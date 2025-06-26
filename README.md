@@ -1,5 +1,5 @@
 <h1 align="center">
-  <a href="RewixxCloudApp"><img src="https://github.com/MikeJouni/Rewixxcloudapp/blob/zain/assets/images/rewixx.png" alt="RewixxCloudApp" width="400"></a>
+  <a href="RewixxCloudApp"><img src="https://github.com/MikeJouni/Rewixxcloudapp/blob/zain/assets/images/rewixx.png" width="400"></a>
 </h1>
 
 <h4 align="center">Business management application with inventory tracking, job management, and barcode scanning capabilities.</h4>
