@@ -5,7 +5,7 @@
 
 <p align="center">
   <a href="#key-features">Key Features</a> •
-  <a href="#project-structure">Project Structure</a> •
+  <a href="#project-structure">Directory Structure</a> •
   <a href="#how-to-use">How To Use</a> •
   <a href="#download">Download</a>
 </p>
@@ -29,7 +29,7 @@
   - Generate reports by customer or job
   - Export reports as pdfs
 
-## Project Directory Structure
+## Directory Structure
 
 ```
 Rewixxcloudapp/
