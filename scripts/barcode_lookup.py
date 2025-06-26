@@ -1,3 +1,4 @@
+import uvicorn
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -59,6 +60,5 @@ def barcode_lookup(barcode: str = Query(..., min_length=1)):
         url=product_url
     )
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8001) 
+
+uvicorn.run(app, host="0.0.0.0", port=8001) 
