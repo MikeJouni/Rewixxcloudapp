@@ -58,7 +58,7 @@ Rewixxcloudapp/
 
 #### Main Navigation:
 * **Customers**: Manage customer information
-* * **Jobs**: Create and track jobs with receipt attachment
+* **Jobs**: Create and track jobs with receipt attachment
 * **Materials**: Manage inventory with barcode scanning
 * **Reports**: Generate reports
 
