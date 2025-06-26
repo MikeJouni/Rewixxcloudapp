@@ -69,6 +69,11 @@ Rewixxcloudapp/
 
 ## Download
 
+### Entire Web Application
+```bash
+git clone https://github.com/MikeJouni/Rewixxcloudapp.git
+```
+
 ### Frontend Setup
 ```bash
 cd frontend
