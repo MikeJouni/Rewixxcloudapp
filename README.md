@@ -7,7 +7,7 @@
   <a href="#key-features">Key Features</a> •
   <a href="#project-structure">Project Structure</a> •
   <a href="#how-to-use">How To Use</a> •
-  <a href="#download">Download</a> •
+  <a href="#download">Download</a>
 </p>
 
 ## Key Features
