@@ -118,7 +118,7 @@ const Materials = () => {
         <BarcodeScannerModal
           onDetected={(barcode) => {
             setShowBarcodeScanner(false);
-            fetch(`https://7fd8-24-35-46-77.ngrok-free.app/api/materials/barcode-lookup?barcode=${barcode}`)
+            fetch(`http://localhost:8001/api/materials/barcode-lookup?barcode=${barcode}`)
               .then(res => res.json())
               .then(data => {
                 setNewMaterial({
