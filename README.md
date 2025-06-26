@@ -1,6 +1,6 @@
 <h1 align="center">
   <br>
-  <a href="RewixxCloudApp"><img src="https://github.com/MikeJouni/Rewixxcloudapp/blob/zain/assets/images/rewixx.png" alt="RewixxCloudApp" width="650"></a>
+  <a href="RewixxCloudApp"><img src="https://github.com/MikeJouni/Rewixxcloudapp/blob/zain/assets/images/rewixx.png" alt="RewixxCloudApp" width="250"></a>
   <br>
 </h1>
 
