@@ -8,7 +8,6 @@
   <a href="#project-structure">Project Structure</a> •
   <a href="#how-to-use">How To Use</a> •
   <a href="#download">Download</a> •
-  <a href="#credits">Credits</a> 
 </p>
 
 ## Key Features
