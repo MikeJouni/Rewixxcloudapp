@@ -8,6 +8,11 @@ from bs4 import BeautifulSoup
 import base64
 import json
 from typing import List, Optional
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 app = FastAPI()
 
@@ -55,13 +60,21 @@ class ReceiptVerificationRequest(BaseModel):
     notes: str = ""
 
 # API configuration
-VERYFI_CLIENT_ID = "vrfchYZiOdKgB3wXhbFpxK6TJ4jgjxaO4NINfiu"
-VERYFI_API_KEY = "zainsbeihh:0afb49e705652bf46fe6176c8fe22448"
+VERYFI_CLIENT_ID = os.getenv("VERYFI_CLIENT_ID")
+VERYFI_API_KEY = os.getenv("VERYFI_API_KEY")
 VERYFI_BASE_URL = "https://api.veryfi.com/api/v8"
 
-# SerpAPI configuration - you'll need to add your API key
-SERPAPI_KEY = "ad905a10bcfcb10430013f9b31cd6b83960793e7b8c536e34242a77d34f41c2a"  # Replace with your actual SerpAPI key
+# SerpAPI configuration
+SERPAPI_KEY = os.getenv("SERPAPI_KEY")
 SERPAPI_BASE_URL = "https://serpapi.com/search"
+
+# Validate API keys are loaded
+if not VERYFI_CLIENT_ID or VERYFI_CLIENT_ID == "your_veryfi_client_id_here":
+    print("⚠️ WARNING: VERYFI_CLIENT_ID not set in environment variables")
+if not VERYFI_API_KEY or VERYFI_API_KEY == "your_veryfi_api_key_here":
+    print("⚠️ WARNING: VERYFI_API_KEY not set in environment variables")
+if not SERPAPI_KEY or SERPAPI_KEY == "your_serpapi_key_here":
+    print("⚠️ WARNING: SERPAPI_KEY not set in environment variables")
 
 @app.get("/api/materials/barcode-lookup")
 def barcode_lookup(barcode: str):
