@@ -81,7 +81,7 @@ const Jobs = () => {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('https://de4b-24-35-46-77.ngrok-free.app/api/receipts/process', {
+      const response = await fetch('https://1965-24-35-46-77.ngrok-free.app/api/receipts/process', {
         method: 'POST',
         body: formData,
       });

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 
-const EnhancedBarcodeScannerModal = ({ 
+const BarcodeScannerModal = ({ 
   isOpen, 
   onClose, 
   onProductFound,
@@ -22,7 +22,7 @@ const EnhancedBarcodeScannerModal = ({
 
   useEffect(() => {
     if (isOpen && isMobile) {
-
+      // Small delay to ensure DOM is ready
       setTimeout(() => {
         startScanning();
       }, 100);
@@ -106,20 +106,6 @@ const EnhancedBarcodeScannerModal = ({
     }
   };
 
-  const stopScanning = async () => {
-    if (html5QrcodeRef.current && html5QrcodeRef.current.isScanning) {
-      try {
-        console.log('🛑 Stopping scanner...');
-        await html5QrcodeRef.current.stop();
-        console.log('✅ Scanner stopped successfully');
-      } catch (error) {
-        console.error('❌ Error stopping scanner:', error);
-      }
-    }
-    html5QrcodeRef.current = null;
-    setScanning(false);
-  };
-
   const onScanSuccess = async (decodedText, decodedResult) => {
     console.log('🎯 Barcode detected:', decodedText);
     console.log('Full scan result:', decodedResult);
@@ -148,7 +134,8 @@ const EnhancedBarcodeScannerModal = ({
     // Add a small delay to prevent rapid-fire scanning
     scanTimeoutRef.current = setTimeout(async () => {
       console.log('🚀 Making API call for barcode:', decodedText);
-      const apiUrl = `https://de4b-24-35-46-77.ngrok-free.app/api/materials/barcode-lookup?barcode=${decodedText}`;
+      // Use a more flexible API URL - can be updated via environment variables later
+      const apiUrl = `https://1965-24-35-46-77.ngrok-free.app/api/materials/barcode-lookup?barcode=${encodeURIComponent(decodedText)}`;
       console.log('🔗 API URL:', apiUrl);
       setLoading(true);
       setError('');
@@ -156,7 +143,6 @@ const EnhancedBarcodeScannerModal = ({
       try {
         console.log('📡 Starting fetch request...');
         
-        // First, let's try a simpler fetch without explicit CORS mode
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
         
@@ -165,18 +151,14 @@ const EnhancedBarcodeScannerModal = ({
           headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
-            // Add ngrok headers if needed
             'ngrok-skip-browser-warning': 'true'
           },
           signal: controller.signal
-          // Remove explicit mode: 'cors' - let browser handle it
         });
         
         clearTimeout(timeoutId);
         
         console.log('📡 API Response status:', response.status);
-        console.log('📡 API Response ok:', response.ok);
-        console.log('📡 Response headers:', [...response.headers.entries()]);
         
         // Check if response is ok
         if (!response.ok) {
@@ -191,18 +173,9 @@ const EnhancedBarcodeScannerModal = ({
           throw new Error(errorMessage);
         }
         
-        // Check content type
-        const contentType = response.headers.get('content-type');
-        console.log('📡 Content-Type:', contentType);
-        
-        if (!contentType || !contentType.includes('application/json')) {
-          console.warn('⚠️ Response is not JSON, content-type:', contentType);
-        }
-        
-        // Get response as text first
+        // Get response as text first, then parse as JSON
         const responseText = await response.text();
         console.log('📡 Raw response text:', responseText);
-        console.log('📡 Response text length:', responseText.length);
         
         if (!responseText.trim()) {
           throw new Error('Server returned empty response');
@@ -210,12 +183,10 @@ const EnhancedBarcodeScannerModal = ({
         
         let productData;
         try {
-          // Try to parse as JSON
           productData = JSON.parse(responseText);
           console.log('📦 Product data received:', productData);
         } catch (jsonError) {
           console.error('❌ Failed to parse JSON:', jsonError);
-          console.error('❌ Response was not valid JSON. Response:', responseText.substring(0, 200));
           throw new Error(`Server returned invalid JSON: ${jsonError.message}`);
         }
         
@@ -227,14 +198,11 @@ const EnhancedBarcodeScannerModal = ({
         } else {
           console.log('❌ Product not found in response');
           setError('Product not found. Please try scanning again.');
-          // Reset the last scanned barcode so user can try again
           lastScannedBarcode.current = '';
         }
         
       } catch (error) {
         console.error('💥 Error fetching product:', error);
-        console.error('💥 Error name:', error.name);
-        console.error('💥 Error message:', error.message);
         
         let errorMessage = 'Failed to fetch product information';
         
@@ -242,14 +210,11 @@ const EnhancedBarcodeScannerModal = ({
           errorMessage = 'Request timed out. Please try again.';
         } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
           errorMessage = 'Network error. Check your internet connection.';
-        } else if (error.name === 'TypeError' && error.message.includes('CORS')) {
-          errorMessage = 'Server configuration error (CORS). Please contact support.';
         } else {
           errorMessage += `: ${error.message}`;
         }
         
         setError(errorMessage);
-        // Reset the last scanned barcode so user can try again
         lastScannedBarcode.current = '';
       } finally {
         setLoading(false);
@@ -288,18 +253,28 @@ const EnhancedBarcodeScannerModal = ({
   };
 
   const handleClose = async () => {
-    console.log('🚪 Closing scanner modal...');
     await stopScanning();
-    if (scanTimeoutRef.current) {
-      clearTimeout(scanTimeoutRef.current);
-    }
     setProduct(null);
     setQuantity(1);
     setShowQuantitySelector(false);
     setError('');
-    lastScannedBarcode.current = '';
     setScannedBarcode('');
+    lastScannedBarcode.current = '';
     onClose();
+  };
+
+  const stopScanning = async () => {
+    if (html5QrcodeRef.current && html5QrcodeRef.current.isScanning) {
+      try {
+        console.log('🛑 Stopping scanner...');
+        await html5QrcodeRef.current.stop();
+        console.log('✅ Scanner stopped successfully');
+      } catch (error) {
+        console.error('❌ Error stopping scanner:', error);
+      }
+    }
+    html5QrcodeRef.current = null;
+    setScanning(false);
   };
 
   if (!isOpen) return null;
@@ -544,4 +519,4 @@ const EnhancedBarcodeScannerModal = ({
   );
 };
 
-export default EnhancedBarcodeScannerModal;
+export default BarcodeScannerModal;

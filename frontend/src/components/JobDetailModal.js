@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import EnhancedBarcodeScannerModal from './EnhancedBarcodeScannerModal';
+import BarcodeScannerModal from './BarcodeScannerModal';
 
 const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob }) => {
   const [activeTab, setActiveTab] = useState('details');
@@ -498,7 +498,7 @@ const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob }) => {
 
         {/* Barcode Scanner Modal */}
         {showBarcodeScanner && (
-          <EnhancedBarcodeScannerModal
+          <BarcodeScannerModal
             isOpen={showBarcodeScanner}
             onClose={() => setShowBarcodeScanner(false)}
             onProductFound={handleBarcodeScan}
