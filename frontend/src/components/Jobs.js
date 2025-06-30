@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import ReceiptVerificationModal from './ReceiptVerificationModal';
+import JobDetailModal from './JobDetailModal';
 
 const Jobs = () => {
   const [jobs, setJobs] = useState([]);
@@ -8,6 +10,12 @@ const Jobs = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [selectedJobForReceipt, setSelectedJobForReceipt] = useState(null);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [processingReceipt, setProcessingReceipt] = useState(false);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [currentReceiptData, setCurrentReceiptData] = useState(null);
+  const [currentJobId, setCurrentJobId] = useState(null);
+  const [selectedJobForDetails, setSelectedJobForDetails] = useState(null);
+  const [showJobDetailModal, setShowJobDetailModal] = useState(false);
   const [newJob, setNewJob] = useState({
     customerId: '',
     customerName: '',
@@ -42,7 +50,9 @@ const Jobs = () => {
       id: jobs.length + 1,
       ...newJob,
       actualHours: 0,
-      receipts: []
+      receipts: [],
+      materials: [],
+      totalCost: 0
     };
     setJobs([...jobs, job]);
     setNewJob({
@@ -66,31 +76,128 @@ const Jobs = () => {
     });
   };
 
-  const handleReceiptUpload = (jobId, event) => {
+  const processReceiptWithVeryfi = async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('https://1965-24-35-46-77.ngrok-free.app/api/receipts/process', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const receiptData = await response.json();
+      return receiptData;
+    } catch (error) {
+      console.error('Error processing receipt with Veryfi:', error);
+      throw error;
+    }
+  };
+
+  const handleReceiptUpload = async (jobId, event) => {
     const file = event.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const receiptData = {
-          id: Date.now(),
-          name: file.name,
-          data: e.target.result,
-          uploadedAt: new Date().toISOString()
-        };
+      setProcessingReceipt(true);
+      
+      try {
+        // Process receipt with Veryfi
+        const receiptData = await processReceiptWithVeryfi(file);
         
-        setJobs(jobs.map(job => 
-          job.id === jobId 
-            ? { ...job, receipts: [...(job.receipts || []), receiptData] }
-            : job
-        ));
-      };
-      reader.readAsDataURL(file);
+        // Read file for display
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const receiptInfo = {
+            id: Date.now(),
+            name: file.name,
+            data: e.target.result,
+            uploadedAt: new Date().toISOString(),
+            extractedData: receiptData
+          };
+          
+          // Store the receipt data for verification
+          setCurrentReceiptData(receiptData);
+          setCurrentJobId(jobId);
+          setShowVerificationModal(true);
+          
+          // Add receipt to job (without materials yet)
+          setJobs(jobs.map(job => {
+            if (job.id === jobId) {
+              return {
+                ...job,
+                receipts: [...(job.receipts || []), receiptInfo]
+              };
+            }
+            return job;
+          }));
+        };
+        reader.readAsDataURL(file);
+        
+      } catch (error) {
+        console.error('Failed to process receipt:', error);
+        alert('Failed to process receipt. Please try again or contact support.');
+      } finally {
+        setProcessingReceipt(false);
+      }
     }
+  };
+
+  const handleReceiptVerification = (verifiedData) => {
+    // Add verified items as materials to the job
+    setJobs(jobs.map(job => {
+      if (job.id === currentJobId) {
+        // Convert verified items to materials format
+        const newMaterials = verifiedData.items.map(item => ({
+          id: Date.now() + Math.random(),
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          total: item.total,
+          supplier: currentReceiptData.vendor,
+          category: 'Receipt Item',
+          source: 'Receipt Scan (Verified)',
+          notes: verifiedData.notes
+        }));
+        
+        const updatedMaterials = [...(job.materials || []), ...newMaterials];
+        
+        // Update total cost
+        const newTotalCost = (job.totalCost || 0) + verifiedData.total;
+        
+        return {
+          ...job,
+          materials: updatedMaterials,
+          totalCost: newTotalCost
+        };
+      }
+      return job;
+    }));
+    
+    // Reset verification state
+    setCurrentReceiptData(null);
+    setCurrentJobId(null);
+    setShowVerificationModal(false);
   };
 
   const viewReceipts = (job) => {
     setSelectedJobForReceipt(job);
     setShowReceiptModal(true);
+  };
+
+  const viewJobDetails = (job) => {
+    setSelectedJobForDetails(job);
+    setShowJobDetailModal(true);
+  };
+
+  const handleJobUpdate = (updatedJob) => {
+    setJobs(jobs.map(job => job.id === updatedJob.id ? updatedJob : job));
+    // Also update the selected job for details if it's the same job
+    if (selectedJobForDetails && selectedJobForDetails.id === updatedJob.id) {
+      setSelectedJobForDetails(updatedJob);
+    }
   };
 
   const getStatusColor = (status) => {
@@ -247,6 +354,7 @@ const Jobs = () => {
               <th>Start Date</th>
               <th>End Date</th>
               <th>Hours (Est/Act)</th>
+              <th>Total Cost</th>
               <th>Receipts</th>
               <th>Actions</th>
             </tr>
@@ -279,6 +387,7 @@ const Jobs = () => {
                 <td>{job.startDate}</td>
                 <td>{job.endDate}</td>
                 <td>{job.estimatedHours} / {job.actualHours}</td>
+                <td>{job.totalCost?.toFixed(2) || '0.00'}</td>
                 <td>
                   <span style={{ fontSize: '0.9rem', color: '#666' }}>
                     {job.receipts ? job.receipts.length : 0} attached
@@ -286,7 +395,18 @@ const Jobs = () => {
                 </td>
                 <td>
                   <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
-                    <button style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}>
+                    <button 
+                      onClick={() => viewJobDetails(job)}
+                      style={{ 
+                        padding: '0.25rem 0.5rem', 
+                        fontSize: '0.875rem',
+                        backgroundColor: '#3498db',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '3px',
+                        cursor: 'pointer'
+                      }}
+                    >
                       View
                     </button>
                     <button style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}>
@@ -296,19 +416,21 @@ const Jobs = () => {
                       <label style={{ 
                         padding: '0.25rem 0.5rem', 
                         fontSize: '0.875rem',
-                        backgroundColor: '#2ecc71',
+                        backgroundColor: processingReceipt ? '#95a5a6' : '#2ecc71',
                         color: 'white',
                         border: 'none',
                         borderRadius: '3px',
-                        cursor: 'pointer',
-                        margin: '0'
+                        cursor: processingReceipt ? 'not-allowed' : 'pointer',
+                        margin: '0',
+                        opacity: processingReceipt ? 0.7 : 1
                       }}>
-                        Attach Receipt
+                        {processingReceipt ? 'Processing...' : 'Attach Receipt'}
                         <input
                           type="file"
                           accept="image/*;capture=environment"
                           style={{ display: 'none' }}
                           onChange={(e) => handleReceiptUpload(job.id, e)}
+                          disabled={processingReceipt}
                         />
                       </label>
                     )}
@@ -396,6 +518,76 @@ const Jobs = () => {
                   <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.9rem', color: '#666' }}>
                     Uploaded: {new Date(receipt.uploadedAt).toLocaleDateString()}
                   </p>
+                  
+                  {/* Display extracted data if available */}
+                  {receipt.extractedData && (
+                    <div style={{ 
+                      backgroundColor: '#f8f9fa', 
+                      padding: '0.75rem', 
+                      borderRadius: '4px', 
+                      marginBottom: '0.75rem',
+                      border: '1px solid #e9ecef'
+                    }}>
+                      <h5 style={{ margin: '0 0 0.5rem 0', fontSize: '0.9rem', color: '#495057' }}>
+                        Extracted Data
+                      </h5>
+                      <div style={{ fontSize: '0.85rem', lineHeight: '1.4' }}>
+                        <p style={{ margin: '0.25rem 0' }}>
+                          <strong>Vendor:</strong> {receipt.extractedData.vendor || 'N/A'}
+                        </p>
+                        <p style={{ margin: '0.25rem 0' }}>
+                          <strong>Date:</strong> {receipt.extractedData.date || 'N/A'}
+                        </p>
+                        <p style={{ margin: '0.25rem 0' }}>
+                          <strong>Total:</strong> ${receipt.extractedData.total?.toFixed(2) || '0.00'}
+                        </p>
+                        <p style={{ margin: '0.25rem 0' }}>
+                          <strong>Subtotal:</strong> ${receipt.extractedData.subtotal?.toFixed(2) || '0.00'}
+                        </p>
+                        <p style={{ margin: '0.25rem 0' }}>
+                          <strong>Tax:</strong> ${receipt.extractedData.tax?.toFixed(2) || '0.00'}
+                        </p>
+                        {receipt.extractedData.receipt_number && (
+                          <p style={{ margin: '0.25rem 0' }}>
+                            <strong>Receipt #:</strong> {receipt.extractedData.receipt_number}
+                          </p>
+                        )}
+                      </div>
+                      
+                      {/* Display line items */}
+                      {receipt.extractedData.items && receipt.extractedData.items.length > 0 && (
+                        <div style={{ marginTop: '0.75rem' }}>
+                          <h6 style={{ margin: '0 0 0.5rem 0', fontSize: '0.8rem', color: '#6c757d' }}>
+                            Items ({receipt.extractedData.items.length})
+                          </h6>
+                          <div style={{ 
+                            maxHeight: '150px', 
+                            overflowY: 'auto', 
+                            border: '1px solid #dee2e6',
+                            borderRadius: '3px',
+                            padding: '0.5rem',
+                            backgroundColor: 'white'
+                          }}>
+                            {receipt.extractedData.items.map((item, itemIndex) => (
+                              <div key={itemIndex} style={{ 
+                                padding: '0.25rem 0', 
+                                borderBottom: itemIndex < receipt.extractedData.items.length - 1 ? '1px solid #f1f3f4' : 'none',
+                                fontSize: '0.8rem'
+                              }}>
+                                <div style={{ fontWeight: 'bold', color: '#495057' }}>
+                                  {item.name}
+                                </div>
+                                <div style={{ color: '#6c757d', fontSize: '0.75rem' }}>
+                                  Qty: {item.quantity} × ${item.price?.toFixed(2)} = ${item.total?.toFixed(2)}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
                   <img 
                     src={receipt.data} 
                     alt={receipt.name}
@@ -412,6 +604,30 @@ const Jobs = () => {
           </div>
         </div>
       )}
+
+      {/* Receipt Verification Modal */}
+      <ReceiptVerificationModal
+        isOpen={showVerificationModal}
+        onClose={() => {
+          setShowVerificationModal(false);
+          setCurrentReceiptData(null);
+          setCurrentJobId(null);
+        }}
+        receiptData={currentReceiptData}
+        onVerify={handleReceiptVerification}
+        jobId={currentJobId}
+      />
+
+      {/* Job Detail Modal */}
+      <JobDetailModal
+        job={selectedJobForDetails}
+        isOpen={showJobDetailModal}
+        onClose={() => {
+          setShowJobDetailModal(false);
+          setSelectedJobForDetails(null);
+        }}
+        onUpdateJob={handleJobUpdate}
+      />
     </div>
   );
 };

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import './App.css';
 import Customers from './components/Customers';
 import Jobs from './components/Jobs';
-import Materials from './components/Materials';
 import Reports from './components/Reports';
 
 function App() {
@@ -14,8 +13,6 @@ function App() {
         return <Customers />;
       case 'jobs':
         return <Jobs />;
-      case 'materials':
-        return <Materials />;
       case 'reports':
         return <Reports />;
       default:
@@ -39,12 +36,6 @@ function App() {
             onClick={() => setActiveTab('jobs')}
           >
             Jobs
-          </button>
-          <button 
-            className={activeTab === 'materials' ? 'nav-button active' : 'nav-button'}
-            onClick={() => setActiveTab('materials')}
-          >
-            Materials
           </button>
           <button 
             className={activeTab === 'reports' ? 'nav-button active' : 'nav-button'}
