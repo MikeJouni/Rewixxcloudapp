@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 
 const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
@@ -12,25 +12,152 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
   const lastScannedBarcode = useRef("");
   const scanTimeoutRef = useRef(null);
 
-  useEffect(() => {
-    if (isOpen && isMobile) {
-      // Small delay to ensure DOM is ready
-      setTimeout(() => {
-        startScanning();
-      }, 100);
-    } else {
-      stopScanning();
+  const stopScanning = useCallback(async () => {
+    if (html5QrcodeRef.current && html5QrcodeRef.current.isScanning) {
+      try {
+        console.log("🛑 Stopping scanner...");
+        await html5QrcodeRef.current.stop();
+        console.log("✅ Scanner stopped successfully");
+      } catch (error) {
+        console.error("❌ Error stopping scanner:", error);
+      }
     }
+    html5QrcodeRef.current = null;
+  }, []);
 
-    return () => {
-      stopScanning();
+  const onScanSuccess = useCallback(
+    async (decodedText, decodedResult) => {
+      console.log("🎯 Barcode detected:", decodedText);
+      console.log("Full scan result:", decodedResult);
+
+      // Prevent multiple scans of the same barcode
+      if (decodedText === lastScannedBarcode.current) {
+        console.log("🔄 Duplicate barcode, ignoring");
+        return;
+      }
+
+      // Prevent multiple simultaneous requests
+      if (loading) {
+        console.log("⏳ Already loading, ignoring scan");
+        return;
+      }
+
+      // Set the last scanned barcode to prevent duplicates
+      lastScannedBarcode.current = decodedText;
+      setScannedBarcode(decodedText);
+
+      // Clear any existing timeout
       if (scanTimeoutRef.current) {
         clearTimeout(scanTimeoutRef.current);
       }
-    };
-  }, [isOpen, isMobile, startScanning, stopScanning]);
 
-  const startScanning = async () => {
+      // Add a small delay to prevent rapid-fire scanning
+      scanTimeoutRef.current = setTimeout(async () => {
+        console.log("🚀 Making API call for barcode:", decodedText);
+        // Use a more flexible API URL - can be updated via environment variables later
+        const apiUrl = `https://1965-24-35-46-77.ngrok-free.app/api/materials/barcode-lookup?barcode=${encodeURIComponent(
+          decodedText
+        )}`;
+        console.log("🔗 API URL:", apiUrl);
+        setLoading(true);
+        setError("");
+
+        try {
+          console.log("📡 Starting fetch request...");
+
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+          const response = await fetch(apiUrl, {
+            method: "GET",
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+              "ngrok-skip-browser-warning": "true",
+            },
+            signal: controller.signal,
+          });
+
+          clearTimeout(timeoutId);
+
+          console.log("📡 API Response status:", response.status);
+
+          // Check if response is ok
+          if (!response.ok) {
+            let errorMessage = `HTTP ${response.status}`;
+            try {
+              const errorText = await response.text();
+              console.error("❌ API Error response:", errorText);
+              errorMessage += `: ${errorText}`;
+            } catch (e) {
+              console.error("❌ Could not read error response");
+            }
+            throw new Error(errorMessage);
+          }
+
+          // Get response as text first, then parse as JSON
+          const responseText = await response.text();
+          console.log("📡 Raw response text:", responseText);
+
+          if (!responseText.trim()) {
+            throw new Error("Server returned empty response");
+          }
+
+          let productData;
+          try {
+            productData = JSON.parse(responseText);
+            console.log("📦 Product data received:", productData);
+          } catch (jsonError) {
+            console.error("❌ Failed to parse JSON:", jsonError);
+            throw new Error(
+              `Server returned invalid JSON: ${jsonError.message}`
+            );
+          }
+
+          if (productData && productData.name) {
+            console.log("✅ Product found, showing quantity selector");
+            setProduct(productData);
+            setShowQuantitySelector(true);
+            await stopScanning();
+          } else {
+            console.log("❌ Product not found in response");
+            setError("Product not found. Please try scanning again.");
+            lastScannedBarcode.current = "";
+          }
+        } catch (error) {
+          console.error("💥 Error fetching product:", error);
+
+          let errorMessage = "Failed to fetch product information";
+
+          if (error.name === "AbortError") {
+            errorMessage = "Request timed out. Please try again.";
+          } else if (
+            error.name === "TypeError" &&
+            error.message.includes("fetch")
+          ) {
+            errorMessage = "Network error. Check your internet connection.";
+          } else {
+            errorMessage += `: ${error.message}`;
+          }
+
+          setError(errorMessage);
+          lastScannedBarcode.current = "";
+        } finally {
+          setLoading(false);
+        }
+      }, 500); // 500ms delay to prevent rapid scanning
+    },
+    [loading, stopScanning]
+  );
+
+  const onScanFailure = useCallback((error) => {
+    // Handle scan failure, but don't show error for normal scanning
+    if (error && error.name !== "NotFoundException") {
+      console.error("Scanning error:", error);
+    }
+  }, []);
+
+  const startScanning = useCallback(async () => {
     try {
       console.log("🎥 Starting barcode scanner...");
       setError("");
@@ -95,134 +222,25 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
         setError("Camera does not meet the required constraints.");
       }
     }
-  };
+  }, [onScanSuccess, onScanFailure]);
 
-  const onScanSuccess = async (decodedText, decodedResult) => {
-    console.log("🎯 Barcode detected:", decodedText);
-    console.log("Full scan result:", decodedResult);
-
-    // Prevent multiple scans of the same barcode
-    if (decodedText === lastScannedBarcode.current) {
-      console.log("🔄 Duplicate barcode, ignoring");
-      return;
+  useEffect(() => {
+    if (isOpen && isMobile) {
+      // Small delay to ensure DOM is ready
+      setTimeout(() => {
+        startScanning();
+      }, 100);
+    } else {
+      stopScanning();
     }
 
-    // Prevent multiple simultaneous requests
-    if (loading) {
-      console.log("⏳ Already loading, ignoring scan");
-      return;
-    }
-
-    // Set the last scanned barcode to prevent duplicates
-    lastScannedBarcode.current = decodedText;
-    setScannedBarcode(decodedText);
-
-    // Clear any existing timeout
-    if (scanTimeoutRef.current) {
-      clearTimeout(scanTimeoutRef.current);
-    }
-
-    // Add a small delay to prevent rapid-fire scanning
-    scanTimeoutRef.current = setTimeout(async () => {
-      console.log("🚀 Making API call for barcode:", decodedText);
-      // Use a more flexible API URL - can be updated via environment variables later
-      const apiUrl = `https://1965-24-35-46-77.ngrok-free.app/api/materials/barcode-lookup?barcode=${encodeURIComponent(
-        decodedText
-      )}`;
-      console.log("🔗 API URL:", apiUrl);
-      setLoading(true);
-      setError("");
-
-      try {
-        console.log("📡 Starting fetch request...");
-
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-
-        const response = await fetch(apiUrl, {
-          method: "GET",
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-            "ngrok-skip-browser-warning": "true",
-          },
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-
-        console.log("📡 API Response status:", response.status);
-
-        // Check if response is ok
-        if (!response.ok) {
-          let errorMessage = `HTTP ${response.status}`;
-          try {
-            const errorText = await response.text();
-            console.error("❌ API Error response:", errorText);
-            errorMessage += `: ${errorText}`;
-          } catch (e) {
-            console.error("❌ Could not read error response");
-          }
-          throw new Error(errorMessage);
-        }
-
-        // Get response as text first, then parse as JSON
-        const responseText = await response.text();
-        console.log("📡 Raw response text:", responseText);
-
-        if (!responseText.trim()) {
-          throw new Error("Server returned empty response");
-        }
-
-        let productData;
-        try {
-          productData = JSON.parse(responseText);
-          console.log("📦 Product data received:", productData);
-        } catch (jsonError) {
-          console.error("❌ Failed to parse JSON:", jsonError);
-          throw new Error(`Server returned invalid JSON: ${jsonError.message}`);
-        }
-
-        if (productData && productData.name) {
-          console.log("✅ Product found, showing quantity selector");
-          setProduct(productData);
-          setShowQuantitySelector(true);
-          await stopScanning();
-        } else {
-          console.log("❌ Product not found in response");
-          setError("Product not found. Please try scanning again.");
-          lastScannedBarcode.current = "";
-        }
-      } catch (error) {
-        console.error("💥 Error fetching product:", error);
-
-        let errorMessage = "Failed to fetch product information";
-
-        if (error.name === "AbortError") {
-          errorMessage = "Request timed out. Please try again.";
-        } else if (
-          error.name === "TypeError" &&
-          error.message.includes("fetch")
-        ) {
-          errorMessage = "Network error. Check your internet connection.";
-        } else {
-          errorMessage += `: ${error.message}`;
-        }
-
-        setError(errorMessage);
-        lastScannedBarcode.current = "";
-      } finally {
-        setLoading(false);
+    return () => {
+      stopScanning();
+      if (scanTimeoutRef.current) {
+        clearTimeout(scanTimeoutRef.current);
       }
-    }, 500); // 500ms delay to prevent rapid scanning
-  };
-
-  const onScanFailure = (error) => {
-    // Handle scan failure, but don't show error for normal scanning
-    if (error && error.name !== "NotFoundException") {
-      console.error("Scanning error:", error);
-    }
-  };
+    };
+  }, [isOpen, isMobile, startScanning, stopScanning]);
 
   const handleQuantityConfirm = () => {
     if (product && quantity > 0) {
@@ -257,19 +275,6 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
     setScannedBarcode("");
     lastScannedBarcode.current = "";
     onClose();
-  };
-
-  const stopScanning = async () => {
-    if (html5QrcodeRef.current && html5QrcodeRef.current.isScanning) {
-      try {
-        console.log("🛑 Stopping scanner...");
-        await html5QrcodeRef.current.stop();
-        console.log("✅ Scanner stopped successfully");
-      } catch (error) {
-        console.error("❌ Error stopping scanner:", error);
-      }
-    }
-    html5QrcodeRef.current = null;
   };
 
   if (!isOpen) return null;
