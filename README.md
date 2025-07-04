@@ -53,7 +53,9 @@ Rewixxcloudapp/
 ├── scripts/           # Python FastAPI backend
 │   ├── api.py                             # Main API (receipts + barcode)
 │   ├── requirements.txt                   # Python dependencies
-│   └── .env.example                       # Environment variables template
+│   ├── .env.example                       # Environment variables template
+│   └── .env                               # Environment variables (not in git)
+├── ngrok.yml                              # ngrok configuration (not in git)
 └── README.md          
 ```
 
@@ -72,7 +74,8 @@ cd Rewixxcloudapp
 cd frontend
 npm install # Only first time
 npm start
-# View at http://localhost:3000
+# Frontend runs on http://localhost:3000 or if viewing on mobile: http://YOUR_COMPUTER_IP:3000
+
 ```
 
 #### Backend Development
@@ -83,11 +86,11 @@ cd backend
 
 ### Barcode/Receipt Scanner Development
 
-#### 1. Setup ngrok(needed for https to access camera on Safari/Chrome on mobile)
+#### 1. Setup ngrok (needed for https to access camera on Safari/Chrome on mobile)
 
-- Download ngrok and get auth token from website
+- Download ngrok
 
-- Update ngrok.yml with your auth token(https://dashboard.ngrok.com/get-started/your-authtoken):
+- Update `ngrok.yml` with ngrok auth token in Environment Variables Google Doc
 
 #### 2. Environment Variables(API Keys)
 
@@ -96,7 +99,7 @@ cd scripts
 cp .env.example .env
 ```
 
-- Update VERYFI_CLIENT_ID, VERYFI_API_KEY, and SERPAPI_KEY with your respective IDs and keys
+- Update VERYFI_CLIENT_ID, VERYFI_API_KEY, and SERPAPI_KEY in `scripts/.env` with ID and keys in Environment Variables Google Doc
 
 
 #### 3. Start the Frontend
@@ -104,7 +107,7 @@ cp .env.example .env
 cd frontend
 npm install # Only first time
 npm start
-# Frontend runs on http://localhost:3000
+# Frontend runs on http://localhost:3000 or if viewing on mobile: http://YOUR_COMPUTER_IP:3000
 ```
 
 #### 4. Start the API 
@@ -120,14 +123,11 @@ python scanning_api.py
 # Start both frontend and backend
 ngrok start --all
 ```
-#### 6. Update Backend ngrok link
 
-- Edit API_BASE_URL in `frontend/src/config.js` with the backend(8000 port) ngrok URL
+#### 6. Access the Application
 
-
-#### 7. Access the Application
-
-- Open your frontend(3000 port) ngrok URL in a browser:
+- If wanting to test API, the backend is running on static URL: https://anchovy-musical-louse.ngrok-free.app 
+- Open your frontend(3000 port) ngrok URL in a browser(changes every ngrok run)
 
 
 ### User
