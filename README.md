@@ -6,7 +6,7 @@
 <p align="center">
   <a href="#key-features">Key Features</a> •
   <a href="#project-structure">Directory Structure</a> •
-  <a href="#how-to-use">How To Use</a> •
+  <a href="#how-to-use">How To Use</a>
 </p>
 
 ## Key Features
@@ -122,7 +122,7 @@ ngrok start --all
 ```
 #### 6. Update Backend ngrok link
 
-- Edit API_BASE_URL in `frontend/src/config.js`
+- Edit API_BASE_URL in `frontend/src/config.js` with the backend(8000 port) ngrok URL
 
 
 #### 7. Access the Application
