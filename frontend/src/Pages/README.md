@@ -121,4 +121,32 @@ When you're ready, you can safely delete the original component files from `src/
 - `JobDetailModal.js`
 - `BarcodeScannerModal.js`
 
-The application now uses the new refactored structure and all functionality has been preserved! 
+The application now uses the new refactored structure and all functionality has been preserved!
+
+## 🌐 Routing Implementation
+
+The application now includes React Router for better navigation:
+
+### **Available Routes**
+- `/` - Redirects to `/customers`
+- `/customers` - Customer Management page
+- `/jobs` - Job Management page  
+- `/reports` - Reports page
+- `*` - 404 Not Found page
+
+### **Features**
+- ✅ **Direct URL Access**: Users can bookmark and directly access pages
+- ✅ **Browser Navigation**: Back/forward buttons work properly
+- ✅ **Active Tab Highlighting**: Navigation shows current page
+- ✅ **404 Handling**: Graceful handling of invalid routes
+- ✅ **Clean URLs**: No hash routing, uses proper browser history
+
+### **Components Added**
+- `Navigation.js` - Handles navigation with active state
+- `NotFound.js` - 404 error page
+- Updated `App.js` - Router configuration
+
+### **Usage Examples**
+- Navigate to customers: `http://localhost:3000/customers`
+- Navigate to jobs: `http://localhost:3000/jobs`
+- Navigate to reports: `http://localhost:3000/reports` 
