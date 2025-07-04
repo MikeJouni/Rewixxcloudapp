@@ -1,23 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import BarcodeScannerModal from './BarcodeScannerModal';
+import React, { useState, useEffect } from "react";
+import BarcodeScannerModal from "./BarcodeScannerModal";
 
 const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob }) => {
-  const [activeTab, setActiveTab] = useState('details');
+  const [activeTab, setActiveTab] = useState("details");
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [newMaterial, setNewMaterial] = useState({
-    name: '',
-    price: '',
+    name: "",
+    price: "",
     quantity: 1,
-    supplier: '',
-    category: '',
-    notes: ''
+    supplier: "",
+    category: "",
+    notes: "",
   });
 
   useEffect(() => {
     // Detect if device is mobile
-    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const isMobileDevice =
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent
+      );
     setIsMobile(isMobileDevice);
   }, []);
 
@@ -27,23 +30,23 @@ const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob }) => {
     const materialWithId = {
       ...material,
       id: Date.now() + Math.random(),
-      addedAt: new Date().toISOString()
+      addedAt: new Date().toISOString(),
     };
 
     const updatedJob = {
       ...job,
       materials: [...(job.materials || []), materialWithId],
-      totalCost: (job.totalCost || 0) + (material.price * material.quantity)
+      totalCost: (job.totalCost || 0) + material.price * material.quantity,
     };
 
     onUpdateJob(updatedJob);
     setNewMaterial({
-      name: '',
-      price: '',
+      name: "",
+      price: "",
       quantity: 1,
-      supplier: '',
-      category: '',
-      notes: ''
+      supplier: "",
+      category: "",
+      notes: "",
     });
     setShowManualEntry(false);
   };
@@ -62,32 +65,31 @@ const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob }) => {
     const material = {
       ...newMaterial,
       price: parseFloat(newMaterial.price) || 0,
-      quantity: parseInt(newMaterial.quantity) || 1
+      quantity: parseInt(newMaterial.quantity) || 1,
     };
 
     handleAddMaterial(material);
   };
 
   const removeMaterial = (materialId) => {
-    const materialToRemove = job.materials?.find(m => m.id === materialId);
+    const materialToRemove = job.materials?.find((m) => m.id === materialId);
     const updatedJob = {
       ...job,
-      materials: job.materials?.filter(m => m.id !== materialId) || [],
-      totalCost: (job.totalCost || 0) - (materialToRemove?.price * materialToRemove?.quantity || 0)
+      materials: job.materials?.filter((m) => m.id !== materialId) || [],
+      totalCost:
+        (job.totalCost || 0) -
+        (materialToRemove?.price * materialToRemove?.quantity || 0),
     };
 
     onUpdateJob(updatedJob);
   };
 
   const updateMaterialQuantity = (materialId, newQuantity) => {
-    const updatedMaterials = job.materials?.map(material => {
+    const updatedMaterials = job.materials?.map((material) => {
       if (material.id === materialId) {
-        const quantityDiff = newQuantity - material.quantity;
-        const costDiff = material.price * quantityDiff;
-        
         return {
           ...material,
-          quantity: newQuantity
+          quantity: newQuantity,
         };
       }
       return material;
@@ -95,133 +97,110 @@ const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob }) => {
 
     const updatedJob = {
       ...job,
-      materials: updatedMaterials
+      materials: updatedMaterials,
     };
 
     // Recalculate total cost
-    updatedJob.totalCost = updatedMaterials?.reduce((total, material) => {
-      return total + (material.price * material.quantity);
-    }, 0) || 0;
+    updatedJob.totalCost =
+      updatedMaterials?.reduce((total, material) => {
+        return total + material.price * material.quantity;
+      }, 0) || 0;
 
     onUpdateJob(updatedJob);
   };
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0,0,0,0.8)',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      zIndex: 1000,
-      padding: '1rem'
-    }}>
-      <div style={{
-        backgroundColor: 'white',
-        borderRadius: '8px',
-        padding: '1.5rem',
-        maxWidth: '95vw',
-        maxHeight: '95vh',
-        overflow: 'auto',
-        width: '100%'
-      }}>
+    <div className="fixed inset-0 bg-black/80 flex justify-center items-center z-50 p-4">
+      <div className="bg-white rounded-lg p-6 max-w-[95vw] max-h-[95vh] overflow-auto w-full">
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <h2 style={{ margin: 0 }}>Job #{job.id} - {job.title}</h2>
-          <button 
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="m-0">
+            Job #{job.id} - {job.title}
+          </h2>
+          <button
             onClick={onClose}
-            style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '1.5rem',
-              cursor: 'pointer',
-              color: '#666'
-            }}
+            className="bg-none border-none text-2xl cursor-pointer text-gray-500 hover:text-gray-700"
           >
             ×
           </button>
         </div>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '1px solid #ddd' }}>
+        <div className="flex gap-2 mb-6 border-b border-gray-300">
           <button
-            onClick={() => setActiveTab('details')}
-            style={{
-              padding: '0.75rem 1rem',
-              border: 'none',
-              background: activeTab === 'details' ? '#3498db' : '#f8f9fa',
-              color: activeTab === 'details' ? 'white' : '#333',
-              borderRadius: '4px 4px 0 0',
-              cursor: 'pointer'
-            }}
+            onClick={() => setActiveTab("details")}
+            className={`px-3 py-3 border-none rounded-t cursor-pointer ${
+              activeTab === "details"
+                ? "bg-blue-500 text-white"
+                : "bg-gray-100 text-gray-800"
+            }`}
           >
             Job Details
           </button>
           <button
-            onClick={() => setActiveTab('materials')}
-            style={{
-              padding: '0.75rem 1rem',
-              border: 'none',
-              background: activeTab === 'materials' ? '#3498db' : '#f8f9fa',
-              color: activeTab === 'materials' ? 'white' : '#333',
-              borderRadius: '4px 4px 0 0',
-              cursor: 'pointer'
-            }}
+            onClick={() => setActiveTab("materials")}
+            className={`px-3 py-3 border-none rounded-t cursor-pointer ${
+              activeTab === "materials"
+                ? "bg-blue-500 text-white"
+                : "bg-gray-100 text-gray-800"
+            }`}
           >
             Materials ({job.materials?.length || 0})
           </button>
           <button
-            onClick={() => setActiveTab('receipts')}
-            style={{
-              padding: '0.75rem 1rem',
-              border: 'none',
-              background: activeTab === 'receipts' ? '#3498db' : '#f8f9fa',
-              color: activeTab === 'receipts' ? 'white' : '#333',
-              borderRadius: '4px 4px 0 0',
-              cursor: 'pointer'
-            }}
+            onClick={() => setActiveTab("receipts")}
+            className={`px-3 py-3 border-none rounded-t cursor-pointer ${
+              activeTab === "receipts"
+                ? "bg-blue-500 text-white"
+                : "bg-gray-100 text-gray-800"
+            }`}
           >
             Receipts ({job.receipts?.length || 0})
           </button>
         </div>
 
         {/* Job Details Tab */}
-        {activeTab === 'details' && (
+        {activeTab === "details" && (
           <div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+            <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
                 <strong>Customer:</strong> {job.customerName}
               </div>
               <div>
-                <strong>Status:</strong> 
-                <span style={{ 
-                  color: job.status === 'Pending' ? '#f39c12' : 
-                         job.status === 'In Progress' ? '#3498db' : 
-                         job.status === 'Completed' ? '#2ecc71' : '#e74c3c',
-                  fontWeight: 'bold',
-                  marginLeft: '0.5rem'
-                }}>
+                <strong>Status:</strong>
+                <span
+                  className={`font-bold ${
+                    job.status === "Pending"
+                      ? "text-yellow-500"
+                      : job.status === "In Progress"
+                      ? "text-blue-500"
+                      : job.status === "Completed"
+                      ? "text-green-500"
+                      : "text-red-500"
+                  }`}
+                >
                   {job.status}
                 </span>
               </div>
               <div>
-                <strong>Priority:</strong> 
-                <span style={{ 
-                  color: job.priority === 'Low' ? '#2ecc71' : 
-                         job.priority === 'Medium' ? '#f39c12' : 
-                         job.priority === 'High' ? '#e67e22' : '#e74c3c',
-                  fontWeight: 'bold',
-                  marginLeft: '0.5rem'
-                }}>
+                <strong>Priority:</strong>
+                <span
+                  className={`font-bold ${
+                    job.priority === "Low"
+                      ? "text-green-500"
+                      : job.priority === "Medium"
+                      ? "text-yellow-500"
+                      : job.priority === "High"
+                      ? "text-orange-500"
+                      : "text-red-500"
+                  }`}
+                >
                   {job.priority}
                 </span>
               </div>
               <div>
-                <strong>Total Cost:</strong> ${job.totalCost?.toFixed(2) || '0.00'}
+                <strong>Total Cost:</strong> $
+                {job.totalCost?.toFixed(2) || "0.00"}
               </div>
               <div>
                 <strong>Start Date:</strong> {job.startDate}
@@ -238,43 +217,27 @@ const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob }) => {
             </div>
             <div>
               <strong>Description:</strong>
-              <p style={{ marginTop: '0.5rem', padding: '1rem', backgroundColor: '#f8f9fa', borderRadius: '4px' }}>
-                {job.description}
-              </p>
+              <p className="mt-2 p-4 bg-gray-100 rounded">{job.description}</p>
             </div>
           </div>
         )}
 
         {/* Materials Tab */}
-        {activeTab === 'materials' && (
+        {activeTab === "materials" && (
           <div>
             {/* Add Materials Section */}
-            <div style={{ marginBottom: '1.5rem', padding: '1rem', backgroundColor: '#f8f9fa', borderRadius: '4px' }}>
-              <h3 style={{ margin: '0 0 1rem 0' }}>Add Materials</h3>
-              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+            <div className="mb-4 p-4 bg-gray-100 rounded">
+              <h3 className="mb-2">Add Materials</h3>
+              <div className="flex gap-2 flex-wrap">
                 <button
                   onClick={() => setShowBarcodeScanner(true)}
-                  style={{
-                    padding: '0.75rem 1rem',
-                    backgroundColor: '#2ecc71',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer'
-                  }}
+                  className="px-4 py-2 bg-green-500 text-white border-none rounded cursor-pointer"
                 >
                   📱 Scan Barcode
                 </button>
                 <button
                   onClick={() => setShowManualEntry(!showManualEntry)}
-                  style={{
-                    padding: '0.75rem 1rem',
-                    backgroundColor: '#3498db',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer'
-                  }}
+                  className="px-4 py-2 bg-blue-500 text-white border-none rounded cursor-pointer"
                 >
                   ✏️ Manual Entry
                 </button>
@@ -282,85 +245,111 @@ const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob }) => {
 
               {/* Manual Entry Form */}
               {showManualEntry && (
-                <form onSubmit={handleManualSubmit} style={{ marginTop: '1rem', padding: '1rem', backgroundColor: 'white', borderRadius: '4px' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <form
+                  onSubmit={handleManualSubmit}
+                  className="mt-4 p-4 bg-white rounded"
+                >
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label style={{ display: 'block', marginBottom: '0.25rem', fontWeight: 'bold' }}>Name *</label>
+                      <label className="block mb-2 font-bold">Name *</label>
                       <input
                         type="text"
                         value={newMaterial.name}
-                        onChange={(e) => setNewMaterial({...newMaterial, name: e.target.value})}
-                        style={{ width: '100%', padding: '0.5rem', border: '1px solid #ddd', borderRadius: '4px' }}
+                        onChange={(e) =>
+                          setNewMaterial({
+                            ...newMaterial,
+                            name: e.target.value,
+                          })
+                        }
+                        className="w-full p-2 border border-gray-300 rounded"
                         required
                       />
                     </div>
                     <div>
-                      <label style={{ display: 'block', marginBottom: '0.25rem', fontWeight: 'bold' }}>Price</label>
+                      <label className="block mb-2 font-bold">Price</label>
                       <input
                         type="number"
                         step="0.01"
                         value={newMaterial.price}
-                        onChange={(e) => setNewMaterial({...newMaterial, price: e.target.value})}
-                        style={{ width: '100%', padding: '0.5rem', border: '1px solid #ddd', borderRadius: '4px' }}
+                        onChange={(e) =>
+                          setNewMaterial({
+                            ...newMaterial,
+                            price: e.target.value,
+                          })
+                        }
+                        className="w-full p-2 border border-gray-300 rounded"
                       />
                     </div>
                     <div>
-                      <label style={{ display: 'block', marginBottom: '0.25rem', fontWeight: 'bold' }}>Quantity</label>
+                      <label className="block mb-2 font-bold">Quantity</label>
                       <input
                         type="number"
                         min="1"
                         value={newMaterial.quantity}
-                        onChange={(e) => setNewMaterial({...newMaterial, quantity: e.target.value})}
-                        style={{ width: '100%', padding: '0.5rem', border: '1px solid #ddd', borderRadius: '4px' }}
+                        onChange={(e) =>
+                          setNewMaterial({
+                            ...newMaterial,
+                            quantity: e.target.value,
+                          })
+                        }
+                        className="w-full p-2 border border-gray-300 rounded"
                       />
                     </div>
                     <div>
-                      <label style={{ display: 'block', marginBottom: '0.25rem', fontWeight: 'bold' }}>Supplier</label>
+                      <label className="block mb-2 font-bold">Supplier</label>
                       <input
                         type="text"
                         value={newMaterial.supplier}
-                        onChange={(e) => setNewMaterial({...newMaterial, supplier: e.target.value})}
-                        style={{ width: '100%', padding: '0.5rem', border: '1px solid #ddd', borderRadius: '4px' }}
+                        onChange={(e) =>
+                          setNewMaterial({
+                            ...newMaterial,
+                            supplier: e.target.value,
+                          })
+                        }
+                        className="w-full p-2 border border-gray-300 rounded"
                       />
                     </div>
                     <div>
-                      <label style={{ display: 'block', marginBottom: '0.25rem', fontWeight: 'bold' }}>Category</label>
+                      <label className="block mb-2 font-bold">Category</label>
                       <input
                         type="text"
                         value={newMaterial.category}
-                        onChange={(e) => setNewMaterial({...newMaterial, category: e.target.value})}
-                        style={{ width: '100%', padding: '0.5rem', border: '1px solid #ddd', borderRadius: '4px' }}
+                        onChange={(e) =>
+                          setNewMaterial({
+                            ...newMaterial,
+                            category: e.target.value,
+                          })
+                        }
+                        className="w-full p-2 border border-gray-300 rounded"
                       />
                     </div>
                     <div>
-                      <label style={{ display: 'block', marginBottom: '0.25rem', fontWeight: 'bold' }}>Notes</label>
+                      <label className="block mb-2 font-bold">Notes</label>
                       <input
                         type="text"
                         value={newMaterial.notes}
-                        onChange={(e) => setNewMaterial({...newMaterial, notes: e.target.value})}
-                        style={{ width: '100%', padding: '0.5rem', border: '1px solid #ddd', borderRadius: '4px' }}
+                        onChange={(e) =>
+                          setNewMaterial({
+                            ...newMaterial,
+                            notes: e.target.value,
+                          })
+                        }
+                        className="w-full p-2 border border-gray-300 rounded"
                       />
                     </div>
                   </div>
-                  <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem' }}>
-                    <button type="submit" style={{
-                      padding: '0.5rem 1rem',
-                      backgroundColor: '#2ecc71',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer'
-                    }}>
+                  <div className="mt-4 flex gap-2">
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-green-500 text-white border-none rounded cursor-pointer"
+                    >
                       Add Material
                     </button>
-                    <button type="button" onClick={() => setShowManualEntry(false)} style={{
-                      padding: '0.5rem 1rem',
-                      backgroundColor: '#95a5a6',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer'
-                    }}>
+                    <button
+                      type="button"
+                      onClick={() => setShowManualEntry(false)}
+                      className="px-4 py-2 bg-gray-300 text-gray-800 border-none rounded cursor-pointer"
+                    >
                       Cancel
                     </button>
                   </div>
@@ -370,58 +359,80 @@ const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob }) => {
 
             {/* Materials List */}
             <div>
-              <h3 style={{ margin: '0 0 1rem 0' }}>Materials List</h3>
+              <h3 className="mb-2">Materials List</h3>
               {job.materials && job.materials.length > 0 ? (
-                <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <div className="max-h-[400px] overflow-y-auto">
+                  <table className="w-full border-collapse">
                     <thead>
-                      <tr style={{ backgroundColor: '#f8f9fa' }}>
-                        <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Name</th>
-                        <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Price</th>
-                        <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Qty</th>
-                        <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Total</th>
-                        <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Supplier</th>
-                        <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Actions</th>
+                      <tr className="bg-gray-100">
+                        <th className="px-4 py-2 text-left border-b border-gray-300">
+                          Name
+                        </th>
+                        <th className="px-4 py-2 text-left border-b border-gray-300">
+                          Price
+                        </th>
+                        <th className="px-4 py-2 text-left border-b border-gray-300">
+                          Qty
+                        </th>
+                        <th className="px-4 py-2 text-left border-b border-gray-300">
+                          Total
+                        </th>
+                        <th className="px-4 py-2 text-left border-b border-gray-300">
+                          Supplier
+                        </th>
+                        <th className="px-4 py-2 text-left border-b border-gray-300">
+                          Actions
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {job.materials.map((material) => (
-                        <tr key={material.id} style={{ borderBottom: '1px solid #eee' }}>
-                          <td style={{ padding: '0.75rem' }}>
+                        <tr
+                          key={material.id}
+                          className="border-b border-gray-200"
+                        >
+                          <td className="px-4 py-2">
                             <div>
                               <strong>{material.name}</strong>
                               {material.category && (
-                                <div style={{ fontSize: '0.8rem', color: '#666' }}>{material.category}</div>
+                                <div className="text-sm text-gray-500">
+                                  {material.category}
+                                </div>
                               )}
                               {material.notes && (
-                                <div style={{ fontSize: '0.8rem', color: '#666', fontStyle: 'italic' }}>{material.notes}</div>
+                                <div className="text-sm text-gray-500 italic">
+                                  {material.notes}
+                                </div>
                               )}
                             </div>
                           </td>
-                          <td style={{ padding: '0.75rem' }}>${material.price?.toFixed(2) || '0.00'}</td>
-                          <td style={{ padding: '0.75rem' }}>
+                          <td className="px-4 py-2">
+                            ${material.price?.toFixed(2) || "0.00"}
+                          </td>
+                          <td className="px-4 py-2">
                             <input
                               type="number"
                               min="1"
                               value={material.quantity}
-                              onChange={(e) => updateMaterialQuantity(material.id, parseInt(e.target.value) || 1)}
-                              style={{ width: '60px', padding: '0.25rem', border: '1px solid #ddd', borderRadius: '3px' }}
+                              onChange={(e) =>
+                                updateMaterialQuantity(
+                                  material.id,
+                                  parseInt(e.target.value) || 1
+                                )
+                              }
+                              className="w-16 p-1 border border-gray-300 rounded"
                             />
                           </td>
-                          <td style={{ padding: '0.75rem' }}>${(material.price * material.quantity).toFixed(2)}</td>
-                          <td style={{ padding: '0.75rem' }}>{material.supplier || 'N/A'}</td>
-                          <td style={{ padding: '0.75rem' }}>
+                          <td className="px-4 py-2">
+                            ${(material.price * material.quantity).toFixed(2)}
+                          </td>
+                          <td className="px-4 py-2">
+                            {material.supplier || "N/A"}
+                          </td>
+                          <td className="px-4 py-2">
                             <button
                               onClick={() => removeMaterial(material.id)}
-                              style={{
-                                padding: '0.25rem 0.5rem',
-                                backgroundColor: '#e74c3c',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '3px',
-                                cursor: 'pointer',
-                                fontSize: '0.8rem'
-                              }}
+                              className="px-2 py-1 bg-red-500 text-white border-none rounded text-sm cursor-pointer"
                             >
                               Remove
                             </button>
@@ -432,8 +443,9 @@ const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob }) => {
                   </table>
                 </div>
               ) : (
-                <p style={{ textAlign: 'center', color: '#7f8c8d', padding: '2rem' }}>
-                  No materials added yet. Use the buttons above to add materials.
+                <p className="text-center text-gray-500 p-4">
+                  No materials added yet. Use the buttons above to add
+                  materials.
                 </p>
               )}
             </div>
@@ -441,55 +453,51 @@ const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob }) => {
         )}
 
         {/* Receipts Tab */}
-        {activeTab === 'receipts' && (
+        {activeTab === "receipts" && (
           <div>
-            <h3 style={{ margin: '0 0 1rem 0' }}>Receipts</h3>
+            <h3 className="mb-2">Receipts</h3>
             {job.receipts && job.receipts.length > 0 ? (
-              <div style={{ display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
+              <div className="grid gap-4 grid-cols-auto-fit">
                 {job.receipts.map((receipt) => (
-                  <div key={receipt.id} style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '1rem' }}>
-                    <h4 style={{ margin: '0 0 0.5rem 0' }}>{receipt.name}</h4>
-                    <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.9rem', color: '#666' }}>
-                      Uploaded: {new Date(receipt.uploadedAt).toLocaleDateString()}
+                  <div
+                    key={receipt.id}
+                    className="border border-gray-200 rounded p-4"
+                  >
+                    <h4 className="mb-2">{receipt.name}</h4>
+                    <p className="mb-2 text-sm text-gray-500">
+                      Uploaded:{" "}
+                      {new Date(receipt.uploadedAt).toLocaleDateString()}
                     </p>
-                    
+
                     {receipt.extractedData && (
-                      <div style={{ 
-                        backgroundColor: '#f8f9fa', 
-                        padding: '0.75rem', 
-                        borderRadius: '4px', 
-                        marginBottom: '0.75rem',
-                        border: '1px solid #e9ecef'
-                      }}>
-                        <div style={{ fontSize: '0.85rem', lineHeight: '1.4' }}>
-                          <p style={{ margin: '0.25rem 0' }}>
-                            <strong>Vendor:</strong> {receipt.extractedData.vendor || 'N/A'}
+                      <div className="mb-2 p-2 bg-gray-100 rounded">
+                        <div className="text-sm leading-6">
+                          <p className="mb-1">
+                            <strong>Vendor:</strong>{" "}
+                            {receipt.extractedData.vendor || "N/A"}
                           </p>
-                          <p style={{ margin: '0.25rem 0' }}>
-                            <strong>Date:</strong> {receipt.extractedData.date || 'N/A'}
+                          <p className="mb-1">
+                            <strong>Date:</strong>{" "}
+                            {receipt.extractedData.date || "N/A"}
                           </p>
-                          <p style={{ margin: '0.25rem 0' }}>
-                            <strong>Total:</strong> ${receipt.extractedData.total?.toFixed(2) || '0.00'}
+                          <p className="mb-1">
+                            <strong>Total:</strong> $
+                            {receipt.extractedData.total?.toFixed(2) || "0.00"}
                           </p>
                         </div>
                       </div>
                     )}
-                    
-                    <img 
-                      src={receipt.data} 
+
+                    <img
+                      src={receipt.data}
                       alt={receipt.name}
-                      style={{ 
-                        width: '100%', 
-                        height: 'auto', 
-                        borderRadius: '4px',
-                        border: '1px solid #eee'
-                      }}
+                      className="w-full h-auto rounded border border-gray-200"
                     />
                   </div>
                 ))}
               </div>
             ) : (
-              <p style={{ textAlign: 'center', color: '#7f8c8d', padding: '2rem' }}>
+              <p className="text-center text-gray-500 p-4">
                 No receipts attached to this job yet.
               </p>
             )}
@@ -510,4 +518,4 @@ const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob }) => {
   );
 };
 
-export default JobDetailModal; 
+export default JobDetailModal;

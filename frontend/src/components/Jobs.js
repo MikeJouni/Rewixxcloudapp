@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ReceiptVerificationModal from './ReceiptVerificationModal';
 import JobDetailModal from './JobDetailModal';
+import config from '../config';
 
 const Jobs = () => {
   const [jobs, setJobs] = useState([]);
@@ -81,7 +82,7 @@ const Jobs = () => {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('https://1965-24-35-46-77.ngrok-free.app/api/receipts/process', {
+      const response = await fetch(`${config.API_BASE_URL}/api/receipts/process`, {
         method: 'POST',
         body: formData,
       });
@@ -221,250 +222,233 @@ const Jobs = () => {
   };
 
   return (
-    <div className="component-container">
-      <div className="component-header">
-        <h2 className="component-title">Job Management</h2>
-        <button 
-          className="primary-button" 
+    <div className="p-6">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold text-gray-800">Jobs</h1>
+        <button
           onClick={() => setShowAddForm(!showAddForm)}
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
         >
-          {showAddForm ? 'Cancel' : 'Create New Job'}
+          {showAddForm ? 'Cancel' : 'Add New Job'}
         </button>
       </div>
 
+      {/* Add Job Form */}
       {showAddForm && (
-        <form onSubmit={handleAddJob} style={{ marginBottom: '2rem', padding: '1rem', border: '1px solid #ddd', borderRadius: '5px' }}>
-          <h3>Create New Job</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <div className="form-group">
-              <label className="form-label">Customer Name</label>
+        <div className="mb-6 p-6 bg-white rounded-lg shadow-md">
+          <h2 className="text-xl font-semibold mb-4">Add New Job</h2>
+          <form onSubmit={handleAddJob} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name *</label>
               <input
                 type="text"
                 name="customerName"
                 value={newJob.customerName}
                 onChange={handleInputChange}
-                className="form-input"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
             </div>
-            <div className="form-group">
-              <label className="form-label">Job Title</label>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Job Title *</label>
               <input
                 type="text"
                 name="title"
                 value={newJob.title}
                 onChange={handleInputChange}
-                className="form-input"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
             </div>
-            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-              <label className="form-label">Description</label>
-              <textarea
-                name="description"
-                value={newJob.description}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <select
+                name="status"
+                value={newJob.status}
                 onChange={handleInputChange}
-                className="form-input"
-                rows="3"
-                required
-              />
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {statusOptions.filter(option => option !== 'All').map(option => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
             </div>
-            <div className="form-group">
-              <label className="form-label">Priority</label>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
               <select
                 name="priority"
                 value={newJob.priority}
                 onChange={handleInputChange}
-                className="form-input"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {priorityOptions.map(priority => (
-                  <option key={priority} value={priority}>{priority}</option>
+                {priorityOptions.map(option => (
+                  <option key={option} value={option}>{option}</option>
                 ))}
               </select>
             </div>
-            <div className="form-group">
-              <label className="form-label">Estimated Hours</label>
-              <input
-                type="number"
-                name="estimatedHours"
-                value={newJob.estimatedHours}
-                onChange={handleInputChange}
-                className="form-input"
-                min="1"
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Start Date</label>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
               <input
                 type="date"
                 name="startDate"
                 value={newJob.startDate}
                 onChange={handleInputChange}
-                className="form-input"
-                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-            <div className="form-group">
-              <label className="form-label">End Date</label>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
               <input
                 type="date"
                 name="endDate"
                 value={newJob.endDate}
                 onChange={handleInputChange}
-                className="form-input"
-                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-          </div>
-          <button type="submit" className="primary-button">Create Job</button>
-        </form>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Estimated Hours</label>
+              <input
+                type="number"
+                name="estimatedHours"
+                value={newJob.estimatedHours}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <textarea
+                name="description"
+                value={newJob.description}
+                onChange={handleInputChange}
+                rows="3"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <button
+                type="submit"
+                className="px-6 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+              >
+                Add Job
+              </button>
+            </div>
+          </form>
+        </div>
       )}
 
-      <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-        <input
-          type="text"
-          placeholder="Search jobs..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="search-bar"
-          style={{ marginBottom: 0, flex: '1', minWidth: '200px' }}
-        />
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="form-input"
-          style={{ width: '200px', marginBottom: 0 }}
-        >
-          {statusOptions.map(status => (
-            <option key={status} value={status}>{status}</option>
-          ))}
-        </select>
+      {/* Filters */}
+      <div className="mb-6 flex flex-col sm:flex-row gap-4">
+        <div className="flex-1">
+          <input
+            type="text"
+            placeholder="Search jobs..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            {statusOptions.map(option => (
+              <option key={option} value={option}>{option}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
-      <div className="table-container">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Customer</th>
-              <th>Title</th>
-              <th>Status</th>
-              <th>Priority</th>
-              <th>Start Date</th>
-              <th>End Date</th>
-              <th>Hours (Est/Act)</th>
-              <th>Total Cost</th>
-              <th>Receipts</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredJobs.map(job => (
-              <tr key={job.id}>
-                <td>{job.id}</td>
-                <td>{job.customerName}</td>
-                <td>{job.title}</td>
-                <td>
-                  <span style={{ 
-                    color: getStatusColor(job.status), 
-                    fontWeight: 'bold',
-                    padding: '0.25rem 0.5rem',
-                    borderRadius: '3px',
-                    backgroundColor: getStatusColor(job.status) + '20'
-                  }}>
-                    {job.status}
-                  </span>
-                </td>
-                <td>
-                  <span style={{ 
-                    color: getPriorityColor(job.priority),
-                    fontWeight: 'bold'
-                  }}>
-                    {job.priority}
-                  </span>
-                </td>
-                <td>{job.startDate}</td>
-                <td>{job.endDate}</td>
-                <td>{job.estimatedHours} / {job.actualHours}</td>
-                <td>{job.totalCost?.toFixed(2) || '0.00'}</td>
-                <td>
-                  <span style={{ fontSize: '0.9rem', color: '#666' }}>
-                    {job.receipts ? job.receipts.length : 0} attached
-                  </span>
-                </td>
-                <td>
-                  <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
-                    <button 
-                      onClick={() => viewJobDetails(job)}
-                      style={{ 
-                        padding: '0.25rem 0.5rem', 
-                        fontSize: '0.875rem',
-                        backgroundColor: '#3498db',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '3px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      View
-                    </button>
-                    <button style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}>
-                      Edit
-                    </button>
-                    {isMobile && (
-                      <label style={{ 
-                        padding: '0.25rem 0.5rem', 
-                        fontSize: '0.875rem',
-                        backgroundColor: processingReceipt ? '#95a5a6' : '#2ecc71',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '3px',
-                        cursor: processingReceipt ? 'not-allowed' : 'pointer',
-                        margin: '0',
-                        opacity: processingReceipt ? 0.7 : 1
-                      }}>
-                        {processingReceipt ? 'Processing...' : 'Attach Receipt'}
-                        <input
-                          type="file"
-                          accept="image/*;capture=environment"
-                          style={{ display: 'none' }}
-                          onChange={(e) => handleReceiptUpload(job.id, e)}
-                          disabled={processingReceipt}
-                        />
-                      </label>
-                    )}
-                    {(job.receipts && job.receipts.length > 0) && (
-                      <button 
-                        style={{ 
-                          padding: '0.25rem 0.5rem', 
-                          fontSize: '0.875rem',
-                          backgroundColor: '#3498db',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '3px'
-                        }}
-                        onClick={() => viewReceipts(job)}
-                      >
-                        View Receipts
-                      </button>
-                    )}
-                    <button style={{ 
-                      padding: '0.25rem 0.5rem', 
-                      fontSize: '0.875rem', 
-                      backgroundColor: '#e74c3c', 
-                      color: 'white', 
-                      border: 'none', 
-                      borderRadius: '3px' 
-                    }}>
-                      Delete
-                    </button>
-                  </div>
-                </td>
+      {/* Jobs Table */}
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start Date</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">End Date</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hours (Est/Act)</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Cost</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Receipts</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredJobs.map(job => (
+                <tr key={job.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{job.id}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{job.customerName}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{job.title}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      job.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                      job.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+                      job.status === 'Completed' ? 'bg-green-100 text-green-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {job.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`font-semibold ${
+                      job.priority === 'Low' ? 'text-green-600' :
+                      job.priority === 'Medium' ? 'text-yellow-600' :
+                      job.priority === 'High' ? 'text-orange-600' :
+                      'text-red-600'
+                    }`}>
+                      {job.priority}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{job.startDate}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{job.endDate}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{job.estimatedHours} / {job.actualHours}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${job.totalCost?.toFixed(2) || '0.00'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {job.receipts ? job.receipts.length : 0} attached
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div className="flex gap-1 flex-wrap">
+                      <button 
+                        onClick={() => viewJobDetails(job)}
+                        className="px-2 py-1 text-xs bg-blue-500 text-white border-none rounded cursor-pointer hover:bg-blue-600"
+                      >
+                        View
+                      </button>
+                      <button className="px-2 py-1 text-xs bg-gray-500 text-white border-none rounded cursor-pointer hover:bg-gray-600">
+                        Edit
+                      </button>
+                      {isMobile && (
+                        <label className={`px-2 py-1 text-xs text-white border-none rounded cursor-pointer ${
+                          processingReceipt 
+                            ? 'bg-gray-400 cursor-not-allowed opacity-70' 
+                            : 'bg-green-500 hover:bg-green-600'
+                        }`}>
+                          {processingReceipt ? 'Processing...' : 'Attach Receipt'}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleReceiptUpload(job.id, e)}
+                            className="hidden"
+                            disabled={processingReceipt}
+                          />
+                        </label>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {filteredJobs.length === 0 && (
