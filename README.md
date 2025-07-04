@@ -72,7 +72,7 @@ cd Rewixxcloudapp
 #### Frontend Development
 ```bash
 cd frontend
-npm install # Only first time
+npm install # On first time run or after new dependencies are added
 npm start
 # Frontend runs on http://localhost:3000 or if viewing on mobile: http://YOUR_COMPUTER_IP:3000
 
@@ -105,7 +105,7 @@ cp .env.example .env
 #### 3. Start the Frontend
 ```bash
 cd frontend
-npm install # Only first time
+npm install # On first time run or after new dependencies are added
 npm start
 # Frontend runs on http://localhost:3000 or if viewing on mobile: http://YOUR_COMPUTER_IP:3000
 ```
@@ -113,7 +113,7 @@ npm start
 #### 4. Start the API 
 ```bash
 cd scripts
-pip install -r requirements.txt # Only first time
+pip install -r requirements.txt # On first time run or after new dependencies are added
 python scanning_api.py
 # Backend runs on http://localhost:8000
 ```
