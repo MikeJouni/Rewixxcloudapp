@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Html5Qrcode } from "html5-qrcode";
-import config from "../config.js";
+import config from "../../../../config";
 
 const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
   const [product, setProduct] = useState(null);
