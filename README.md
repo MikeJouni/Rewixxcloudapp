@@ -122,7 +122,7 @@ ngrok start --all
 ```
 #### 6. Update Backend ngrok link
 
-- Edit API_BASE_URL in `frontend/src/config.js`
+- Edit API_BASE_URL in `frontend/src/config.js` with the backend(8000 port) ngrok URL
 
 
 #### 7. Access the Application
