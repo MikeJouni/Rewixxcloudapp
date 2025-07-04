@@ -118,31 +118,22 @@ Summary:
   };
 
   return (
-    <div className="component-container">
-      <div className="component-header">
-        <h2 className="component-title">Reports</h2>
+    <div className="p-6">
+      {/* Header */}
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-800">Reports</h1>
       </div>
 
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
-        gap: '2rem',
-        marginBottom: '2rem'
-      }}>
-        <div style={{ 
-          padding: '1.5rem', 
-          border: '1px solid #e5e7eb', 
-          borderRadius: '8px',
-          backgroundColor: '#f9fafb'
-        }}>
-          <h3 style={{ margin: '0 0 1rem 0', color: '#1e293b' }}>Generate Report</h3>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <div className="p-6 border border-gray-200 rounded-lg bg-gray-50">
+          <h3 className="text-xl font-semibold text-gray-800 mb-4">Generate Report</h3>
           
-          <div style={{ marginBottom: '1rem' }}>
-            <label className="form-label">Report Type</label>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Report Type</label>
             <select
               value={reportType}
               onChange={(e) => setReportType(e.target.value)}
-              className="form-input"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="customer">Customer Report</option>
               <option value="job">Job Report</option>
@@ -150,12 +141,12 @@ Summary:
           </div>
 
           {reportType === 'customer' && (
-            <div style={{ marginBottom: '1rem' }}>
-              <label className="form-label">Select Customer</label>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Select Customer</label>
               <select
                 value={selectedCustomer}
                 onChange={(e) => setSelectedCustomer(e.target.value)}
-                className="form-input"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Choose a customer...</option>
                 {customers.map(customer => (
@@ -168,12 +159,12 @@ Summary:
           )}
 
           {reportType === 'job' && (
-            <div style={{ marginBottom: '1rem' }}>
-              <label className="form-label">Select Job</label>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Select Job</label>
               <select
                 value={selectedJob}
                 onChange={(e) => setSelectedJob(e.target.value)}
-                className="form-input"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Choose a job...</option>
                 {jobs.map(job => (
@@ -186,35 +177,21 @@ Summary:
           )}
 
           <button 
-            className="primary-button"
+            className="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
             onClick={generateReport}
             disabled={!((reportType === 'customer' && selectedCustomer) || (reportType === 'job' && selectedJob))}
-            style={{ width: '100%' }}
           >
             Generate Report
           </button>
         </div>
 
         {showReport && generatedReport && (
-          <div style={{ 
-            padding: '1.5rem', 
-            border: '1px solid #e5e7eb', 
-            borderRadius: '8px',
-            backgroundColor: '#fff'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h3 style={{ margin: 0, color: '#1e293b' }}>{generatedReport.type}</h3>
+          <div className="p-6 border border-gray-200 rounded-lg bg-white">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold text-gray-800">{generatedReport.type}</h3>
               <button 
                 onClick={exportReport}
-                style={{
-                  padding: '0.5rem 1rem',
-                  backgroundColor: '#10b981',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '0.9rem'
-                }}
+                className="px-4 py-2 bg-green-500 text-white border-none rounded cursor-pointer text-sm hover:bg-green-600 transition-colors"
               >
                 Export
               </button>

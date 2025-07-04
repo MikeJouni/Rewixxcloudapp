@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
+import config from '../config';
 
 const BarcodeScannerModal = ({ 
   isOpen, 
@@ -134,8 +135,8 @@ const BarcodeScannerModal = ({
     // Add a small delay to prevent rapid-fire scanning
     scanTimeoutRef.current = setTimeout(async () => {
       console.log('🚀 Making API call for barcode:', decodedText);
-      // Use a more flexible API URL - can be updated via environment variables later
-      const apiUrl = `https://1965-24-35-46-77.ngrok-free.app/api/materials/barcode-lookup?barcode=${encodeURIComponent(decodedText)}`;
+      // Use API URL from config
+      const apiUrl = `${config.API_BASE_URL}/api/materials/barcode-lookup?barcode=${encodeURIComponent(decodedText)}`;
       console.log('🔗 API URL:', apiUrl);
       setLoading(true);
       setError('');
@@ -280,43 +281,16 @@ const BarcodeScannerModal = ({
   if (!isOpen) return null;
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0,0,0,0.9)',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      zIndex: 1000,
-      padding: '1rem'
-    }}>
-      <div style={{
-        backgroundColor: 'white',
-        borderRadius: '12px',
-        padding: '1.5rem',
-        maxWidth: '90vw',
-        maxHeight: '90vh',
-        overflow: 'auto',
-        width: '500px',
-        position: 'relative'
-      }}>
+    <div className="fixed inset-0 bg-black/90 flex justify-center items-center z-50 p-4">
+      <div className="bg-white rounded-xl p-6 max-w-[90vw] max-h-[90vh] overflow-auto w-[500px] relative">
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <h3 style={{ margin: 0 }}>
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="m-0">
             {showQuantitySelector ? 'Select Quantity' : 'Scan Barcode'}
           </h3>
           <button
             onClick={handleClose}
-            style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '1.5rem',
-              cursor: 'pointer',
-              color: '#666'
-            }}
+            className="bg-none border-none text-2xl cursor-pointer text-gray-500 hover:text-gray-700"
           >
             ×
           </button>
@@ -325,62 +299,32 @@ const BarcodeScannerModal = ({
         {/* Scanner View */}
         {!showQuantitySelector && (
           <div>
-            <p style={{ color: '#666', marginBottom: '1rem', textAlign: 'center' }}>
+            <p className="text-gray-600 mb-4 text-center">
               Point your camera at a product barcode
             </p>
             
             {/* Debug Info */}
             {scannedBarcode && (
-              <div style={{
-                backgroundColor: '#e8f5e8',
-                color: '#2d5a2d',
-                padding: '0.75rem',
-                borderRadius: '4px',
-                marginBottom: '1rem',
-                textAlign: 'center',
-                fontFamily: 'monospace',
-                fontSize: '0.9rem'
-              }}>
+              <div className="bg-green-50 text-green-800 p-3 rounded mb-4 text-center font-mono text-sm">
                 🎯 Scanned: {scannedBarcode}
               </div>
             )}
 
             {error && (
-              <div style={{
-                backgroundColor: '#f8d7da',
-                color: '#721c24',
-                padding: '0.75rem',
-                borderRadius: '4px',
-                marginBottom: '1rem',
-                textAlign: 'center'
-              }}>
+              <div className="bg-red-50 text-red-800 p-3 rounded mb-4 text-center">
                 {error}
               </div>
             )}
 
             {loading && (
-              <div style={{
-                backgroundColor: '#d1ecf1',
-                color: '#0c5460',
-                padding: '0.75rem',
-                borderRadius: '4px',
-                marginBottom: '1rem',
-                textAlign: 'center'
-              }}>
+              <div className="bg-blue-50 text-blue-800 p-3 rounded mb-4 text-center">
                 Loading product information...
               </div>
             )}
             
             <div 
               id="reader"
-              style={{
-                width: '100%',
-                minHeight: '300px',
-                borderRadius: '8px',
-                overflow: 'hidden',
-                marginBottom: '1rem',
-                border: '2px solid #3498db'
-              }}
+              className="w-full min-h-[300px] rounded-lg overflow-hidden mb-4 border-2 border-blue-500"
             />
           </div>
         )}
@@ -388,35 +332,24 @@ const BarcodeScannerModal = ({
         {/* Product Selection View */}
         {showQuantitySelector && product && (
           <div>
-            <div style={{
-              border: '1px solid #ddd',
-              borderRadius: '8px',
-              padding: '1rem',
-              marginBottom: '1.5rem',
-              backgroundColor: '#f8f9fa'
-            }}>
+            <div className="border border-gray-300 rounded-lg p-4 mb-6 bg-gray-50">
               {/* Product Image */}
               {product.image_url && (
-                <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+                <div className="text-center mb-4">
                   <img 
                     src={product.image_url} 
                     alt={product.name}
-                    style={{
-                      maxWidth: '150px',
-                      maxHeight: '150px',
-                      borderRadius: '4px',
-                      border: '1px solid #ddd'
-                    }}
+                    className="max-w-[150px] max-h-[150px] rounded border border-gray-300"
                   />
                 </div>
               )}
 
               {/* Product Details */}
-              <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem' }}>
+              <h4 className="m-0 mb-2 text-lg">
                 {product.name}
               </h4>
               
-              <div style={{ fontSize: '0.9rem', color: '#666', marginBottom: '0.5rem' }}>
+              <div className="text-sm text-gray-600 mb-2">
                 <div><strong>Price:</strong> {product.price}</div>
                 {product.category && (
                   <div><strong>Category:</strong> {product.category}</div>
@@ -425,7 +358,7 @@ const BarcodeScannerModal = ({
                   <div><strong>Availability:</strong> {product.availability}</div>
                 )}
                 {product.description && (
-                  <div style={{ marginTop: '0.5rem' }}>
+                  <div className="mt-2">
                     <strong>Description:</strong> {product.description}
                   </div>
                 )}
@@ -433,22 +366,14 @@ const BarcodeScannerModal = ({
             </div>
 
             {/* Quantity Selector */}
-            <div style={{ marginBottom: '1.5rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+            <div className="mb-6">
+              <label className="block mb-2 font-bold">
                 Quantity:
               </label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div className="flex items-center gap-4">
                 <button
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  style={{
-                    padding: '0.5rem 1rem',
-                    backgroundColor: '#6c757d',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontSize: '1.2rem'
-                  }}
+                  className="px-4 py-2 bg-gray-600 text-white border-none rounded cursor-pointer text-xl hover:bg-gray-700"
                 >
                   -
                 </button>
@@ -457,57 +382,26 @@ const BarcodeScannerModal = ({
                   value={quantity}
                   onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
                   min="1"
-                  style={{
-                    padding: '0.5rem',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    width: '80px',
-                    textAlign: 'center',
-                    fontSize: '1.1rem'
-                  }}
+                  className="px-2 py-2 border border-gray-300 rounded w-20 text-center text-lg"
                 />
                 <button
                   onClick={() => setQuantity(quantity + 1)}
-                  style={{
-                    padding: '0.5rem 1rem',
-                    backgroundColor: '#6c757d',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontSize: '1.2rem'
-                  }}
+                  className="px-4 py-2 bg-gray-600 text-white border-none rounded cursor-pointer text-xl hover:bg-gray-700"
                 >
                   +
                 </button>
               </div>
               
-              <div style={{ 
-                marginTop: '0.5rem', 
-                padding: '0.75rem', 
-                backgroundColor: '#e8f5e8', 
-                borderRadius: '4px',
-                textAlign: 'center',
-                fontWeight: 'bold'
-              }}>
+              <div className="mt-2 p-3 bg-green-50 rounded text-center font-bold">
                 Total: ${((parseFloat(product.price.replace(/[^0-9.]/g, '')) || 0) * quantity).toFixed(2)}
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <div className="flex justify-center">
               <button
                 onClick={handleQuantityConfirm}
-                style={{
-                  padding: '0.75rem 2rem',
-                  backgroundColor: '#28a745',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '1rem',
-                  fontWeight: 'bold'
-                }}
+                className="px-8 py-3 bg-green-600 text-white border-none rounded cursor-pointer text-base font-bold hover:bg-green-700"
               >
                 Add to Materials
               </button>

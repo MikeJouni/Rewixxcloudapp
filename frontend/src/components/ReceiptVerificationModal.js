@@ -109,72 +109,34 @@ const ReceiptVerificationModal = ({
   if (!isOpen || !receiptData) return null;
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0,0,0,0.8)',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      zIndex: 1000,
-      padding: '1rem'
-    }}>
-      <div style={{
-        backgroundColor: 'white',
-        borderRadius: '8px',
-        padding: '1.5rem',
-        maxWidth: '90vw',
-        maxHeight: '90vh',
-        overflow: 'auto',
-        width: '600px'
-      }}>
+    <div className="fixed inset-0 bg-black/80 flex justify-center items-center z-50 p-4">
+      <div className="bg-white rounded-lg p-6 max-w-[90vw] max-h-[90vh] overflow-auto w-[600px]">
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <h3>Verify Receipt Data</h3>
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-xl font-semibold">Verify Receipt Data</h3>
           <button 
             onClick={onClose}
-            style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '1.5rem',
-              cursor: 'pointer',
-              color: '#666'
-            }}
+            className="bg-none border-none text-2xl cursor-pointer text-gray-500 hover:text-gray-700"
           >
             ×
           </button>
         </div>
 
         {/* Progress Steps */}
-        <div style={{ display: 'flex', marginBottom: '1.5rem', gap: '0.5rem' }}>
-          <div style={{
-            padding: '0.5rem 1rem',
-            backgroundColor: currentStep >= 1 ? '#3498db' : '#ecf0f1',
-            color: currentStep >= 1 ? 'white' : '#666',
-            borderRadius: '20px',
-            fontSize: '0.9rem'
-          }}>
+        <div className="flex mb-6 gap-2">
+          <div className={`px-4 py-2 rounded-full text-sm ${
+            currentStep >= 1 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600'
+          }`}>
             Step 1: Review Items
           </div>
-          <div style={{
-            padding: '0.5rem 1rem',
-            backgroundColor: currentStep >= 2 ? '#3498db' : '#ecf0f1',
-            color: currentStep >= 2 ? 'white' : '#666',
-            borderRadius: '20px',
-            fontSize: '0.9rem'
-          }}>
+          <div className={`px-4 py-2 rounded-full text-sm ${
+            currentStep >= 2 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600'
+          }`}>
             Step 2: Add Missing Items
           </div>
-          <div style={{
-            padding: '0.5rem 1rem',
-            backgroundColor: currentStep >= 3 ? '#3498db' : '#ecf0f1',
-            color: currentStep >= 3 ? 'white' : '#666',
-            borderRadius: '20px',
-            fontSize: '0.9rem'
-          }}>
+          <div className={`px-4 py-2 rounded-full text-sm ${
+            currentStep >= 3 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600'
+          }`}>
             Step 3: Confirm
           </div>
         </div>
