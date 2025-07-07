@@ -120,6 +120,7 @@ const JobsPage = () => {
       {showJobDetailModal && selectedJobForDetails && (
         <JobDetailModal
           job={selectedJobForDetails}
+          isOpen={showJobDetailModal} //pass this from JobDetailModal.js
           onUpdate={handleJobUpdate}
           onClose={() => setShowJobDetailModal(false)}
         />
