@@ -282,6 +282,41 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
 
   if (!isOpen) return null;
 
+  if (!isMobile) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-6 relative">
+        {/* Modal Header */}
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-semibold text-gray-800">Scan Barcode</h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+
+        {/* Message */}
+        <div className="text-center text-red-600 text-lg font-medium">
+          Barcode scanning is only supported on mobile devices.
+        </div>
+
+        {/* Close Button */}
+        <div className="mt-6 flex justify-center">
+          <button
+            onClick={onClose}
+            className="px-5 py-2 rounded-full bg-gray-800 text-white font-medium hover:bg-gray-900 transition"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
   return (
     <div className="fixed inset-0 bg-black/90 flex justify-center items-center z-50 p-4">
       <div className="bg-white rounded-xl p-6 max-w-[90vw] max-h-[90vh] overflow-auto w-[500px] relative">
