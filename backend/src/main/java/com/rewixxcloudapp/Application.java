@@ -25,4 +25,4 @@ public class Application implements CommandLineRunner {
             System.err.println("[DB CHECK] Database connection failed: " + e.getMessage());
         }
     }
-} 
+}   
