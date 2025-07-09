@@ -81,7 +81,7 @@ npm start
 #### Backend Development
 ```bash
 cd backend
-# Whatever else goes here
+mvn spring-boot:run
 ```
 
 ### Barcode/Receipt Scanner Development
@@ -142,6 +142,50 @@ ngrok start --all
 * **Barcode Scanning**: Scan product barcodes to auto-fill material information
 * **Receipt Processing**: Upload receipt photos to extract items and add to jobs
 * **Material Tracking**: View and manage materials within each job
+
+
+
+
+Database & Hibernate Setup
+
+This project uses Spring Data JPA (with Hibernate as the JPA provider) to persist Java entities to a PostgreSQL database hosted on AWS RDS.
+
+
+How It Works
+
+Hibernate is enabled automatically via the spring-boot-starter-data-jpa dependency in pom.xml.
+Database connection is configured in src/main/resources/application.properties using environment variables for security and flexibility. 
+
+Schema management is handled by Hibernate (spring.jpa.hibernate.ddl-auto=update), which creates/updates tables based on your entity classes.
+
+
+Configuration
+
+Set the following environment variables before running the backend:
+
+spring.datasource.url=jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=require
+spring.datasource.username=${DB_USER}
+spring.datasource.password=${DB_PASSWORD}
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+
+
+Running the BackEnd
+
+Make sure you have Java 11+ and Maven installed.
+Set the required environment variables. REFER TO DATABASE CONFIG DOC 
+Build and run the backend:
+On startup, Hibernate will connect to the database and auto-create/update tables as needed.
+
+
+
+
+
+
+
 
 ## License
 
