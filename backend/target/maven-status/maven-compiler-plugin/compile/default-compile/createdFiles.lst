@@ -1,0 +1,10 @@
+com\rewixxcloudapp\entity\User.class
+com\rewixxcloudapp\entity\Tender.class
+com\rewixxcloudapp\entity\Customer.class
+com\rewixxcloudapp\entity\Currency.class
+com\rewixxcloudapp\entity\Sale.class
+com\rewixxcloudapp\Application.class
+com\rewixxcloudapp\entity\SaleItem.class
+com\rewixxcloudapp\entity\Product.class
+com\rewixxcloudapp\entity\Role.class
+com\rewixxcloudapp\entity\Supplier.class
