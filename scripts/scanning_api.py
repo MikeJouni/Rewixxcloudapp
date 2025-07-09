@@ -1,5 +1,5 @@
 import uvicorn
-from fastapi import FastAPI, UploadFile, Request, HTTPException
+from fastapi import FastAPI, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 import requests
 import base64
@@ -28,26 +28,73 @@ app.add_middleware(
 )
 
 @app.get("/api/materials/barcode-lookup")
-def barcode_lookup(barcode: str, request: Request):
-    print(f"[DEBUG] Received barcode lookup request: {barcode}")
-    serpapi_key = os.getenv("SERPAPI_KEY")
-    print(f"[DEBUG] Using SerpAPI key: {serpapi_key}")
-    if not serpapi_key:
-        print("[ERROR] SERPAPI_KEY not set in environment variables!")
-        raise HTTPException(status_code=500, detail="SerpAPI key not configured.")
+def barcode_lookup(barcode):
     try:
-        serpapi_url = f"https://serpapi.com/search.json?engine=google_products&barcode={barcode}&api_key={serpapi_key}"
+        search_url = f"https://www.homedepot.com/s/{barcode}"
+        print(f"[DEBUG] Home Depot search URL: {search_url}")
+        headers = {
+            "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 14_7_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.2 Mobile/15E148 Safari/604.1",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.5",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Connection": "keep-alive",
+            "Upgrade-Insecure-Requests": "1"
+        }
+        response = requests.get(search_url, headers=headers, timeout=10, allow_redirects=True)
+        print(f"[DEBUG] Final redirected Home Depot URL: {response.url}")
+        product_id_match = re.search(r'/p/[^/]+/(\d+)$', response.url)
+        if not product_id_match:
+            print("[ERROR] Product ID not found in Home Depot URL!")
+            raise Exception("Product ID not found")
+        product_id = product_id_match.group(1)
+        print(f"[DEBUG] Extracted product ID: {product_id}")
+        params = {
+            "api_key": SERPAPI_KEY,
+            "engine": "home_depot",
+            "q": product_id,
+            "num": 1
+        }
+        serpapi_url = SERPAPI_BASE_URL
         print(f"[DEBUG] SerpAPI request URL: {serpapi_url}")
-        response = requests.get(serpapi_url)
+        print(f"[DEBUG] SerpAPI params: {params}")
+        response = requests.get(serpapi_url, params=params, timeout=10)
         print(f"[DEBUG] SerpAPI response status: {response.status_code}")
         print(f"[DEBUG] SerpAPI response text: {response.text}")
-        response.raise_for_status()
+        if response.status_code != 200:
+            print("[ERROR] SerpAPI request failed!")
+            raise Exception("SerpAPI request failed")
         data = response.json()
-        print(f"[DEBUG] Parsed SerpAPI response: {data}")
-        return data
+        if "products" not in data:
+            print("[ERROR] No product found in SerpAPI response!")
+            raise Exception("No product found")
+        product = data["products"][0]
+        price = product.get("price")
+        price_str = str(price) if price else ""
+        print(f"[DEBUG] Final product data: {product}")
+        return {
+            "name": product.get("title", ""),
+            "price": price_str,
+            "category": product.get("category", ""),
+            "sku": barcode,
+            "supplier": "Home Depot",
+            "url": product.get("link", ""),
+            "image_url": product.get("thumbnail", ""),
+            "description": product.get("description", ""),
+            "availability": product.get("availability", "")
+        }
     except Exception as e:
         print(f"[ERROR] Exception during barcode lookup: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return {
+            "name": f"Product (UPC: {barcode})",
+            "price": "",
+            "category": "",
+            "sku": barcode,
+            "supplier": "Unknown",
+            "url": "",
+            "image_url": "",
+            "description": "Product not found on Home Depot",
+            "availability": ""
+        }
 
 @app.post("/api/receipts/process")
 async def process_receipt(file: UploadFile):
