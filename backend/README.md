@@ -14,7 +14,7 @@ This is the Spring Boot backend for the Rewixx Cloud App, providing REST APIs fo
 
 ### Environment Variables
 
-The application requires the following environment variables:
+The application requires the following environment variables which are found in the env file in the shared google drive folder. just place that file at the root of the backend repo:
 
 ```bash
 DB_HOST=your-database-host
