@@ -1,17 +1,8 @@
-
-
-
-/**
- * Test
- */
-
-package com.warehouse.entity.currency;
+package com.rewixxcloudapp.entity;
 
 import javax.persistence.*;
+import java.util.Objects;
 
-/**
- * Currency entity
- */
 @Entity
 @Table(name = "currencies")
 public class Currency {
@@ -19,51 +10,22 @@ public class Currency {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /**
-     * Currency code (e.g., USD, EUR, GBP)
-     */
     @Column(unique = true, length = 3)
     private String code;
 
-    /**
-     * Currency name (e.g., US Dollar, Euro, British Pound)
-     */
     private String name;
 
-    // Constructors
     public Currency() {}
-
     public Currency(String code, String name) {
         this.code = code;
         this.name = name;
     }
-
-    // Getters and Setters
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getCode() {
-        return code;
-    }
-
-    public void setCode(String code) {
-        this.code = code;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    // Equals and HashCode
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getCode() { return code; }
+    public void setCode(String code) { this.code = code; }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -71,12 +33,10 @@ public class Currency {
         Currency currency = (Currency) o;
         return Objects.equals(code, currency.code);
     }
-
     @Override
     public int hashCode() {
         return Objects.hash(code);
     }
-
     @Override
     public String toString() {
         return "Currency{" +
@@ -85,4 +45,4 @@ public class Currency {
                 ", name='" + name + '\'' +
                 '}';
     }
-}
+} 
