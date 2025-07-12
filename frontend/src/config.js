@@ -1,5 +1,5 @@
 const config = {
-  API_BASE_URL: 'https://anchovy-musical-louse.ngrok-free.app'
+  API_BASE_URL: 'https://rewixxcloudapp.onrender.com'
 };
 
 export default config; 
