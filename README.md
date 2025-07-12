@@ -148,22 +148,12 @@ This project uses Spring Data JPA (with Hibernate as the JPA provider) to persis
 
 ### How It Works
 
-Hibernate is enabled automatically via the `spring-boot-starter-data-jpa` dependency in `pom.xml`. Database connection is configured in `src/main/resources/application.properties` using environment variables for security and flexibility. Schema management is handled by Hibernate (`spring.jpa.hibernate.ddl-auto=update`), which creates/updates tables based on your entity classes.
+Hibernate is enabled automatically via the `spring-boot-starter-data-jpa` dependency in `pom.xml`. Database connection is configured in the DatabaseConfig bean using environment variables for security and flexibility. Schema management is handled by Hibernate (`spring.jpa.hibernate.ddl-auto=update`), which creates/updates tables based on your entity classes.
 
 ### Configuration
 
-Set the following environment variables before running the backend:
-
-```properties
-spring.datasource.url=jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=require
-spring.datasource.username=${DB_USER}
-spring.datasource.password=${DB_PASSWORD}
-spring.datasource.driver-class-name=org.postgresql.Driver
-
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=true
-spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
-```
+Set the following environment variables before running the backend. you can either set them manually in terminal of the environment where the spring app is
+or just place a .env file at the root of the backend repo (recommended)
 
 ### Running the Backend
 
@@ -177,23 +167,14 @@ spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
 #### Use psql (CLI)
 1. Install psql
 2. Run:
-   ```bash
-   psql "host=cloudapp.cz0qamc8ywng.us-east-2.rds.amazonaws.com port=5432 dbname=postgres user=postgres1 password=Rewixxsolutions sslmode=require"
+   ```psql -h cloudapp.cz0qamc8ywng.us-east-2.rds.amazonaws.com -p 5432 -U postgres1 -d postgres
    ```
+   This will prompt for the db password and once you enter it you will be connected
 3. Once connected, list tables with: `\dt`
 
-#### Use pgAdmin (GUI)
-AWS RDS does not provide a built-in SQL editor for PostgreSQL. To see your tables, you can use pgAdmin:
-
-1. Download and install pgAdmin
-2. Open pgAdmin and create a new connection:
-   - Host: `cloudapp.cz0qamc8ywng.us-east-2.rds.amazonaws.com`
-   - Port: `5432`
-   - Database: `postgres`
-   - Username: `postgres1`
-   - Password: `Rewixxsolutions`
-   - SSL: Required (set SSL mode to "require")
-3. Connect, expand the database, and look under Schemas > public > Tables to see the tables Hibernate created
+#### (GUI)
+Alternatively you can use a GUI. DataGrip from IntelliJ is recommended. 
+Just use the plus icon to add a new postgres db connection and enter all the details to connect. 
 
 ## License
 
