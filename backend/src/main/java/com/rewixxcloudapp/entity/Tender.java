@@ -12,7 +12,8 @@ public class Tender {
 
     private BigDecimal amount; // Negative for expenses, positive for income
 
-    private String type; // e.g. "INCOME", "EXPENSE"
+    @Enumerated(EnumType.STRING)
+    private TenderType type;
 
     @ManyToOne
     private Sale sale;
@@ -23,7 +24,7 @@ public class Tender {
     public Tender() {
     }
 
-    public Tender(BigDecimal amount, String type) {
+    public Tender(BigDecimal amount, TenderType type) {
         this.amount = amount;
         this.type = type;
     }
@@ -44,11 +45,11 @@ public class Tender {
         this.amount = amount;
     }
 
-    public String getType() {
+    public TenderType getType() {
         return type;
     }
 
-    public void setType(String type) {
+    public void setType(TenderType type) {
         this.type = type;
     }
 
