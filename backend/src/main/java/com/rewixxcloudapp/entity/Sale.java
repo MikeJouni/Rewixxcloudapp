@@ -6,6 +6,7 @@ import javax.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
+import java.util.Collection;
 
 @Entity
 @Table(name = "sales")
@@ -55,7 +56,7 @@ public class Sale {
         return Sale.serializer().serialize(this);
     }
 
-    public static String toJsonArray(List<Sale> sales) {
+    public static String toJsonArray(Collection<Sale> sales) {
         return JsonSerializer.toJsonArray(sales, Sale.serializer());
     }
 
