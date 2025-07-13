@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 public class JsonSerializer {
@@ -62,21 +63,21 @@ public class JsonSerializer {
         }
     }
 
-    public static String toJsonArray(List<?> objects) {
+    public static String toJsonArray(Collection<?> objects) {
         try {
             ObjectMapper mapper = new ObjectMapper();
             mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
             return mapper.writeValueAsString(objects);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException("Error serializing list to JSON", e);
+            throw new RuntimeException("Error serializing collection to JSON", e);
         }
     }
 
-    public static String toJsonArray(List<?> objects, JsonSerializer serializer) {
+    public static String toJsonArray(Collection<?> objects, JsonSerializer serializer) {
         try {
             return serializer.objectMapper.writeValueAsString(objects);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException("Error serializing list to JSON", e);
+            throw new RuntimeException("Error serializing collection to JSON", e);
         }
     }
 }

@@ -5,6 +5,7 @@ import com.rewixxcloudapp.util.JsonSerializer;
 import javax.persistence.*;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Collection;
 
 @Entity
 @Table(name = "products")
@@ -39,7 +40,7 @@ public class Product {
         return Product.serializer().serialize(this);
     }
 
-    public static String toJsonArray(List<Product> products) {
+    public static String toJsonArray(Collection<Product> products) {
         return JsonSerializer.toJsonArray(products, Product.serializer());
     }
 

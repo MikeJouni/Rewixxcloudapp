@@ -39,7 +39,7 @@ public class Supplier extends User {
         return Supplier.serializer().serialize(this);
     }
 
-    public static String toJsonArray(List<Supplier> suppliers) {
+    public static String toJsonArray(Collection<Supplier> suppliers) {
         return JsonSerializer.toJsonArray(suppliers, Supplier.serializer());
     }
 

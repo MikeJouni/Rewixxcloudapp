@@ -5,6 +5,7 @@ import com.rewixxcloudapp.util.JsonSerializer;
 import javax.persistence.*;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Collection;
 
 @Entity
 @Table(name = "jobs")
@@ -63,7 +64,7 @@ public class Job {
         return Job.serializer().serialize(this);
     }
 
-    public static String toJsonArray(List<Job> jobs) {
+    public static String toJsonArray(Collection<Job> jobs) {
         return JsonSerializer.toJsonArray(jobs, Job.serializer());
     }
 
