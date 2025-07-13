@@ -1,32 +1,27 @@
 package com.rewixxcloudapp.entity;
 
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
 import javax.persistence.*;
+import java.util.Collection;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "customers")
-public class Customer {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class Customer extends User {
 
     private String name;
 
-    @ManyToOne
-    private User createdBy;
-
     public Customer() {
+        super();
     }
 
-    public Customer(String name) {
+    public Customer(String username, String password, String name) {
+        super(username, password);
         this.name = name;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
     }
 
     public String getName() {
@@ -35,13 +30,5 @@ public class Customer {
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public User getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(User createdBy) {
-        this.createdBy = createdBy;
     }
 }
