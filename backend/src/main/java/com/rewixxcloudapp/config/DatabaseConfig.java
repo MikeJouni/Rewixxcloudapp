@@ -1,22 +1,22 @@
 package com.rewixxcloudapp.config;
 
 import io.github.cdimascio.dotenv.Dotenv;
+import org.apache.tomcat.jdbc.pool.DataSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import javax.sql.DataSource;
 import java.sql.SQLException;
 
 @Configuration
 public class DatabaseConfig {
 
     @Bean
-    public DataSource dataSource() throws SQLException {
+    public javax.sql.DataSource dataSource() throws SQLException {
         Dotenv dotenv = Dotenv.load();
 
-        org.apache.tomcat.jdbc.pool.DataSource dataSource = new org.apache.tomcat.jdbc.pool.DataSource();
+        DataSource dataSource = new DataSource();
 
         dataSource.setDriverClassName("org.postgresql.Driver");
         dataSource.setUrl("jdbc:postgresql://" + dotenv.get("DB_HOST") + ":" + dotenv.get("DB_PORT") + "/"
