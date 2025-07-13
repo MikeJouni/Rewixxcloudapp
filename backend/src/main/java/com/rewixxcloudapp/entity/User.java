@@ -1,11 +1,13 @@
 package com.rewixxcloudapp.entity;
 
+import com.rewixxcloudapp.util.JsonSerializer;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import javax.persistence.*;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -45,6 +47,18 @@ public abstract class User implements UserDetails {
         this();
         this.username = username;
         this.password = password;
+    }
+
+    // JSON Serialization methods
+    private static JsonSerializer serializer() {
+        return JsonSerializer.create()
+                .include("id", "username", "enabled", "phone", "addressLine1", "addressLine2",
+                        "city", "state", "zip", "roles.id", "roles.name")
+                .exclude("*");
+    }
+
+    public String toJson() {
+        return User.serializer().serialize(this);
     }
 
     // Getters and setters

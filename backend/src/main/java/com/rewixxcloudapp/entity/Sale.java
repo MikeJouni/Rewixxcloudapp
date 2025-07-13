@@ -1,5 +1,7 @@
 package com.rewixxcloudapp.entity;
 
+import com.rewixxcloudapp.util.JsonSerializer;
+
 import javax.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -37,6 +39,24 @@ public class Sale {
     public Sale(LocalDateTime date, String description) {
         this.date = date;
         this.description = description;
+    }
+
+    // JSON Serialization methods
+    private static JsonSerializer serializer() {
+        return JsonSerializer.create()
+                .include("id", "date", "description", "customer.id", "customer.username",
+                        "supplier.id", "supplier.username", "job.id", "job.title",
+                        "saleItems.id", "saleItems.quantity", "saleItems.unitPrice",
+                        "saleItems.product.id", "saleItems.product.name")
+                .exclude("*");
+    }
+
+    public String toJson() {
+        return Sale.serializer().serialize(this);
+    }
+
+    public static String toJsonArray(List<Sale> sales) {
+        return JsonSerializer.toJsonArray(sales, Sale.serializer());
     }
 
     public Long getId() {
