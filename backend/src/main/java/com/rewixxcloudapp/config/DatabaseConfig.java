@@ -21,7 +21,7 @@ public class DatabaseConfig {
         dataSource.setDriverClassName("org.postgresql.Driver");
         dataSource.setUrl("jdbc:postgresql://" + dotenv.get("DB_HOST") + ":" + dotenv.get("DB_PORT") + "/"
                 + dotenv.get("DB_NAME"));
-        dataSource.setUsername(dotenv.get("DB_USERNAME"));
+        dataSource.setUsername(dotenv.get("DB_USER"));
         dataSource.setPassword(dotenv.get("DB_PASSWORD"));
 
         // Connection pool settings
