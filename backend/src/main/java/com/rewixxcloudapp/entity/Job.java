@@ -33,6 +33,11 @@ public class Job {
     @OneToMany(mappedBy = "job", cascade = CascadeType.ALL)
     private List<Sale> sales;
 
+    @ElementCollection
+    @CollectionTable(name = "job_receipt_images", joinColumns = @JoinColumn(name = "job_id"))
+    @Column(name = "image_url")
+    private List<String> receiptImageUrls;
+
     public Job() {
     }
 
@@ -121,5 +126,13 @@ public class Job {
 
     public void setSales(List<Sale> sales) {
         this.sales = sales;
+    }
+
+    public List<String> getReceiptImageUrls() {
+        return receiptImageUrls;
+    }
+
+    public void setReceiptImageUrls(List<String> receiptImageUrls) {
+        this.receiptImageUrls = receiptImageUrls;
     }
 }
