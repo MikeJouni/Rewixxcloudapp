@@ -1,7 +1,10 @@
 package com.rewixxcloudapp.entity;
 
+import com.rewixxcloudapp.util.JsonSerializer;
+
 import javax.persistence.*;
 import java.math.BigDecimal;
+import java.util.List;
 
 @Entity
 @Table(name = "products")
@@ -23,6 +26,21 @@ public class Product {
         this.name = name;
         this.description = description;
         this.unitPrice = unitPrice;
+    }
+
+    // JSON Serialization methods
+    private static JsonSerializer serializer() {
+        return JsonSerializer.create()
+                .include("id", "name", "description", "unitPrice")
+                .exclude("*");
+    }
+
+    public String toJson() {
+        return Product.serializer().serialize(this);
+    }
+
+    public static String toJsonArray(List<Product> products) {
+        return JsonSerializer.toJsonArray(products, Product.serializer());
     }
 
     public Long getId() {
