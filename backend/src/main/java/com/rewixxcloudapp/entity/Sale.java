@@ -22,6 +22,9 @@ public class Sale {
     @ManyToOne
     private Supplier supplier;
 
+    @ManyToOne
+    private Job job;
+
     @OneToMany(mappedBy = "sale")
     private List<Tender> tenders;
 
@@ -74,6 +77,14 @@ public class Sale {
 
     public void setSupplier(Supplier supplier) {
         this.supplier = supplier;
+    }
+
+    public Job getJob() {
+        return job;
+    }
+
+    public void setJob(Job job) {
+        this.job = job;
     }
 
     public List<Tender> getTenders() {
