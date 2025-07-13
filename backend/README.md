@@ -6,6 +6,7 @@ This is the Spring Boot backend for the Rewixx Cloud App, providing REST APIs fo
 
 - **JPA/Hibernate Integration**: Full JPA support with Hibernate ORM
 - **PostgreSQL Database**: Production-ready database configuration
+- **AWS S3 Integration**: File storage for receipt images and documents
 - **REST APIs**: RESTful endpoints for all entities
 - **Auto Table Updates**: Tables are automatically updated on application startup
 - **Connection Pooling**: Optimized database connection management
@@ -17,11 +18,18 @@ This is the Spring Boot backend for the Rewixx Cloud App, providing REST APIs fo
 The application requires the following environment variables which are found in the env file in the shared google drive folder. just place that file at the root of the backend repo:
 
 ```bash
+# Database Configuration
 DB_HOST=your-database-host
 DB_PORT=5432
 DB_NAME=your-database-name
 DB_USER=your-database-user
 DB_PASSWORD=your-database-password
+
+# AWS S3 Configuration
+AWS_ACCESS_KEY_ID=your_access_key_id
+AWS_SECRET_ACCESS_KEY=your_secret_access_key
+AWS_REGION=us-east-1
+AWS_S3_BUCKET_NAME=your-s3-bucket-name
 ```
 
 ### Database Configuration
@@ -31,6 +39,13 @@ DB_PASSWORD=your-database-password
 - **Connection Pool**: HikariCP with optimized settings
 - **SSL**: Required for production database connections
 
+### AWS S3 Setup
+
+1. Create an S3 bucket for file storage
+2. Configure CORS for the bucket to allow uploads from your frontend domain
+3. Set up IAM user with S3 permissions
+4. Add the credentials to your environment variables
+
 ## Running the Application
 
 ### Prerequisites
@@ -38,6 +53,7 @@ DB_PASSWORD=your-database-password
 - Java 11 or higher
 - Maven 3.6 or higher
 - PostgreSQL database
+- AWS S3 bucket
 
 ### Development
 
@@ -69,6 +85,11 @@ mvn spring-boot:run -Dspring.profiles.active=test
 - `POST /api/users` - Create new user
 - `PUT /api/users/{id}` - Update user
 - `DELETE /api/users/{id}` - Delete user
+
+### File Upload
+- `POST /api/files/upload` - Upload receipt images to S3
+  - Accepts multipart form data with "file" parameter
+  - Returns S3 URL of uploaded file
 
 ## Entity Structure
 
