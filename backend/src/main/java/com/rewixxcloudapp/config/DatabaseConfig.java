@@ -4,8 +4,6 @@ import io.github.cdimascio.dotenv.Dotenv;
 import org.apache.tomcat.jdbc.pool.DataSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.sql.SQLException;
 
@@ -40,10 +38,5 @@ public class DatabaseConfig {
         dataSource.setConnectionProperties("ssl=true;sslmode=require");
 
         return dataSource;
-    }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
     }
 }
