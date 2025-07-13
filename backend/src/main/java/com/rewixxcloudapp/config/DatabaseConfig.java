@@ -1,55 +1,49 @@
 package com.rewixxcloudapp.config;
 
 import io.github.cdimascio.dotenv.Dotenv;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import javax.sql.DataSource;
+import java.sql.SQLException;
 
 @Configuration
 public class DatabaseConfig {
 
-    @Autowired
-    private Dotenv dotenv;
-
     @Bean
-    @Primary
-    public DataSource dataSource() {
-        String dbHost = getEnvValue("DB_HOST", "localhost");
-        String dbPort = getEnvValue("DB_PORT", "5432");
-        String dbName = getEnvValue("DB_NAME", "postgres");
-        String dbUser = getEnvValue("DB_USER", "postgres");
-        String dbPassword = getEnvValue("DB_PASSWORD", "");
+    public DataSource dataSource() throws SQLException {
+        Dotenv dotenv = Dotenv.load();
 
-        System.out.println("[DATABASE CONFIG] DB_HOST: " + dbHost);
-        System.out.println("[DATABASE CONFIG] DB_PORT: " + dbPort);
-        System.out.println("[DATABASE CONFIG] DB_NAME: " + dbName);
-        System.out.println("[DATABASE CONFIG] DB_USER: " + dbUser);
+        org.apache.tomcat.jdbc.pool.DataSource dataSource = new org.apache.tomcat.jdbc.pool.DataSource();
 
-        String url = String.format("jdbc:postgresql://%s:%s/%s?sslmode=require",
-                dbHost, dbPort, dbName);
+        dataSource.setDriverClassName("org.postgresql.Driver");
+        dataSource.setUrl("jdbc:postgresql://" + dotenv.get("DB_HOST") + ":" + dotenv.get("DB_PORT") + "/"
+                + dotenv.get("DB_NAME"));
+        dataSource.setUsername(dotenv.get("DB_USERNAME"));
+        dataSource.setPassword(dotenv.get("DB_PASSWORD"));
 
-        return DataSourceBuilder.create()
-                .url(url)
-                .username(dbUser)
-                .password(dbPassword)
-                .driverClassName("org.postgresql.Driver")
-                .build();
+        // Connection pool settings
+        dataSource.setInitialSize(5);
+        dataSource.setMaxActive(20);
+        dataSource.setMinIdle(5);
+        dataSource.setMaxIdle(10);
+        dataSource.setMaxWait(30000);
+
+        // Connection validation
+        dataSource.setValidationQuery("SELECT 1");
+        dataSource.setTestOnBorrow(true);
+        dataSource.setTestWhileIdle(true);
+
+        // SSL settings for production
+        dataSource.setConnectionProperties("ssl=true;sslmode=require");
+
+        return dataSource;
     }
 
-    private String getEnvValue(String key, String defaultValue) {
-        if (dotenv != null) {
-            String value = dotenv.get(key);
-            if (value != null && !value.isEmpty()) {
-                return value;
-            }
-        }
-
-        // Fallback to system environment variables
-        String systemValue = System.getenv(key);
-        return systemValue != null ? systemValue : defaultValue;
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 }

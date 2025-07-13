@@ -1,10 +1,14 @@
 package com.rewixxcloudapp.service;
 
+import com.rewixxcloudapp.entity.Customer;
+import com.rewixxcloudapp.entity.Supplier;
 import com.rewixxcloudapp.entity.User;
 import com.rewixxcloudapp.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,7 +18,10 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
-    public List<User> getAllUsers() {
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    public Collection<User> getAllUsers() {
         return userRepository.findAll();
     }
 
@@ -26,19 +33,91 @@ public class UserService {
         return userRepository.findByUsername(username);
     }
 
-    public User createUser(String username, String password) {
+    public Customer createCustomer(String username, String password, String name) {
         if (userRepository.existsByUsername(username)) {
             throw new RuntimeException("Username already exists");
         }
-        User user = new User(username, password);
-        return userRepository.save(user);
+
+        if (username == null || username.trim().isEmpty()) {
+            throw new IllegalArgumentException("Username cannot be empty");
+        }
+
+        if (password == null || password.trim().isEmpty()) {
+            throw new IllegalArgumentException("Password cannot be empty");
+        }
+
+        if (name == null || name.trim().isEmpty()) {
+            throw new IllegalArgumentException("Name cannot be empty");
+        }
+
+        String encodedPassword = passwordEncoder.encode(password);
+        Customer customer = new Customer(username, encodedPassword, name);
+        return userRepository.save(customer);
+    }
+
+    public Supplier createSupplier(String username, String password, String name) {
+        if (userRepository.existsByUsername(username)) {
+            throw new RuntimeException("Username already exists");
+        }
+
+        if (username == null || username.trim().isEmpty()) {
+            throw new IllegalArgumentException("Username cannot be empty");
+        }
+
+        if (password == null || password.trim().isEmpty()) {
+            throw new IllegalArgumentException("Password cannot be empty");
+        }
+
+        if (name == null || name.trim().isEmpty()) {
+            throw new IllegalArgumentException("Name cannot be empty");
+        }
+
+        String encodedPassword = passwordEncoder.encode(password);
+        Supplier supplier = new Supplier(username, encodedPassword, name);
+        return userRepository.save(supplier);
     }
 
     public User saveUser(User user) {
+        if (user == null) {
+            throw new IllegalArgumentException("User cannot be null");
+        }
+
+        if (user.getUsername() == null || user.getUsername().trim().isEmpty()) {
+            throw new IllegalArgumentException("Username cannot be empty");
+        }
+
+        // If this is a new user and password is not encoded, encode it
+        if (user.getId() == null && user.getPassword() != null && !user.getPassword().startsWith("$2a$")) {
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+        }
+
         return userRepository.save(user);
     }
 
     public void deleteUser(Long id) {
+        if (id == null) {
+            throw new IllegalArgumentException("User ID cannot be null");
+        }
+
+        if (!userRepository.existsById(id)) {
+            throw new RuntimeException("User not found with ID: " + id);
+        }
+
         userRepository.deleteById(id);
+    }
+
+    public boolean existsByUsername(String username) {
+        return userRepository.existsByUsername(username);
+    }
+
+    public void updatePassword(Long userId, String newPassword) {
+        Optional<User> userOpt = userRepository.findById(userId);
+        if (userOpt.isEmpty()) {
+            throw new RuntimeException("User not found with ID: " + userId);
+        }
+
+        User user = userOpt.get();
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
     }
 }
