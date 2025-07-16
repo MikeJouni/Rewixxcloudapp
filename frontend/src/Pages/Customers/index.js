@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import CustomerForm from "./components/forms/CustomerForm";
 import CustomerTable from "./components/tables/CustomerTable";
 import useCustomers from "./hooks/useCustomers";
+import Footer from "../../components/Footer";
 
 const CustomersPage = () => {
   const {
@@ -19,6 +20,8 @@ const CustomersPage = () => {
   const [showAddForm, setShowAddForm] = useState(false);
 
   return (
+    <div className="flex flex-col min-h-screen">
+      {/* Main content */}
     <div className="p-6">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
@@ -69,6 +72,10 @@ const CustomersPage = () => {
         onEdit={startEditing}
         onDelete={deleteCustomer}
       />
+      </div>
+      
+      {/* Footer */}
+      <Footer />
     </div>
   );
 };

@@ -2,6 +2,7 @@ import React from "react";
 import ReportGenerator from "./components/forms/ReportGenerator";
 import ReportDisplay from "./components/tables/ReportDisplay";
 import useReports from "./hooks/useReports";
+import Footer from "../../components/Footer";
 
 const ReportsPage = () => {
   const {
@@ -20,6 +21,8 @@ const ReportsPage = () => {
   } = useReports();
 
   return (
+    <div className="flex flex-col min-h-screen">
+      {/* Main content */}
     <div className="p-6">
       {/* Header */}
       <div className="mb-6">
@@ -74,6 +77,11 @@ const ReportsPage = () => {
         </div>
       </div>
     </div>
+
+    {/* Footer */}
+      <Footer />
+    </div>
+    
   );
 };
 
