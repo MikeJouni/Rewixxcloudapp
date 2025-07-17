@@ -72,7 +72,14 @@ public class UserController {
             }
 
             Customer customer = userService.createCustomer(username, password, name);
-            return ResponseEntity.ok(customer.toJson());
+            
+            // Fetch the fully initialized customer to avoid serialization issues
+            Optional<User> loadedCustomer = userService.getUserById(customer.getId());
+            if (loadedCustomer.isPresent()) {
+                return ResponseEntity.ok(loadedCustomer.get().toJson());
+            } else {
+                return ResponseEntity.ok(customer.toJson());
+            }
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (RuntimeException e) {
@@ -94,7 +101,14 @@ public class UserController {
             }
 
             Supplier supplier = userService.createSupplier(username, password, name);
-            return ResponseEntity.ok(supplier.toJson());
+            
+            // Fetch the fully initialized supplier to avoid serialization issues
+            Optional<User> loadedSupplier = userService.getUserById(supplier.getId());
+            if (loadedSupplier.isPresent()) {
+                return ResponseEntity.ok(loadedSupplier.get().toJson());
+            } else {
+                return ResponseEntity.ok(supplier.toJson());
+            }
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (RuntimeException e) {
