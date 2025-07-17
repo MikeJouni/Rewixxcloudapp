@@ -4,7 +4,6 @@ import JobTable from "./components/tables/JobTable";
 import ReceiptVerificationModal from "./components/modals/ReceiptVerificationModal";
 import JobDetailModal from "./components/modals/JobDetailModal";
 import useJobs from "./hooks/useJobs";
-import Footer from "../../components/Footer";
 
 const JobsPage = () => {
   const {
@@ -41,8 +40,6 @@ const JobsPage = () => {
   const [showAddForm, setShowAddForm] = useState(false);
 
   return (
-    <div className="flex flex-col min-h-screen">
-      {/* Main content */}
     <div className="p-6">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
@@ -128,10 +125,6 @@ const JobsPage = () => {
           onClose={() => setShowJobDetailModal(false)}
         />
       )}
-    </div>
-
-     {/* Footer */}
-      <Footer />
     </div>
   );
 };
