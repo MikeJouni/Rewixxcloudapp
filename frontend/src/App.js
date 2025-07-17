@@ -11,7 +11,7 @@ import NotFound from "./components/NotFound";
 import CustomersPage from "./Pages/Customers";
 import JobsPage from "./Pages/Jobs";
 import ReportsPage from "./Pages/Reports";
-
+import Footer from "./components/Footer";
 function App() {
   return (
     <Router>
@@ -39,6 +39,11 @@ function AppContent() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
+
+      <footer>
+         <Footer/>
+      </footer>
+     
     </div>
   );
 }

@@ -16,9 +16,6 @@ const JobsPage = () => {
     editingJob,
     isMobile,
     processingReceipt,
-    selectedJobForReceipt,
-    showReceiptModal,
-    setShowReceiptModal,
     showVerificationModal,
     setShowVerificationModal,
     currentReceiptData,
@@ -32,7 +29,6 @@ const JobsPage = () => {
     cancelEditing,
     handleReceiptUpload,
     handleReceiptVerification,
-    viewReceipts,
     viewJobDetails,
     handleJobUpdate,
   } = useJobs();

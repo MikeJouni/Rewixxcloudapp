@@ -1,17 +1,7 @@
-
-
-
-/**
- * Test
- */
-
-package com.warehouse.entity.currency;
+package com.rewixxcloudapp.entity;
 
 import javax.persistence.*;
 
-/**
- * Currency entity
- */
 @Entity
 @Table(name = "currencies")
 public class Currency {
@@ -19,26 +9,18 @@ public class Currency {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /**
-     * Currency code (e.g., USD, EUR, GBP)
-     */
-    @Column(unique = true, length = 3)
-    private String code;
+    private String code; // e.g. USD, EUR
 
-    /**
-     * Currency name (e.g., US Dollar, Euro, British Pound)
-     */
     private String name;
 
-    // Constructors
-    public Currency() {}
+    public Currency() {
+    }
 
     public Currency(String code, String name) {
         this.code = code;
         this.name = name;
     }
 
-    // Getters and Setters
     public Long getId() {
         return id;
     }
@@ -61,28 +43,5 @@ public class Currency {
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    // Equals and HashCode
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Currency currency = (Currency) o;
-        return Objects.equals(code, currency.code);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(code);
-    }
-
-    @Override
-    public String toString() {
-        return "Currency{" +
-                "id=" + id +
-                ", code='" + code + '\'' +
-                ", name='" + name + '\'' +
-                '}';
     }
 }
