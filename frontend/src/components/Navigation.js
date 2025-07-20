@@ -15,10 +15,10 @@ const Navigation = () => {
   const activeTab = getActiveTab();
 
   return (
-    <nav className="flex gap-4">
+    <nav className="flex gap-2 sm:gap-4 w-full">
       <Link
         to="/customers"
-        className={`px-6 py-3 rounded border-2 transition-all duration-300 hover:-translate-y-0.5 ${
+        className={`flex-1 text-center px-2 sm:px-4 md:px-6 py-2 sm:py-3 rounded border-2 transition-all duration-300 hover:-translate-y-0.5 text-sm sm:text-base ${
           activeTab === "customers"
             ? "bg-blue-500 border-blue-500 text-white"
             : "border-gray-600 text-gray-200 hover:bg-gray-700"
@@ -28,7 +28,7 @@ const Navigation = () => {
       </Link>
       <Link
         to="/jobs"
-        className={`px-6 py-3 rounded border-2 transition-all duration-300 hover:-translate-y-0.5 ${
+        className={`flex-1 text-center px-2 sm:px-4 md:px-6 py-2 sm:py-3 rounded border-2 transition-all duration-300 hover:-translate-y-0.5 text-sm sm:text-base ${
           activeTab === "jobs"
             ? "bg-blue-500 border-blue-500 text-white"
             : "border-gray-600 text-gray-200 hover:bg-gray-700"
@@ -38,7 +38,7 @@ const Navigation = () => {
       </Link>
       <Link
         to="/reports"
-        className={`px-6 py-3 rounded border-2 transition-all duration-300 hover:-translate-y-0.5 ${
+        className={`flex-1 text-center px-2 sm:px-4 md:px-6 py-2 sm:py-3 rounded border-2 transition-all duration-300 hover:-translate-y-0.5 text-sm sm:text-base ${
           activeTab === "reports"
             ? "bg-blue-500 border-blue-500 text-white"
             : "border-gray-600 text-gray-200 hover:bg-gray-700"
