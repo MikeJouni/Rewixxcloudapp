@@ -1,6 +1,9 @@
+# Rewixx Cloud App
+
 <h1 align="center">
   <a href="RewixxCloudApp"><img src="https://github.com/MikeJouni/Rewixxcloudapp/blob/zain/assets/images/rewixx_logo.png" width="400" > </a>
 </h1>
+
 <h4 align="center">Web application for Imad's Electrical Services LLC with customer management, job handling, inventory tracking, and report generating.</h4>
 
 <p align="center">
@@ -29,7 +32,7 @@
   - Generate reports by customer or job
   - Export reports as pdfs
 
-## Directory Structure
+## Project Structure
 
 ```
 Rewixxcloudapp/
@@ -75,13 +78,12 @@ cd frontend
 npm install # On first time run or after new dependencies are added
 npm start
 # Frontend runs on http://localhost:3000 or if viewing on mobile: http://YOUR_COMPUTER_IP:3000
-
 ```
 
 #### Backend Development
 ```bash
 cd backend
-# Whatever else goes here
+mvn spring-boot:run
 ```
 
 ### Barcode/Receipt Scanner Development
@@ -89,10 +91,9 @@ cd backend
 #### 1. Setup ngrok (needed for https to access camera on Safari/Chrome on mobile)
 
 - Download ngrok
-
 - Update `ngrok.yml` with ngrok auth token in Environment Variables Google Doc
 
-#### 2. Environment Variables(API Keys)
+#### 2. Environment Variables (API Keys)
 
 ```bash
 cd scripts
@@ -100,7 +101,6 @@ cp .env.example .env
 ```
 
 - Update VERYFI_CLIENT_ID, VERYFI_API_KEY, and SERPAPI_KEY in `scripts/.env` with ID and keys in Environment Variables Google Doc
-
 
 #### 3. Start the Frontend
 ```bash
@@ -127,8 +127,7 @@ ngrok start --all
 #### 6. Access the Application
 
 - If wanting to test API, the backend is running on static URL: https://anchovy-musical-louse.ngrok-free.app 
-- Open your frontend(3000 port) ngrok URL in a browser(changes every ngrok run)
-
+- Open your frontend (3000 port) ngrok URL in a browser (changes every ngrok run)
 
 ### User
 
@@ -143,6 +142,40 @@ ngrok start --all
 * **Receipt Processing**: Upload receipt photos to extract items and add to jobs
 * **Material Tracking**: View and manage materials within each job
 
+## Database & Hibernate Setup
+
+This project uses Spring Data JPA (with Hibernate as the JPA provider) to persist Java entities to a PostgreSQL database hosted on AWS RDS.
+
+### How It Works
+
+Hibernate is enabled automatically via the `spring-boot-starter-data-jpa` dependency in `pom.xml`. Database connection is configured in the DatabaseConfig bean using environment variables for security and flexibility. Schema management is handled by Hibernate (`spring.jpa.hibernate.ddl-auto=update`), which creates/updates tables based on your entity classes.
+
+### Configuration
+
+Set the following environment variables before running the backend. you can either set them manually in terminal of the environment where the spring app is
+or just place a .env file at the root of the backend repo (recommended)
+
+### Running the Backend
+
+1. Make sure you have Java 11+ and Maven installed
+2. Set the required environment variables (REFER TO DATABASE CONFIG DOC)
+3. Build and run the backend
+4. On startup, Hibernate will connect to the database and auto-create/update tables as needed
+
+### Connect to Your Database
+
+#### Use psql (CLI)
+1. Install psql
+2. Run:
+   ```psql -h cloudapp.cz0qamc8ywng.us-east-2.rds.amazonaws.com -p 5432 -U postgres1 -d postgres
+   ```
+   This will prompt for the db password and once you enter it you will be connected
+3. Once connected, list tables with: `\dt`
+
+#### (GUI)
+Alternatively you can use a GUI. DataGrip from IntelliJ is recommended. 
+Just use the plus icon to add a new postgres db connection and enter all the details to connect. 
+
 ## License
 
-MIT 
+MIT
