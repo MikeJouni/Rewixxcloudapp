@@ -22,7 +22,7 @@ function App() {
 
 function AppContent() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-gray-50">
       <header className="bg-gray-800 text-white px-8 py-6 shadow-lg">
         <h1 className="text-3xl font-light mb-4">
           Cloud App/Electrician System
@@ -30,7 +30,7 @@ function AppContent() {
         <Navigation />
       </header>
 
-      <main className="max-w-7xl mx-auto">
+      <main className="flex-grow max-w-7xl mx-auto w-full px-4 py-6">
         <Routes>
           <Route path="/" element={<Navigate to="/customers" replace />} />
           <Route path="/customers" element={<CustomersPage />} />
@@ -41,11 +41,11 @@ function AppContent() {
       </main>
 
       <footer>
-         <Footer/>
+        <Footer />
       </footer>
-     
     </div>
   );
 }
+
 
 export default App;
