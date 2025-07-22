@@ -31,7 +31,6 @@ app.add_middleware(
 def barcode_lookup(barcode):
     try:
         search_url = f"https://www.homedepot.com/s/{barcode}"
-        print(f"[DEBUG] Home Depot search URL: {search_url}")
         headers = {
             "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 14_7_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.2 Mobile/15E148 Safari/604.1",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -41,36 +40,34 @@ def barcode_lookup(barcode):
             "Upgrade-Insecure-Requests": "1"
         }
         response = requests.get(search_url, headers=headers, timeout=10, allow_redirects=True)
-        print(f"[DEBUG] Final redirected Home Depot URL: {response.url}")
         product_id_match = re.search(r'/p/[^/]+/(\d+)$', response.url)
+        
         if not product_id_match:
-            print("[ERROR] Product ID not found in Home Depot URL!")
             raise Exception("Product ID not found")
+        
         product_id = product_id_match.group(1)
-        print(f"[DEBUG] Extracted product ID: {product_id}")
+        
         params = {
             "api_key": SERPAPI_KEY,
             "engine": "home_depot",
             "q": product_id,
             "num": 1
         }
-        serpapi_url = SERPAPI_BASE_URL
-        print(f"[DEBUG] SerpAPI request URL: {serpapi_url}")
-        print(f"[DEBUG] SerpAPI params: {params}")
-        response = requests.get(serpapi_url, params=params, timeout=10)
-        print(f"[DEBUG] SerpAPI response status: {response.status_code}")
-        print(f"[DEBUG] SerpAPI response text: {response.text}")
+        response = requests.get(SERPAPI_BASE_URL, params=params, timeout=10)
+        
         if response.status_code != 200:
-            print("[ERROR] SerpAPI request failed!")
             raise Exception("SerpAPI request failed")
+        
         data = response.json()
         if "products" not in data:
-            print("[ERROR] No product found in SerpAPI response!")
             raise Exception("No product found")
+        
         product = data["products"][0]
         price = product.get("price")
-        price_str = str(price) if price else ""
-        print(f"[DEBUG] Final product data: {product}")
+        if price:
+            price_str = str(price)
+        else:
+            price_str = ""
         return {
             "name": product.get("title", ""),
             "price": price_str,
@@ -82,8 +79,8 @@ def barcode_lookup(barcode):
             "description": product.get("description", ""),
             "availability": product.get("availability", "")
         }
-    except Exception as e:
-        print(f"[ERROR] Exception during barcode lookup: {e}")
+        
+    except Exception:
         return {
             "name": f"Product (UPC: {barcode})",
             "price": "",
