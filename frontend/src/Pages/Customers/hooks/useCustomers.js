@@ -1,4 +1,6 @@
 import { useState, useMemo } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import * as customerService from "../services/customerService";
 
 const useCustomers = () => {
   const [customers, setCustomers] = useState([]);
@@ -57,5 +59,26 @@ const useCustomers = () => {
     cancelEditing,
   };
 };
+
+export function useCustomerDetails(id) {
+  return useQuery(["customer", id], () => customerService.getCustomer(id));
+}
+
+export function useCreateCustomer() {
+  const queryClient = useQueryClient();
+  return useMutation(customerService.createCustomer, {
+    onSuccess: () => queryClient.invalidateQueries(["customers"]),
+  });
+}
+
+export function useUpdateCustomer() {
+  const queryClient = useQueryClient();
+  return useMutation(
+    ({ id, ...customer }) => customerService.updateCustomer(id, customer),
+    {
+      onSuccess: () => queryClient.invalidateQueries(["customers"]),
+    }
+  );
+}
 
 export default useCustomers;
