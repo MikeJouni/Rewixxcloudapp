@@ -1,10 +1,12 @@
 import axios from "axios";
 import config from "./config";
 
+const URL = config.SPRING_API_BASE + "/";
+
+
 class Backend {
   static async get(path, body = null, params = null) {
-    // same as Python API URL found in config.js
-    let url = config.API_BASE_URL + "/" + path.replace(/^\//, "");
+    let url = URL + path.replace(/^\//, "");
     if (params) {
       let data = new URLSearchParams();
       for (const p in params) {
@@ -24,7 +26,7 @@ class Backend {
   }
 
   static async post(path, body = null, params = null) {
-    let url = config.API_BASE_URL + "/" + path.replace(/^\//, "");
+    let url = URL + path.replace(/^\//, "");
     if (params) {
       let data = new URLSearchParams();
       for (const p in params) {
@@ -40,7 +42,7 @@ class Backend {
   }
 
   static async put(path, body = null, params = null) {
-    let url = config.API_BASE_URL + "/" + path.replace(/^\//, "");
+    let url = URL + path.replace(/^\//, "");
     if (params) {
       let data = new URLSearchParams();
       for (const p in params) {

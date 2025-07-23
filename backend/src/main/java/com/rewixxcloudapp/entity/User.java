@@ -7,9 +7,12 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import javax.persistence.*;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.Collections;
 
 // Base User entity with Spring Security integration
 @Entity
@@ -35,7 +38,7 @@ public abstract class User implements UserDetails {
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
-    private Set<Role> roles;
+    private Set<Role> roles = new HashSet<>();
 
     // Default constructor
     public User() {
@@ -79,6 +82,7 @@ public abstract class User implements UserDetails {
         this.username = username;
     }
 
+    @JsonIgnore
     @Override
     public String getPassword() {
         return password;
@@ -155,8 +159,10 @@ public abstract class User implements UserDetails {
     }
 
     // UserDetails implementation
+    @JsonIgnore
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
+        if (roles == null) return Collections.emptyList();
         return roles.stream()
                 .map(role -> new SimpleGrantedAuthority(role.getName()))
                 .collect(Collectors.toList());

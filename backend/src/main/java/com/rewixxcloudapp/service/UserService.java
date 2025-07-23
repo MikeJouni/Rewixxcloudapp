@@ -9,7 +9,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -119,5 +121,53 @@ public class UserService {
         User user = userOpt.get();
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
+    }
+
+    public Optional<Customer> getCustomerById(Long id) {
+        Optional<User> user = userRepository.findById(id);
+        if (user.isPresent() && user.get() instanceof Customer) {
+            return Optional.of((Customer) user.get());
+        }
+        return Optional.empty();
+    }
+
+    public Customer saveCustomer(Customer customer) {
+        return userRepository.save(customer);
+    }
+
+    public Map<String, Object> getCustomersList(int page, int pageSize, String searchTerm) {
+        // Get all users and filter for customers
+        Collection<User> allUsers = userRepository.findAll();
+        List<Customer> customers = allUsers.stream()
+                .filter(user -> user instanceof Customer)
+                .map(user -> (Customer) user)
+                .filter(customer -> 
+                    searchTerm.isEmpty() || 
+                    customer.getName().toLowerCase().contains(searchTerm.toLowerCase()) ||
+                    customer.getUsername().toLowerCase().contains(searchTerm.toLowerCase()) ||
+                    (customer.getPhone() != null && customer.getPhone().contains(searchTerm))
+                )
+                .collect(java.util.stream.Collectors.toList());
+        
+        // Calculate pagination
+        int totalCustomers = customers.size();
+        int totalPages = (int) Math.ceil((double) totalCustomers / pageSize);
+        int startIndex = page * pageSize;
+        int endIndex = Math.min(startIndex + pageSize, totalCustomers);
+        
+        // Get the page of customers
+        List<Customer> pageCustomers = customers.subList(startIndex, endIndex);
+        
+        // Build response
+        Map<String, Object> result = new HashMap<>();
+        result.put("customers", pageCustomers);
+        result.put("totalCustomers", totalCustomers);
+        result.put("totalPages", totalPages);
+        result.put("currentPage", page);
+        result.put("pageSize", pageSize);
+        result.put("hasNext", page < totalPages - 1);
+        result.put("hasPrevious", page > 0);
+        
+        return result;
     }
 }

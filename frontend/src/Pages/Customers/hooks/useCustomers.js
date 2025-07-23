@@ -81,4 +81,14 @@ export function useUpdateCustomer() {
   );
 }
 
+export function useCustomersList(params = {}) {
+  return useQuery(
+    ["customers", "list", params],
+    () => customerService.getCustomersList(params),
+    {
+      keepPreviousData: true, 
+    }
+  );
+}
 export default useCustomers;
+
