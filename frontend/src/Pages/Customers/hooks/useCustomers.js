@@ -7,13 +7,14 @@ const useCustomers = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [editingCustomer, setEditingCustomer] = useState(null);
 
-  const { data, isLoading, error } = useQuery(
-    ["customers", { searchTerm }],
-    () => customerService.getCustomersList({ searchTerm }),
-    { keepPreviousData: true }
-  );
+  // Fetch all customers (paginated, can be adjusted)
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["customers", { searchTerm }],
+    queryFn: () => customerService.getCustomersList({ searchTerm }),
+    keepPreviousData: true
+  });
 
-  const customers = data?.data || data || [];
+  const customers = data?.customers || [];
 
   const filteredCustomers = useMemo(() => {
     if (!searchTerm) return customers;
@@ -26,30 +27,22 @@ const useCustomers = () => {
   }, [customers, searchTerm]);
 
   // Add customer
-  const addCustomer = useMutation(customerService.createCustomer, {
-    onSuccess: () => queryClient.invalidateQueries(["customers"]),
+  const addCustomer = useMutation({
+    mutationFn: customerService.createCustomer,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["customers"] }),
   });
 
   // Update customer
-  const updateCustomer = useMutation(
-    ({ id, ...customer }) => customerService.updateCustomer(id, customer),
-    {
-      onSuccess: () => queryClient.invalidateQueries(["customers"]),
-    }
-  );
+  const updateCustomer = useMutation({
+    mutationFn: ({ id, ...customer }) => customerService.updateCustomer(id, customer),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["customers"] }),
+  });
 
-  // Delete customer 
-  const deleteCustomer = useMutation(
-    (id) => customerService.deleteCustomer(id),
-    {
-      onSuccess: () => queryClient.invalidateQueries(["customers"]),
-    }
-  );
-
-  const getCustomerDetails = (id) =>
-    useQuery(["customer", id], () => customerService.getCustomer(id), {
-      enabled: !!id,
-    });
+  // Delete customer
+  const deleteCustomer = useMutation({
+    mutationFn: (id) => customerService.deleteCustomer(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["customers"] }),
+  });
 
   const startEditing = (customer) => setEditingCustomer(customer);
   const cancelEditing = () => setEditingCustomer(null);
@@ -66,9 +59,16 @@ const useCustomers = () => {
     addCustomer,
     updateCustomer,
     deleteCustomer,
-    getCustomerDetails,
   };
 };
 
 export default useCustomers;
+
+// Custom hook for fetching a single customer by id
+export const useCustomerDetails = (id) =>
+  useQuery({
+    queryKey: ["customer", id],
+    queryFn: () => customerService.getCustomer(id),
+    enabled: !!id,
+  });
 
