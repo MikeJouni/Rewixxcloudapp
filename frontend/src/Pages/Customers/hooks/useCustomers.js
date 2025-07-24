@@ -6,11 +6,13 @@ const useCustomers = () => {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [editingCustomer, setEditingCustomer] = useState(null);
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
 
   // Fetch all customers (paginated, can be adjusted)
   const { data, isLoading, error } = useQuery({
-    queryKey: ["customers", { searchTerm }],
-    queryFn: () => customerService.getCustomersList({ searchTerm }),
+    queryKey: ["customers", { searchTerm, page, pageSize }],
+    queryFn: () => customerService.getCustomersList({ searchTerm, page, pageSize }),
     keepPreviousData: true
   });
 
@@ -59,6 +61,14 @@ const useCustomers = () => {
     addCustomer,
     updateCustomer,
     deleteCustomer,
+    page,
+    setPage,
+    pageSize,
+    setPageSize,
+    totalPages: data?.totalPages || 1,
+    totalCustomers: data?.totalCustomers || 0,
+    hasNext: data?.hasNext || false,
+    hasPrevious: data?.hasPrevious || false,
   };
 };
 
