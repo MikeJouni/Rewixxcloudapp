@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as customerService from "../services/customerService";
-import { useState, useMemo } from "react";
+import { useState } from "react";
 
 const useCustomers = () => {
   const queryClient = useQueryClient();
@@ -9,7 +9,6 @@ const useCustomers = () => {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
 
-  // Fetch all customers (paginated, can be adjusted)
   const { data, isLoading, error } = useQuery({
     queryKey: ["customers", { searchTerm, page, pageSize }],
     queryFn: () => customerService.getCustomersList({ searchTerm, page, pageSize }),
@@ -17,16 +16,6 @@ const useCustomers = () => {
   });
 
   const customers = data?.customers || [];
-
-  const filteredCustomers = useMemo(() => {
-    if (!searchTerm) return customers;
-    return customers.filter(
-      (customer) =>
-        customer.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.phone?.includes(searchTerm)
-    );
-  }, [customers, searchTerm]);
 
   // Add customer
   const addCustomer = useMutation({
@@ -50,7 +39,7 @@ const useCustomers = () => {
   const cancelEditing = () => setEditingCustomer(null);
 
   return {
-    customers: filteredCustomers,
+    customers,
     isLoading,
     error,
     searchTerm,
