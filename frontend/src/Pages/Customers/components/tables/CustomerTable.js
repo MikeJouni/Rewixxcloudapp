@@ -31,9 +31,6 @@ const CustomerTable = ({ customers, onEdit, onDelete }) => {
                 Address
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Date Added
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -48,16 +45,22 @@ const CustomerTable = ({ customers, onEdit, onDelete }) => {
                   {customer.name}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {customer.email}
+                  {customer.username}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {customer.phone}
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-900">
-                  {customer.address}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {customer.dateAdded}
+                  {[
+                    customer.addressLine1,
+                    customer.addressLine2
+                  ].filter(Boolean).join(', ')}
+                  <br />
+                  {[
+                    customer.city,
+                    customer.state,
+                    customer.zip
+                  ].filter(Boolean).join(', ')}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <div className="flex gap-2">
@@ -68,7 +71,11 @@ const CustomerTable = ({ customers, onEdit, onDelete }) => {
                       Edit
                     </button>
                     <button
-                      onClick={() => onDelete(customer.id)}
+                      onClick={() => {
+                        if (window.confirm("Are you sure you want to delete this customer?")) {
+                          onDelete(customer.id);
+                        }
+                      }}
                       className="px-2 py-1 text-xs bg-red-500 text-white border-none rounded cursor-pointer hover:bg-red-600"
                     >
                       Delete
