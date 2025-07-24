@@ -12,12 +12,17 @@ import CustomersPage from "./Pages/Customers";
 import JobsPage from "./Pages/Jobs";
 import ReportsPage from "./Pages/Reports";
 import Footer from "./components/Footer";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+const queryClient = new QueryClient();
 
 function App() {
   return (
-    <Router>
-      <AppContent />
-    </Router>
+    <QueryClientProvider client={queryClient}>
+      <Router>
+        <AppContent />
+      </Router>
+    </QueryClientProvider>
   );
 }
 
