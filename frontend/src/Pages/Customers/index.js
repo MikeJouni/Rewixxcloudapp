@@ -5,7 +5,7 @@ import useCustomers from "./hooks/useCustomers";
 
 const CustomersPage = () => {
   const {
-    filteredCustomers,
+    customers,
     searchTerm,
     setSearchTerm,
     editingCustomer,
@@ -14,6 +14,8 @@ const CustomersPage = () => {
     deleteCustomer,
     startEditing,
     cancelEditing,
+    isLoading,
+    error,
   } = useCustomers();
 
   const [showAddForm, setShowAddForm] = useState(false);
@@ -38,10 +40,16 @@ const CustomersPage = () => {
         <CustomerForm
           onSubmit={(customerData) => {
             if (editingCustomer) {
-              updateCustomer({ ...customerData, id: editingCustomer.id });
+              updateCustomer.mutate({ ...customerData, id: editingCustomer.id }, {
+                onSuccess: () => {
+                  cancelEditing();
+                  setShowAddForm(false);
+                },
+              });
             } else {
-              addCustomer(customerData);
-              setShowAddForm(false);
+              addCustomer.mutate(customerData, {
+                onSuccess: () => setShowAddForm(false),
+              });
             }
           }}
           onCancel={() => {
@@ -49,6 +57,8 @@ const CustomersPage = () => {
             cancelEditing();
           }}
           initialData={editingCustomer}
+          isLoading={addCustomer.isLoading || updateCustomer.isLoading}
+          error={addCustomer.error || updateCustomer.error}
         />
       )}
 
@@ -63,11 +73,17 @@ const CustomersPage = () => {
         />
       </div>
 
+      {/* Loading/Error States */}
+      {isLoading && <p className="text-center text-gray-500">Loading customers...</p>}
+      {error && <p className="text-center text-red-500">Error loading customers.</p>}
+
       {/* Customers Table */}
       <CustomerTable
-        customers={filteredCustomers}
+        customers={customers}
         onEdit={startEditing}
-        onDelete={deleteCustomer}
+        onDelete={(id) => deleteCustomer.mutate(id)}
+        isDeleting={deleteCustomer.isLoading}
+        deleteError={deleteCustomer.error}
       />
     </div>
   );

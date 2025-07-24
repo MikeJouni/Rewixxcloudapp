@@ -4,7 +4,7 @@ export const getCustomer = (id) =>
   Backend.get(`api/users/customers/${id}`);
 
 export const createCustomer = (customer) =>
-  Backend.post("api/users/customers", customer);
+  Backend.post("api/users/customers/create", customer);
 
 export const updateCustomer = (id, customer) =>
   Backend.put(`api/users/customers/${id}`, customer);
@@ -14,4 +14,7 @@ export const getCustomersList = (params = {}) =>
     page: params.page || 0,
     pageSize: params.pageSize || 10,
     searchTerm: params.searchTerm || ""
-  }); 
+  });
+
+export const deleteCustomer = (id) =>
+  Backend.delete(`api/users/customers/${id}`); 
