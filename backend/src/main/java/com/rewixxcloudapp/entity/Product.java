@@ -4,7 +4,6 @@ import com.rewixxcloudapp.util.JsonSerializer;
 
 import javax.persistence.*;
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.Collection;
 
 @Entity
