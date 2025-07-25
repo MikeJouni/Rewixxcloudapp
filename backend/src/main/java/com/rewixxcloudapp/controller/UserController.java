@@ -1,7 +1,5 @@
 package com.rewixxcloudapp.controller;
 
-import com.rewixxcloudapp.entity.Customer;
-import com.rewixxcloudapp.entity.Supplier;
 import com.rewixxcloudapp.entity.User;
 import com.rewixxcloudapp.service.UserService;
 import com.rewixxcloudapp.util.JsonSerializer;
@@ -22,7 +20,7 @@ public class UserController {
     @Autowired
     private UserService userService;
 
-    @GetMapping
+    @GetMapping("/all")
     public ResponseEntity<String> getAllUsers() {
         try {
             Collection<User> users = userService.getAllUsers();
@@ -57,35 +55,6 @@ public class UserController {
             }
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body("Error retrieving user: " + e.getMessage());
-        }
-    }
-
-    @PostMapping("/suppliers")
-    public ResponseEntity<String> createSupplier(@RequestBody Map<String, String> request) {
-        try {
-            String username = request.get("username");
-            String password = request.get("password");
-            String name = request.get("name");
-
-            if (username == null || password == null || name == null) {
-                return ResponseEntity.badRequest().body("Username, password, and name are required");
-            }
-
-            Supplier supplier = userService.createSupplier(username, password, name);
-            
-            // Fetch the fully initialized supplier to avoid serialization issues
-            Optional<User> loadedSupplier = userService.getUserById(supplier.getId());
-            if (loadedSupplier.isPresent()) {
-                return ResponseEntity.ok(loadedSupplier.get().toJson());
-            } else {
-                return ResponseEntity.ok(supplier.toJson());
-            }
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Error creating supplier: " + e.getMessage());
         }
     }
 
@@ -175,5 +144,5 @@ public class UserController {
             return ResponseEntity.internalServerError().body("Error checking username: " + e.getMessage());
         }
     }
-    
+
 }
