@@ -1,7 +1,5 @@
 package com.rewixxcloudapp.service;
 
-import com.rewixxcloudapp.entity.Customer;
-import com.rewixxcloudapp.entity.Supplier;
 import com.rewixxcloudapp.entity.User;
 import com.rewixxcloudapp.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,9 +7,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -33,50 +28,6 @@ public class UserService {
 
     public Optional<User> getUserByUsername(String username) {
         return userRepository.findByUsername(username);
-    }
-
-    public Customer createCustomer(String username, String password, String name) {
-        if (userRepository.existsByUsername(username)) {
-            throw new RuntimeException("Username already exists");
-        }
-
-        if (username == null || username.trim().isEmpty()) {
-            throw new IllegalArgumentException("Username cannot be empty");
-        }
-
-        if (password == null || password.trim().isEmpty()) {
-            throw new IllegalArgumentException("Password cannot be empty");
-        }
-
-        if (name == null || name.trim().isEmpty()) {
-            throw new IllegalArgumentException("Name cannot be empty");
-        }
-
-        String encodedPassword = passwordEncoder.encode(password);
-        Customer customer = new Customer(username, encodedPassword, name);
-        return userRepository.save(customer);
-    }
-
-    public Supplier createSupplier(String username, String password, String name) {
-        if (userRepository.existsByUsername(username)) {
-            throw new RuntimeException("Username already exists");
-        }
-
-        if (username == null || username.trim().isEmpty()) {
-            throw new IllegalArgumentException("Username cannot be empty");
-        }
-
-        if (password == null || password.trim().isEmpty()) {
-            throw new IllegalArgumentException("Password cannot be empty");
-        }
-
-        if (name == null || name.trim().isEmpty()) {
-            throw new IllegalArgumentException("Name cannot be empty");
-        }
-
-        String encodedPassword = passwordEncoder.encode(password);
-        Supplier supplier = new Supplier(username, encodedPassword, name);
-        return userRepository.save(supplier);
     }
 
     public User saveUser(User user) {
