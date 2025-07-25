@@ -80,7 +80,7 @@ const useJobs = () => {
       formData.append("file", file);
 
       const response = await fetch(
-        `${config.API_BASE_URL}/api/receipts/process`,
+        `${config.PYTHON_API_BASE}/api/receipts/process`,
         {
           method: "POST",
           body: formData,

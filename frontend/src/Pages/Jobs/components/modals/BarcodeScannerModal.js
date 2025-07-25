@@ -57,7 +57,7 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
         console.log("🚀 Making API call for barcode:", decodedText);
         // Use API URL from config
         const apiUrl = `${
-          config.API_BASE_URL
+          config.PYTHON_API_BASE
         }/api/materials/barcode-lookup?barcode=${encodeURIComponent(
           decodedText
         )}`;
