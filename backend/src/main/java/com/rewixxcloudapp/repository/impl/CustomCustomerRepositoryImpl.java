@@ -1,4 +1,6 @@
-package com.rewixxcloudapp.repository;
+package com.rewixxcloudapp.repository.impl;
+
+import com.rewixxcloudapp.repository.CustomCustomerRepository;
 
 import com.rewixxcloudapp.entity.Customer;
 
