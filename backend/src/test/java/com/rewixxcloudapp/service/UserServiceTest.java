@@ -1,7 +1,5 @@
 package com.rewixxcloudapp.service;
 
-import com.rewixxcloudapp.entity.Customer;
-import com.rewixxcloudapp.entity.Supplier;
 import com.rewixxcloudapp.entity.User;
 import com.rewixxcloudapp.repository.UserRepository;
 import org.junit.jupiter.api.Test;
@@ -29,85 +27,84 @@ public class UserServiceTest {
     private PasswordEncoder passwordEncoder;
 
     @Test
-    public void testCreateCustomer() {
-        // Given
-        String username = "testcustomer";
-        String password = "password123";
-        String name = "Test Customer";
-        String encodedPassword = "encoded_password";
-
-        when(userRepository.existsByUsername(username)).thenReturn(false);
-        when(passwordEncoder.encode(password)).thenReturn(encodedPassword);
-        when(userRepository.save(any(Customer.class))).thenAnswer(invocation -> {
-            Customer customer = invocation.getArgument(0);
-            customer.setId(1L);
-            return customer;
-        });
-
-        // When
-        Customer customer = userService.createCustomer(username, password, name);
-
-        // Then
-        assertNotNull(customer);
-        assertEquals(username, customer.getUsername());
-        assertEquals(encodedPassword, customer.getPassword());
-        assertEquals(name, customer.getName());
-        assertEquals(1L, customer.getId());
-    }
-
-    @Test
-    public void testCreateSupplier() {
-        // Given
-        String username = "testsupplier";
-        String password = "password123";
-        String name = "Test Supplier";
-        String encodedPassword = "encoded_password";
-
-        when(userRepository.existsByUsername(username)).thenReturn(false);
-        when(passwordEncoder.encode(password)).thenReturn(encodedPassword);
-        when(userRepository.save(any(Supplier.class))).thenAnswer(invocation -> {
-            Supplier supplier = invocation.getArgument(0);
-            supplier.setId(1L);
-            return supplier;
-        });
-
-        // When
-        Supplier supplier = userService.createSupplier(username, password, name);
-
-        // Then
-        assertNotNull(supplier);
-        assertEquals(username, supplier.getUsername());
-        assertEquals(encodedPassword, supplier.getPassword());
-        assertEquals(name, supplier.getName());
-        assertEquals(1L, supplier.getId());
-    }
-
-    @Test
-    public void testCreateCustomerWithExistingUsername() {
-        // Given
-        String username = "existinguser";
-        when(userRepository.existsByUsername(username)).thenReturn(true);
-
-        // When & Then
-        assertThrows(RuntimeException.class, () -> {
-            userService.createCustomer(username, "password", "name");
-        });
-    }
-
-    @Test
     public void testGetUserByUsername() {
-        // Given
         String username = "testuser";
-        Customer customer = new Customer(username, "password", "Test User");
-        customer.setId(1L);
+        User user = new User() {
+            @Override
+            public String getUsername() {
+                return username;
+            }
 
-        when(userRepository.findByUsername(username)).thenReturn(Optional.of(customer));
-
-        // When
+            @Override
+            public String getPassword() {
+                return "password";
+            }
+        };
+        when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
         Optional<User> result = userService.getUserByUsername(username);
-
-        // Then
         assertTrue(result.isPresent());
         assertEquals(username, result.get().getUsername());
+    }
+
+    @Test
+    public void testSaveUser() {
+        User user = new User() {
+            @Override
+            public String getUsername() {
+                return "saveuser";
+            }
+
+            @Override
+            public String getPassword() {
+                return "password";
+            }
+        };
+        when(userRepository.save(any(User.class))).thenReturn(user);
+        User saved = userService.saveUser(user);
+        assertNotNull(saved);
+        assertEquals("saveuser", saved.getUsername());
+    }
+
+    @Test
+    public void testDeleteUser() {
+        Long userId = 1L;
+        when(userRepository.existsById(userId)).thenReturn(true);
+        assertDoesNotThrow(() -> userService.deleteUser(userId));
+    }
+
+    @Test
+    public void testExistsByUsername() {
+        String username = "existsuser";
+        when(userRepository.existsByUsername(username)).thenReturn(true);
+        boolean exists = userService.existsByUsername(username);
+        assertTrue(exists);
+    }
+
+    @Test
+    public void testUpdatePassword() {
+        Long userId = 1L;
+        User user = new User() {
+            private String password = "old";
+
+            @Override
+            public String getUsername() {
+                return "user";
+            }
+
+            @Override
+            public String getPassword() {
+                return password;
+            }
+
+            @Override
+            public void setPassword(String pw) {
+                this.password = pw;
+            }
+        };
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode("newpass")).thenReturn("encoded_newpass");
+        when(userRepository.save(any(User.class))).thenReturn(user);
+        userService.updatePassword(userId, "newpass");
+        assertEquals("encoded_newpass", user.getPassword());
     }
 }
