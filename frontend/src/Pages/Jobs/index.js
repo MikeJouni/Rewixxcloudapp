@@ -105,13 +105,12 @@ const JobsPage = () => {
       />
 
       {/* Modals */}
-      {showVerificationModal && currentReceiptData && (
-        <ReceiptVerificationModal
-          receiptData={currentReceiptData}
-          onVerify={handleReceiptVerification}
-          onClose={() => setShowVerificationModal(false)}
-        />
-      )}
+      <ReceiptVerificationModal
+        isOpen={showVerificationModal}
+        onClose={() => setShowVerificationModal(false)}
+        receiptData={currentReceiptData}
+        onVerify={handleReceiptVerification}
+      />
 
       {showJobDetailModal && selectedJobForDetails && (
         <JobDetailModal

@@ -5,7 +5,7 @@ import useCustomers from "./hooks/useCustomers";
 
 const CustomersPage = () => {
   const {
-    filteredCustomers,
+    customers,
     searchTerm,
     setSearchTerm,
     editingCustomer,
@@ -14,6 +14,15 @@ const CustomersPage = () => {
     deleteCustomer,
     startEditing,
     cancelEditing,
+    isLoading,
+    error,
+    page,
+    setPage,
+    pageSize,
+    setPageSize,
+    totalPages,
+    hasNext,
+    hasPrevious,
   } = useCustomers();
 
   const [showAddForm, setShowAddForm] = useState(false);
@@ -38,10 +47,16 @@ const CustomersPage = () => {
         <CustomerForm
           onSubmit={(customerData) => {
             if (editingCustomer) {
-              updateCustomer({ ...customerData, id: editingCustomer.id });
+              updateCustomer.mutate({ ...customerData, id: editingCustomer.id }, {
+                onSuccess: () => {
+                  cancelEditing();
+                  setShowAddForm(false);
+                },
+              });
             } else {
-              addCustomer(customerData);
-              setShowAddForm(false);
+              addCustomer.mutate(customerData, {
+                onSuccess: () => setShowAddForm(false),
+              });
             }
           }}
           onCancel={() => {
@@ -49,6 +64,8 @@ const CustomersPage = () => {
             cancelEditing();
           }}
           initialData={editingCustomer}
+          isLoading={addCustomer.isLoading || updateCustomer.isLoading}
+          error={addCustomer.error || updateCustomer.error}
         />
       )}
 
@@ -63,12 +80,53 @@ const CustomersPage = () => {
         />
       </div>
 
+      {/* Loading/Error States */}
+      {isLoading && <p className="text-center text-gray-500">Loading customers...</p>}
+      {error && <p className="text-center text-red-500">Error loading customers.</p>}
+
       {/* Customers Table */}
       <CustomerTable
-        customers={filteredCustomers}
+        customers={customers}
         onEdit={startEditing}
-        onDelete={deleteCustomer}
+        onDelete={(id) => deleteCustomer.mutate(id)}
+        isDeleting={deleteCustomer.isLoading}
+        deleteError={deleteCustomer.error}
       />
+
+      {/* Pagination Controls */}
+      <div className="flex flex-col sm:flex-row items-center justify-between mt-4 gap-2">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setPage(page - 1)}
+            disabled={!hasPrevious}
+            className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <span>Page {page + 1} of {totalPages}</span>
+          <button
+            onClick={() => setPage(page + 1)}
+            disabled={!hasNext}
+            className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+        <div className="flex items-center gap-2">
+          <label htmlFor="pageSize" className="text-sm">Rows per page:</label>
+          <select
+            id="pageSize"
+            value={pageSize}
+            onChange={e => setPageSize(Number(e.target.value))}
+            className="border border-gray-300 rounded px-2 py-1"
+          >
+            <option value={5}>5</option>
+            <option value={10}>10</option>
+            <option value={25}>25</option>
+            <option value={50}>50</option>
+          </select>
+        </div>
+      </div>
     </div>
   );
 };

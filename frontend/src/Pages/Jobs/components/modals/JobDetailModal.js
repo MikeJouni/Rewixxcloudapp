@@ -505,14 +505,12 @@ const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob }) => {
         )}
 
         {/* Barcode Scanner Modal */}
-        {showBarcodeScanner && (
-          <BarcodeScannerModal
-            isOpen={showBarcodeScanner}
-            onClose={() => setShowBarcodeScanner(false)}
-            onProductFound={handleBarcodeScan}
-            isMobile={isMobile}
-          />
-        )}
+        <BarcodeScannerModal
+          isOpen={showBarcodeScanner}
+          onClose={() => setShowBarcodeScanner(false)}
+          onProductFound={handleBarcodeScan}
+          isMobile={isMobile}
+        />
       </div>
     </div>
   );
