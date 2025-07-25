@@ -2,7 +2,9 @@ package com.rewixxcloudapp.service;
 
 import com.rewixxcloudapp.entity.Customer;
 import com.rewixxcloudapp.repository.CustomerRepository;
+import com.rewixxcloudapp.dto.CustomerDto;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -13,6 +15,9 @@ public class CustomerService {
     @Autowired
     private CustomerRepository customerRepository;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     public Optional<Customer> getCustomerById(Long id) {
         return customerRepository.findById(id);
     }
@@ -21,8 +26,51 @@ public class CustomerService {
         return customerRepository.save(customer);
     }
 
-    public Customer createCustomer(String username, String password, String name) {
-        Customer customer = new Customer(username, password, name);
+    public Customer createCustomer(CustomerDto dto) {
+        if (customerRepository.findByUsername(dto.getUsername()).isPresent()) {
+            throw new RuntimeException("Username already exists");
+        }
+        if (dto.getUsername() == null || dto.getUsername().trim().isEmpty()) {
+            throw new IllegalArgumentException("Username cannot be empty");
+        }
+        if (dto.getPassword() == null || dto.getPassword().trim().isEmpty()) {
+            throw new IllegalArgumentException("Password cannot be empty");
+        }
+        if (dto.getName() == null || dto.getName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Name cannot be empty");
+        }
+        String encodedPassword = passwordEncoder.encode(dto.getPassword());
+        Customer customer = new Customer(dto.getUsername(), encodedPassword, dto.getName());
+        customer.setPhone(dto.getPhone());
+        customer.setAddressLine1(dto.getAddressLine1());
+        customer.setAddressLine2(dto.getAddressLine2());
+        customer.setCity(dto.getCity());
+        customer.setState(dto.getState());
+        customer.setZip(dto.getZip());
+        return customerRepository.save(customer);
+    }
+
+    public Customer updateCustomerFromDto(Customer customer, CustomerDto dto) {
+        if (dto.getUsername() != null)
+            customer.setUsername(dto.getUsername());
+        if (dto.getName() != null)
+            customer.setName(dto.getName());
+        if (dto.getPhone() != null)
+            customer.setPhone(dto.getPhone());
+        if (dto.getAddressLine1() != null)
+            customer.setAddressLine1(dto.getAddressLine1());
+        if (dto.getAddressLine2() != null)
+            customer.setAddressLine2(dto.getAddressLine2());
+        if (dto.getCity() != null)
+            customer.setCity(dto.getCity());
+        if (dto.getState() != null)
+            customer.setState(dto.getState());
+        if (dto.getZip() != null)
+            customer.setZip(dto.getZip());
+        // Only update password if provided and not blank
+        if (dto.getPassword() != null && !dto.getPassword().trim().isEmpty()) {
+            customer.setPassword(passwordEncoder.encode(dto.getPassword()));
+        }
         return customerRepository.save(customer);
     }
 
