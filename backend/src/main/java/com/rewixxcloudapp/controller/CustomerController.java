@@ -6,6 +6,8 @@ import com.rewixxcloudapp.dto.CustomerDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.Optional;
@@ -14,6 +16,8 @@ import java.util.Optional;
 @RequestMapping("/api/users/customers")
 @CrossOrigin(origins = "*")
 public class CustomerController {
+
+    private static final Logger logger = LoggerFactory.getLogger(CustomerController.class);
 
     @Autowired
     private CustomerService customerService;
