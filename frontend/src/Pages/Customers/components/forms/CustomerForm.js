@@ -4,9 +4,13 @@ const CustomerForm = ({ onSubmit, onCancel, initialData = null, isLoading = fals
   const [formData, setFormData] = useState(
     initialData || {
       name: "",
-      email: "",
+      username: "",
       phone: "",
-      address: "",
+      addressLine1: "",
+      addressLine2: "",
+      city: "",
+      state: "",
+      zip: "",
     }
   );
 
@@ -48,8 +52,8 @@ const CustomerForm = ({ onSubmit, onCancel, initialData = null, isLoading = fals
           </label>
           <input
             type="email"
-            name="email"
-            value={formData.email}
+            name="username"
+            value={formData.username}
             onChange={handleInputChange}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
@@ -72,17 +76,74 @@ const CustomerForm = ({ onSubmit, onCancel, initialData = null, isLoading = fals
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Address *
+            Address Line 1 *
           </label>
-          <textarea
-            name="address"
-            value={formData.address}
+          <input
+            type="text"
+            name="addressLine1"
+            value={formData.addressLine1}
             onChange={handleInputChange}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            rows="3"
             required
             disabled={isLoading}
           />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Address Line 2
+          </label>
+          <input
+            type="text"
+            name="addressLine2"
+            value={formData.addressLine2}
+            onChange={handleInputChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={isLoading}
+          />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              City *
+            </label>
+            <input
+              type="text"
+              name="city"
+              value={formData.city}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+              disabled={isLoading}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              State *
+            </label>
+            <input
+              type="text"
+              name="state"
+              value={formData.state}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+              disabled={isLoading}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              ZIP *
+            </label>
+            <input
+              type="text"
+              name="zip"
+              value={formData.zip}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+              disabled={isLoading}
+            />
+          </div>
         </div>
         {error && (
           <div className="text-red-500 text-sm">{error.message || "An error occurred."}</div>

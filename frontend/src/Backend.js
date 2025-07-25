@@ -56,6 +56,22 @@ class Backend {
     });
     return response.data;
   }
+
+  static async delete(path, params = null) {
+    let url = URL + path.replace(/^\//, "");
+    if (params) {
+      let data = new URLSearchParams();
+      for (const p in params) {
+        data.append(p, params[p]);
+      }
+      url += '?';
+      url += data.toString();
+    }
+    const response = await axios.delete(url, {
+      headers: { "Content-Type": "application/json" },
+    });
+    return response.data;
+  }
 }
 
 export default Backend; 
