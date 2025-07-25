@@ -21,8 +21,8 @@ public class CustomerController {
     @PostMapping("/create")
     public ResponseEntity<?> createCustomer(@RequestBody CustomerDto dto) {
         try {
-            if (dto.getUsername() == null || dto.getPassword() == null || dto.getName() == null) {
-                return ResponseEntity.badRequest().body("Username, password, and name are required");
+            if (dto.getUsername() == null || dto.getName() == null) {
+                return ResponseEntity.badRequest().body("Username and name are required");
             }
             Customer customer = customerService.createCustomer(dto);
             return ResponseEntity.ok(customer);

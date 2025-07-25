@@ -33,14 +33,13 @@ public class CustomerService {
         if (dto.getUsername() == null || dto.getUsername().trim().isEmpty()) {
             throw new IllegalArgumentException("Username cannot be empty");
         }
-        if (dto.getPassword() == null || dto.getPassword().trim().isEmpty()) {
-            throw new IllegalArgumentException("Password cannot be empty");
-        }
         if (dto.getName() == null || dto.getName().trim().isEmpty()) {
             throw new IllegalArgumentException("Name cannot be empty");
         }
-        String encodedPassword = passwordEncoder.encode(dto.getPassword());
-        Customer customer = new Customer(dto.getUsername(), encodedPassword, dto.getName());
+        Customer customer = new Customer(dto.getUsername(), null, dto.getName());
+        if (dto.getPassword() != null && !dto.getPassword().trim().isEmpty()) {
+            customer.setPassword(passwordEncoder.encode(dto.getPassword()));
+        }
         customer.setPhone(dto.getPhone());
         customer.setAddressLine1(dto.getAddressLine1());
         customer.setAddressLine2(dto.getAddressLine2());
