@@ -1,6 +1,8 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
-const CustomerTable = ({ customers, onEdit, onDelete }) => {
+const CustomerTable = ({ customers, onDelete }) => {
+  const navigate = useNavigate();
   if (customers.length === 0) {
     return (
       <p className="text-center text-gray-500 mt-8">
@@ -37,7 +39,11 @@ const CustomerTable = ({ customers, onEdit, onDelete }) => {
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {customers.map((customer) => (
-              <tr key={customer.id} className="hover:bg-gray-50">
+              <tr
+                key={customer.id}
+                className="hover:bg-gray-50 cursor-pointer"
+                onClick={() => navigate(`/customers/${customer.id}`)}
+              >
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {customer.id}
                 </td>
@@ -51,28 +57,24 @@ const CustomerTable = ({ customers, onEdit, onDelete }) => {
                   {customer.phone}
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-900">
-                  {[
-                    customer.addressLine1,
-                    customer.addressLine2
-                  ].filter(Boolean).join(', ')}
+                  {[customer.addressLine1, customer.addressLine2]
+                    .filter(Boolean)
+                    .join(", ")}
                   <br />
-                  {[
-                    customer.city,
-                    customer.state,
-                    customer.zip
-                  ].filter(Boolean).join(', ')}
+                  {[customer.city, customer.state, customer.zip]
+                    .filter(Boolean)
+                    .join(", ")}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <div className="flex gap-2">
                     <button
-                      onClick={() => onEdit(customer)}
-                      className="px-2 py-1 text-xs bg-gray-500 text-white border-none rounded cursor-pointer hover:bg-gray-600"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (window.confirm("Are you sure you want to delete this customer?")) {
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (
+                          window.confirm(
+                            "Are you sure you want to delete this customer?"
+                          )
+                        ) {
                           onDelete(customer.id);
                         }
                       }}
