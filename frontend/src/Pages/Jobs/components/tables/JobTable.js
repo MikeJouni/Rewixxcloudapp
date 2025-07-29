@@ -1,4 +1,12 @@
 import React from "react";
+import { Table, Button, Space, Tag, Upload, Tooltip } from "antd";
+import { 
+  EditOutlined, 
+  DeleteOutlined, 
+  EyeOutlined, 
+  UploadOutlined,
+  FileTextOutlined 
+} from "@ant-design/icons";
 
 const JobTable = ({
   jobs,
@@ -8,153 +16,234 @@ const JobTable = ({
   onReceiptUpload,
   processingReceipt = false,
   isMobile = false,
+  isLoading = false,
+  error = null,
 }) => {
-  if (jobs.length === 0) {
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "Pending":
+        return "orange";
+      case "In Progress":
+        return "blue";
+      case "Completed":
+        return "green";
+      case "Cancelled":
+        return "red";
+      default:
+        return "default";
+    }
+  };
+
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case "Low":
+        return "green";
+      case "Medium":
+        return "orange";
+      case "High":
+        return "red";
+      case "Critical":
+        return "volcano";
+      default:
+        return "default";
+    }
+  };
+
+  const columns = [
+    {
+      title: "ID",
+      dataIndex: "id",
+      key: "id",
+      width: 80,
+      sorter: (a, b) => a.id - b.id,
+    },
+    {
+      title: "Customer",
+      dataIndex: "customerName",
+      key: "customerName",
+      sorter: (a, b) => a.customerName.localeCompare(b.customerName),
+      render: (text) => <span className="font-medium">{text}</span>,
+    },
+    {
+      title: "Title",
+      dataIndex: "title",
+      key: "title",
+      render: (text) => (
+        <div className="max-w-xs">
+          <div className="font-medium">{text}</div>
+        </div>
+      ),
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      width: 120,
+      render: (status) => (
+        <Tag color={getStatusColor(status)}>
+          {status}
+        </Tag>
+      ),
+      filters: [
+        { text: "Pending", value: "Pending" },
+        { text: "In Progress", value: "In Progress" },
+        { text: "Completed", value: "Completed" },
+        { text: "Cancelled", value: "Cancelled" },
+      ],
+      onFilter: (value, record) => record.status === value,
+    },
+    {
+      title: "Priority",
+      dataIndex: "priority",
+      key: "priority",
+      width: 100,
+      render: (priority) => (
+        <Tag color={getPriorityColor(priority)}>
+          {priority}
+        </Tag>
+      ),
+      filters: [
+        { text: "Low", value: "Low" },
+        { text: "Medium", value: "Medium" },
+        { text: "High", value: "High" },
+        { text: "Critical", value: "Critical" },
+      ],
+      onFilter: (value, record) => record.priority === value,
+    },
+    {
+      title: "Start Date",
+      dataIndex: "startDate",
+      key: "startDate",
+      width: 120,
+      sorter: (a, b) => new Date(a.startDate) - new Date(b.startDate),
+    },
+    {
+      title: "End Date",
+      dataIndex: "endDate",
+      key: "endDate",
+      width: 120,
+      sorter: (a, b) => new Date(a.endDate) - new Date(b.endDate),
+    },
+    {
+      title: "Hours",
+      key: "hours",
+      width: 120,
+      render: (_, record) => (
+        <div className="text-sm">
+          <div>Est: {record.estimatedHours}h</div>
+          <div>Act: {record.actualHours}h</div>
+        </div>
+      ),
+    },
+    {
+      title: "Total Cost",
+      dataIndex: "totalCost",
+      key: "totalCost",
+      width: 120,
+      render: (cost) => (
+        <span className="font-medium text-green-600">
+          ${cost?.toFixed(2) || "0.00"}
+        </span>
+      ),
+      sorter: (a, b) => (a.totalCost || 0) - (b.totalCost || 0),
+    },
+    {
+      title: "Receipts",
+      key: "receipts",
+      width: 100,
+      render: (_, record) => (
+        <div className="text-center">
+          <FileTextOutlined className="text-blue-500" />
+          <span className="ml-1 text-sm text-gray-600">
+            {record.receipts ? record.receipts.length : 0}
+          </span>
+        </div>
+      ),
+    },
+    {
+      title: "Actions",
+      key: "actions",
+      width: 200,
+      fixed: "right",
+      render: (_, record) => (
+        <Space size="small">
+          {onViewDetails && (
+            <Tooltip title="View Details">
+              <Button
+                type="primary"
+                size="small"
+                icon={<EyeOutlined />}
+                onClick={() => onViewDetails(record)}
+              />
+            </Tooltip>
+          )}
+          {onEdit && (
+            <Tooltip title="Edit Job">
+              <Button
+                type="default"
+                size="small"
+                icon={<EditOutlined />}
+                onClick={() => onEdit(record)}
+              />
+            </Tooltip>
+          )}
+          {onDelete && (
+            <Tooltip title="Delete Job">
+              <Button
+                type="primary"
+                danger
+                size="small"
+                icon={<DeleteOutlined />}
+                onClick={() => onDelete(record.id)}
+              />
+            </Tooltip>
+          )}
+          {onReceiptUpload && (isMobile || true) && (
+            <Tooltip title="Attach Receipt">
+              <Upload
+                accept="image/*"
+                showUploadList={false}
+                beforeUpload={(file) => {
+                  onReceiptUpload(record.id, { target: { files: [file] } });
+                  return false;
+                }}
+                disabled={processingReceipt}
+              >
+                <Button
+                  type="default"
+                  size="small"
+                  icon={<UploadOutlined />}
+                  loading={processingReceipt}
+                  disabled={processingReceipt}
+                />
+              </Upload>
+            </Tooltip>
+          )}
+        </Space>
+      ),
+    },
+  ];
+
+  if (error) {
     return (
-      <p className="text-center text-gray-500 mt-8">
-        No jobs found matching your criteria.
-      </p>
+      <div className="text-center py-8">
+        <div className="text-red-500 text-lg mb-2">Error loading jobs</div>
+        <div className="text-gray-600">{error}</div>
+      </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                ID
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Customer
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Title
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Priority
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Start Date
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                End Date
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Hours (Est/Act)
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Total Cost
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Receipts
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {jobs.map((job) => (
-              <tr key={job.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {job.id}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {job.customerName}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {job.title}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span
-                    className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      job.status === "Pending"
-                        ? "bg-yellow-100 text-yellow-800"
-                        : job.status === "In Progress"
-                        ? "bg-blue-100 text-blue-800"
-                        : job.status === "Completed"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-red-100 text-red-800"
-                    }`}
-                  >
-                    {job.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span
-                    className={`font-semibold ${
-                      job.priority === "Low"
-                        ? "text-green-600"
-                        : job.priority === "Medium"
-                        ? "text-yellow-600"
-                        : job.priority === "High"
-                        ? "text-orange-600"
-                        : "text-red-600"
-                    }`}
-                  >
-                    {job.priority}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {job.startDate}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {job.endDate}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {job.estimatedHours} / {job.actualHours}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  ${job.totalCost?.toFixed(2) || "0.00"}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {job.receipts ? job.receipts.length : 0} attached
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <div className="flex gap-1 flex-wrap">
-                    <button
-                      onClick={() => onViewDetails(job)}
-                      className="px-2 py-1 text-xs bg-blue-500 text-white border-none rounded cursor-pointer hover:bg-blue-600"
-                    >
-                      View
-                    </button>
-                    <button
-                      onClick={() => onEdit(job)}
-                      className="px-2 py-1 text-xs bg-gray-500 text-white border-none rounded cursor-pointer hover:bg-gray-600"
-                    >
-                      Edit
-                    </button>
-                    {isMobile && (
-                      <label
-                        className={`px-2 py-1 text-xs text-white border-none rounded cursor-pointer ${
-                          processingReceipt
-                            ? "bg-gray-400 cursor-not-allowed opacity-70"
-                            : "bg-green-500 hover:bg-green-600"
-                        }`}
-                      >
-                        {processingReceipt ? "Processing..." : "Attach Receipt"}
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => onReceiptUpload(job.id, e)}
-                          className="hidden"
-                          disabled={processingReceipt}
-                        />
-                      </label>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <Table
+      columns={columns}
+      dataSource={jobs}
+      rowKey="id"
+      loading={isLoading}
+      pagination={false} // We handle pagination in the parent component
+      scroll={{ x: 1400 }}
+      size="middle"
+      className="bg-white rounded-lg shadow-sm"
+    />
   );
 };
 
