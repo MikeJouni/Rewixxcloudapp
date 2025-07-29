@@ -8,6 +8,7 @@
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^13.5.0",
+    "antd": "^5.26.7",
     "axios": "^1.10.0",
     "html5-qrcode": "^2.3.8",
     "lucide-react": "^0.523.0",

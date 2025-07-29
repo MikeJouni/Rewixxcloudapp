@@ -13,6 +13,7 @@ import JobsPage from "./Pages/Jobs";
 import ReportsPage from "./Pages/Reports";
 import Footer from "./components/Footer";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import "antd/dist/reset.css";
 
 const queryClient = new QueryClient();
 
