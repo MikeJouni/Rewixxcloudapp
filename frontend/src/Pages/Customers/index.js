@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { Button, Input, Pagination, Select, Space, Card } from "antd";
+import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import CustomerForm from "./components/forms/CustomerForm";
 import CustomerTable from "./components/tables/CustomerTable";
 import useCustomers from "./hooks/useCustomers";
@@ -34,12 +36,14 @@ const CustomersPage = () => {
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
           Customer Management
         </h1>
-        <button
-          className="w-full sm:w-auto px-3 sm:px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors text-sm sm:text-base"
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
           onClick={() => setShowAddForm(!showAddForm)}
+          size="large"
         >
           {showAddForm ? "Cancel" : "Add New Customer"}
-        </button>
+        </Button>
       </div>
 
       {/* Add/Edit Customer Form */}
@@ -71,12 +75,13 @@ const CustomersPage = () => {
 
       {/* Search */}
       <div className="mb-6">
-        <input
-          type="text"
+        <Input
           placeholder="Search customers..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          prefix={<SearchOutlined />}
+          size="large"
+          allowClear
         />
       </div>
 
@@ -85,47 +90,43 @@ const CustomersPage = () => {
       {error && <p className="text-center text-red-500">Error loading customers.</p>}
 
       {/* Customers Table */}
-      <CustomerTable
-        customers={customers}
-        onEdit={startEditing}
-        onDelete={(id) => deleteCustomer.mutate(id)}
-        isDeleting={deleteCustomer.isLoading}
-        deleteError={deleteCustomer.error}
-      />
+      <Card className="mb-4">
+        <CustomerTable
+          customers={customers}
+          onEdit={startEditing}
+          onDelete={(id) => deleteCustomer.mutate(id)}
+          isLoading={isLoading}
+          error={error}
+        />
+      </Card>
 
       {/* Pagination Controls */}
-      <div className="flex flex-col sm:flex-row items-center justify-between mt-4 gap-2">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setPage(page - 1)}
-            disabled={!hasPrevious}
-            className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
-          >
-            Previous
-          </button>
-          <span>Page {page + 1} of {totalPages}</span>
-          <button
-            onClick={() => setPage(page + 1)}
-            disabled={!hasNext}
-            className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
-          >
-            Next
-          </button>
-        </div>
-        <div className="flex items-center gap-2">
-          <label htmlFor="pageSize" className="text-sm">Rows per page:</label>
-          <select
-            id="pageSize"
+      <div className="flex flex-col sm:flex-row items-center justify-between mt-4 gap-4">
+        <Pagination
+          current={page + 1}
+          total={totalPages * pageSize}
+          pageSize={pageSize}
+          onChange={(newPage) => setPage(newPage - 1)}
+          showSizeChanger={false}
+          showQuickJumper
+          showTotal={(total, range) => 
+            `${range[0]}-${range[1]} of ${total} customers`
+          }
+        />
+        <Space>
+          <span>Rows per page:</span>
+          <Select
             value={pageSize}
-            onChange={e => setPageSize(Number(e.target.value))}
-            className="border border-gray-300 rounded px-2 py-1"
-          >
-            <option value={5}>5</option>
-            <option value={10}>10</option>
-            <option value={25}>25</option>
-            <option value={50}>50</option>
-          </select>
-        </div>
+            onChange={setPageSize}
+            options={[
+              { value: 5, label: '5' },
+              { value: 10, label: '10' },
+              { value: 25, label: '25' },
+              { value: 50, label: '50' },
+            ]}
+            style={{ width: 80 }}
+          />
+        </Space>
       </div>
     </div>
   );
