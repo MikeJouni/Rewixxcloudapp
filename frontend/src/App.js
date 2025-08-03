@@ -40,7 +40,7 @@ function AppContent() {
         <div className="max-w-7xl mx-auto">
           <Routes>
             <Route path="/" element={<Navigate to="/customers" replace />} />
-            <Route path="/customers" element={<CustomersPage />} />
+            <Route path="/customers/*" element={<CustomersPage />} />
             <Route path="/jobs" element={<JobsPage />} />
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="*" element={<NotFound />} />

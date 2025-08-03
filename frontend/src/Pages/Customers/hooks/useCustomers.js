@@ -5,14 +5,14 @@ import { useState } from "react";
 const useCustomers = () => {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
-  const [editingCustomer, setEditingCustomer] = useState(null);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["customers", { searchTerm, page, pageSize }],
-    queryFn: () => customerService.getCustomersList({ searchTerm, page, pageSize }),
-    keepPreviousData: true
+    queryFn: () =>
+      customerService.getCustomersList({ searchTerm, page, pageSize }),
+    keepPreviousData: true,
   });
 
   const customers = data?.customers || [];
@@ -25,7 +25,8 @@ const useCustomers = () => {
 
   // Update customer
   const updateCustomer = useMutation({
-    mutationFn: ({ id, ...customer }) => customerService.updateCustomer(id, customer),
+    mutationFn: ({ id, ...customer }) =>
+      customerService.updateCustomer(id, customer),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["customers"] }),
   });
 
@@ -35,18 +36,12 @@ const useCustomers = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["customers"] }),
   });
 
-  const startEditing = (customer) => setEditingCustomer(customer);
-  const cancelEditing = () => setEditingCustomer(null);
-
   return {
     customers,
     isLoading,
     error,
     searchTerm,
     setSearchTerm,
-    editingCustomer,
-    startEditing,
-    cancelEditing,
     addCustomer,
     updateCustomer,
     deleteCustomer,
@@ -70,4 +65,3 @@ export const useCustomerDetails = (id) =>
     queryFn: () => customerService.getCustomer(id),
     enabled: !!id,
   });
-
