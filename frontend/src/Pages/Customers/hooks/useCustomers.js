@@ -12,7 +12,6 @@ const useCustomers = () => {
     queryKey: ["customers", { searchTerm, page, pageSize }],
     queryFn: () =>
       customerService.getCustomersList({ searchTerm, page, pageSize }),
-    keepPreviousData: true,
   });
 
   const customers = data?.customers || [];

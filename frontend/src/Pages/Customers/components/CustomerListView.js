@@ -1,15 +1,17 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import CustomerTable from "./tables/CustomerTable";
 import useCustomers from "../hooks/useCustomers";
 
 const CustomerListView = () => {
   const navigate = useNavigate();
+  const [isDeleting, setIsDeleting] = useState(false);
   const {
     customers,
     searchTerm,
     setSearchTerm,
     deleteCustomer,
+    updateCustomer,
     isLoading,
     error,
     page,
@@ -22,10 +24,32 @@ const CustomerListView = () => {
   } = useCustomers();
 
   const handleDelete = (id) => {
+    if (isDeleting) {
+      console.log("Delete already in progress, ignoring duplicate call for customer ID:", id);
+      return;
+    }
+    
+    console.log("handleDelete called for customer ID:", id);
     if (window.confirm("Are you sure you want to delete this customer?")) {
-      deleteCustomer.mutate(id);
+      console.log("Delete confirmed, calling deleteCustomer.mutate for ID:", id);
+      setIsDeleting(true);
+      deleteCustomer.mutate(id, {
+        onSuccess: () => {
+          setIsDeleting(false);
+        },
+        onError: () => {
+          setIsDeleting(false);
+        }
+      });
+    } else {
+      console.log("Delete cancelled for customer ID:", id);
     }
   };
+
+  // Reset page to 0 when search term or pageSize changes
+  useEffect(() => {
+    setPage(0);
+  }, [searchTerm, pageSize, setPage]);
 
   return (
     <div className="p-4 sm:p-6 w-full h-full">
@@ -55,7 +79,10 @@ const CustomerListView = () => {
 
       {/* Loading/Error States */}
       {isLoading && (
-        <p className="text-center text-gray-500">Loading customers...</p>
+        <div className="text-center py-8">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          <p className="mt-2 text-gray-600">Loading customers...</p>
+        </div>
       )}
       {error && (
         <p className="text-center text-red-500">Error loading customers.</p>
@@ -65,7 +92,8 @@ const CustomerListView = () => {
       <CustomerTable
         customers={customers}
         onDelete={handleDelete}
-        isDeleting={deleteCustomer.isLoading}
+        onUpdate={updateCustomer.mutateAsync}
+        isDeleting={deleteCustomer.isLoading || isDeleting}
         deleteError={deleteCustomer.error}
       />
 
