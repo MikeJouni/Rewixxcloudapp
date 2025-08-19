@@ -8,8 +8,8 @@ const CustomerCreateView = () => {
   const { addCustomer } = useCustomers();
 
   const handleCreateSuccess = (response) => {
-    // Navigate to the newly created customer's detail page
-    navigate(`/customers/${response.id}`);
+    // Navigate back to the customer list
+    navigate("/customers");
   };
 
   const handleCancel = () => {
