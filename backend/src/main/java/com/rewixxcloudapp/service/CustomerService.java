@@ -1,7 +1,9 @@
 package com.rewixxcloudapp.service;
 
 import com.rewixxcloudapp.entity.Customer;
+import com.rewixxcloudapp.entity.Job;
 import com.rewixxcloudapp.repository.CustomerRepository;
+import com.rewixxcloudapp.repository.JobRepository;
 import com.rewixxcloudapp.dto.CustomerDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -18,6 +20,9 @@ public class CustomerService {
 
     @Autowired
     private CustomerRepository customerRepository;
+
+    @Autowired
+    private JobRepository jobRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -78,7 +83,24 @@ public class CustomerService {
     }
 
     public void deleteCustomerById(Long id) {
-        customerRepository.deleteById(id);
+        try {
+            // First delete all jobs associated with this customer
+            List<Job> customerJobs = jobRepository.findByCustomerId(id);
+            if (customerJobs != null && !customerJobs.isEmpty()) {
+                logger.info("Deleting {} jobs associated with customer ID {}", customerJobs.size(), id);
+                jobRepository.deleteAll(customerJobs);
+                logger.info("Successfully deleted {} jobs for customer ID {}", customerJobs.size(), id);
+            } else {
+                logger.info("No jobs found for customer ID {}", id);
+            }
+            
+            // Now delete the customer
+            customerRepository.deleteById(id);
+            logger.info("Customer with ID {} deleted successfully", id);
+        } catch (Exception e) {
+            logger.error("Error deleting customer with ID {}: {}", id, e.getMessage(), e);
+            throw new RuntimeException("Failed to delete customer: " + e.getMessage(), e);
+        }
     }
 
     public Map<String, Object> getCustomersList(int page, int pageSize, String searchTerm) {
