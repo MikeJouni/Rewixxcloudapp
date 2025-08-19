@@ -1,6 +1,9 @@
 package com.rewixxcloudapp.entity;
 
 import com.rewixxcloudapp.util.JsonSerializer;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -9,6 +12,7 @@ import java.util.Set;
 import java.util.Collection;
 
 @Entity
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Table(name = "sales")
 public class Sale {
     @Id
@@ -26,12 +30,14 @@ public class Sale {
     private Supplier supplier;
 
     @ManyToOne
+    @JsonBackReference("job-sales")
     private Job job;
 
     @OneToMany(mappedBy = "sale")
     private List<Tender> tenders;
 
     @OneToMany(mappedBy = "sale", cascade = CascadeType.ALL)
+    @JsonManagedReference("sale-saleItems")
     private Set<SaleItem> saleItems;
 
     public Sale() {
@@ -48,7 +54,8 @@ public class Sale {
                 .include("id", "date", "description", "customer.id", "customer.username",
                         "supplier.id", "supplier.username", "job.id", "job.title",
                         "saleItems.id", "saleItems.quantity", "saleItems.unitPrice",
-                        "saleItems.product.id", "saleItems.product.name")
+                        "saleItems.product.id", "saleItems.product.name", "saleItems.product.unitPrice",
+                        "saleItems.product.category", "saleItems.product.description")
                 .exclude("*");
     }
 

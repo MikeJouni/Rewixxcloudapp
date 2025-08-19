@@ -1,6 +1,8 @@
 package com.rewixxcloudapp.entity;
 
 import com.rewixxcloudapp.util.JsonSerializer;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import javax.persistence.*;
 import java.time.LocalDate;
@@ -8,6 +10,7 @@ import java.util.List;
 import java.util.Collection;
 
 @Entity
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Table(name = "jobs")
 public class Job {
     @Id
@@ -34,11 +37,12 @@ public class Job {
     private Customer customer;
 
     @OneToMany(mappedBy = "job", cascade = CascadeType.ALL)
+    @JsonManagedReference("job-sales")
     private List<Sale> sales;
 
     @ElementCollection
     @CollectionTable(name = "job_receipt_images", joinColumns = @JoinColumn(name = "job_id"))
-    @Column(name = "image_url")
+    @Column(name = "image_url", columnDefinition = "TEXT")
     private List<String> receiptImageUrls;
 
     public Job() {
@@ -55,8 +59,13 @@ public class Job {
     private static JsonSerializer serializer() {
         return JsonSerializer.create()
                 .include("id", "title", "description", "status", "priority", "startDate", "endDate",
-                        "estimatedHours", "receiptImageUrls", "customer.id", "customer.username",
-                        "customer.phone", "customer.addressLine1", "customer.city", "customer.state")
+                        "receiptImageUrls", "customer.id", "customer.username",
+                        "customer.phone", "customer.addressLine1", "customer.city", "customer.state",
+                        "sales.id", "sales.date", "sales.description", "sales.saleItems.id", 
+                        "sales.saleItems.quantity", "sales.saleItems.unitPrice", 
+                        "sales.saleItems.product.id", "sales.saleItems.product.name", 
+                        "sales.saleItems.product.unitPrice", "sales.saleItems.product.category",
+                        "sales.saleItems.product.description")
                 .exclude("*");
     }
 
