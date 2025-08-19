@@ -6,9 +6,9 @@ const Navigation = () => {
 
   const getActiveTab = () => {
     const path = location.pathname;
-    if (path === "/customers" || path === "/") return "customers";
-    if (path === "/jobs") return "jobs";
-    if (path === "/reports") return "reports";
+    if (path.startsWith("/customers") || path === "/") return "customers";
+    if (path.startsWith("/jobs")) return "jobs";
+    if (path.startsWith("/reports")) return "reports";
     return "customers";
   };
 
