@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import BarcodeScannerModal from "./BarcodeScannerModal";
 
-const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob }) => {
+const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob, onRemoveReceipt, onClearAllReceipts }) => {
   const [activeTab, setActiveTab] = useState("details");
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [showManualEntry, setShowManualEntry] = useState(false);
@@ -15,6 +15,40 @@ const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob }) => {
     notes: "",
   });
 
+  // Extract materials from sales data
+  const materials = useMemo(() => {
+    if (!job || !job.sales) return [];
+    
+    const allMaterials = [];
+    job.sales.forEach(sale => {
+      if (sale.saleItems) {
+        sale.saleItems.forEach(saleItem => {
+          if (saleItem.product) {
+            allMaterials.push({
+              id: saleItem.id,
+              name: saleItem.product.name,
+              price: parseFloat(saleItem.unitPrice || saleItem.product.unitPrice || 0),
+              quantity: saleItem.quantity || 1,
+              supplier: sale.supplier?.username || "N/A",
+              category: saleItem.product.category || "N/A",
+              notes: sale.description || "",
+              saleId: sale.id,
+              productId: saleItem.product.id
+            });
+          }
+        });
+      }
+    });
+    return allMaterials;
+  }, [job]);
+
+  // Calculate total cost from materials
+  const totalCost = useMemo(() => {
+    return materials.reduce((total, material) => {
+      return total + (material.price * material.quantity);
+    }, 0);
+  }, [materials]);
+
   useEffect(() => {
     // Detect if device is mobile
     const isMobileDevice =
@@ -27,34 +61,17 @@ const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob }) => {
   if (!isOpen || !job) return null;
 
   const handleAddMaterial = (material) => {
-    const materialWithId = {
-      ...material,
-      id: Date.now() + Math.random(),
-      addedAt: new Date().toISOString(),
-    };
-
-    const updatedJob = {
-      ...job,
-      materials: [...(job.materials || []), materialWithId],
-      totalCost: (job.totalCost || 0) + material.price * material.quantity,
-    };
-
-    onUpdateJob(updatedJob);
-    setNewMaterial({
-      name: "",
-      price: "",
-      quantity: 1,
-      supplier: "",
-      category: "",
-      notes: "",
-    });
-    setShowManualEntry(false);
+    // This function now just calls the parent's onUpdateJob
+    // The actual material addition is handled by the backend API
+    // and will be reflected when the job data is refreshed
+    onUpdateJob(job);
   };
 
   const handleBarcodeScan = (materialData) => {
-    // Use the complete materialData object passed from the barcode scanner
-    // This includes the correct quantity, total, and all other fields
-    handleAddMaterial(materialData);
+    // For barcode scanned materials, we need to create a product first and then add it as a material
+    // This will be handled by the parent component through the backend API
+    // Pass the material data to the parent for processing
+    onUpdateJob(job, materialData);
     setShowBarcodeScanner(false);
   };
 
@@ -72,41 +89,15 @@ const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob }) => {
   };
 
   const removeMaterial = (materialId) => {
-    const materialToRemove = job.materials?.find((m) => m.id === materialId);
-    const updatedJob = {
-      ...job,
-      materials: job.materials?.filter((m) => m.id !== materialId) || [],
-      totalCost:
-        (job.totalCost || 0) -
-        (materialToRemove?.price * materialToRemove?.quantity || 0),
-    };
-
-    onUpdateJob(updatedJob);
+    // For now, we'll just refresh the job data
+    // In a real implementation, you'd call a backend API to remove the material
+    onUpdateJob(job);
   };
 
   const updateMaterialQuantity = (materialId, newQuantity) => {
-    const updatedMaterials = job.materials?.map((material) => {
-      if (material.id === materialId) {
-        return {
-          ...material,
-          quantity: newQuantity,
-        };
-      }
-      return material;
-    });
-
-    const updatedJob = {
-      ...job,
-      materials: updatedMaterials,
-    };
-
-    // Recalculate total cost
-    updatedJob.totalCost =
-      updatedMaterials?.reduce((total, material) => {
-        return total + material.price * material.quantity;
-      }, 0) || 0;
-
-    onUpdateJob(updatedJob);
+    // For now, we'll just refresh the job data
+    // In a real implementation, you'd call a backend API to update the quantity
+    onUpdateJob(job);
   };
 
   return (
@@ -145,7 +136,7 @@ const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob }) => {
                 : "bg-gray-100 text-gray-800"
             }`}
           >
-            Materials ({job.materials?.length || 0})
+            Materials ({materials.length})
           </button>
           <button
             onClick={() => setActiveTab("receipts")}
@@ -155,7 +146,7 @@ const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob }) => {
                 : "bg-gray-100 text-gray-800"
             }`}
           >
-            Receipts ({job.receipts?.length || 0})
+            Receipts ({job?.receiptImageUrls?.length || 0})
           </button>
         </div>
 
@@ -200,16 +191,13 @@ const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob }) => {
               </div>
               <div>
                 <strong>Total Cost:</strong> $
-                {job.totalCost?.toFixed(2) || "0.00"}
+                {totalCost.toFixed(2)}
               </div>
               <div>
                 <strong>Start Date:</strong> {job.startDate}
               </div>
               <div>
-                <strong>End Date:</strong> {job.endDate}
-              </div>
-              <div>
-                <strong>Estimated Hours:</strong> {job.estimatedHours}
+                <strong>Estimated End Date:</strong> {job.endDate}
               </div>
               <div>
                 <strong>Actual Hours:</strong> {job.actualHours || 0}
@@ -225,142 +213,10 @@ const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob }) => {
         {/* Materials Tab */}
         {activeTab === "materials" && (
           <div>
-            {/* Add Materials Section */}
-            <div className="mb-4 p-4 bg-gray-100 rounded">
-              <h3 className="mb-2">Add Materials</h3>
-              <div className="flex gap-2 flex-wrap">
-                <button
-                  onClick={() => setShowBarcodeScanner(true)}
-                  className="px-4 py-2 bg-green-500 text-white border-none rounded cursor-pointer"
-                >
-                  📱 Scan Barcode
-                </button>
-                <button
-                  onClick={() => setShowManualEntry(!showManualEntry)}
-                  className="px-4 py-2 bg-blue-500 text-white border-none rounded cursor-pointer"
-                >
-                  ✏️ Manual Entry
-                </button>
-              </div>
-
-              {/* Manual Entry Form */}
-              {showManualEntry && (
-                <form
-                  onSubmit={handleManualSubmit}
-                  className="mt-4 p-4 bg-white rounded"
-                >
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block mb-2 font-bold">Name *</label>
-                      <input
-                        type="text"
-                        value={newMaterial.name}
-                        onChange={(e) =>
-                          setNewMaterial({
-                            ...newMaterial,
-                            name: e.target.value,
-                          })
-                        }
-                        className="w-full p-2 border border-gray-300 rounded"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block mb-2 font-bold">Price</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={newMaterial.price}
-                        onChange={(e) =>
-                          setNewMaterial({
-                            ...newMaterial,
-                            price: e.target.value,
-                          })
-                        }
-                        className="w-full p-2 border border-gray-300 rounded"
-                      />
-                    </div>
-                    <div>
-                      <label className="block mb-2 font-bold">Quantity</label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={newMaterial.quantity}
-                        onChange={(e) =>
-                          setNewMaterial({
-                            ...newMaterial,
-                            quantity: e.target.value,
-                          })
-                        }
-                        className="w-full p-2 border border-gray-300 rounded"
-                      />
-                    </div>
-                    <div>
-                      <label className="block mb-2 font-bold">Supplier</label>
-                      <input
-                        type="text"
-                        value={newMaterial.supplier}
-                        onChange={(e) =>
-                          setNewMaterial({
-                            ...newMaterial,
-                            supplier: e.target.value,
-                          })
-                        }
-                        className="w-full p-2 border border-gray-300 rounded"
-                      />
-                    </div>
-                    <div>
-                      <label className="block mb-2 font-bold">Category</label>
-                      <input
-                        type="text"
-                        value={newMaterial.category}
-                        onChange={(e) =>
-                          setNewMaterial({
-                            ...newMaterial,
-                            category: e.target.value,
-                          })
-                        }
-                        className="w-full p-2 border border-gray-300 rounded"
-                      />
-                    </div>
-                    <div>
-                      <label className="block mb-2 font-bold">Notes</label>
-                      <input
-                        type="text"
-                        value={newMaterial.notes}
-                        onChange={(e) =>
-                          setNewMaterial({
-                            ...newMaterial,
-                            notes: e.target.value,
-                          })
-                        }
-                        className="w-full p-2 border border-gray-300 rounded"
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-4 flex gap-2">
-                    <button
-                      type="submit"
-                      className="px-4 py-2 bg-green-500 text-white border-none rounded cursor-pointer"
-                    >
-                      Add Material
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowManualEntry(false)}
-                      className="px-4 py-2 bg-gray-300 text-gray-800 border-none rounded cursor-pointer"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </form>
-              )}
-            </div>
-
             {/* Materials List */}
             <div>
               <h3 className="mb-2">Materials List</h3>
-              {job.materials && job.materials.length > 0 ? (
+              {materials && materials.length > 0 ? (
                 <div className="max-h-[400px] overflow-y-auto">
                   <table className="w-full border-collapse">
                     <thead>
@@ -386,7 +242,7 @@ const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob }) => {
                       </tr>
                     </thead>
                     <tbody>
-                      {job.materials.map((material) => (
+                      {materials.map((material) => (
                         <tr
                           key={material.id}
                           className="border-b border-gray-200"
@@ -455,62 +311,70 @@ const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob }) => {
         {/* Receipts Tab */}
         {activeTab === "receipts" && (
           <div>
-            <h3 className="mb-2">Receipts</h3>
-            {job.receipts && job.receipts.length > 0 ? (
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="mb-2">Receipts</h3>
+              {job?.receiptImageUrls && job.receiptImageUrls.length > 0 && (
+                <button
+                  onClick={() => {
+                    if (window.confirm("Are you sure you want to remove all receipts for this job?")) {
+                      onClearAllReceipts && onClearAllReceipts(job.id);
+                    }
+                  }}
+                  className="px-3 py-1 bg-red-500 text-white border-none rounded text-sm cursor-pointer hover:bg-red-600"
+                >
+                  Clear All Receipts
+                </button>
+              )}
+            </div>
+            {console.log("Job data in receipts tab:", job)}
+            {console.log("ReceiptImageUrls in receipts tab:", job?.receiptImageUrls)}
+            {job?.receiptImageUrls && job.receiptImageUrls.length > 0 ? (
               <div className="grid gap-4 grid-cols-auto-fit">
-                {job.receipts.map((receipt) => (
+                {job.receiptImageUrls.map((receiptUrl, index) => (
                   <div
-                    key={receipt.id}
+                    key={index}
                     className="border border-gray-200 rounded p-4"
                   >
-                    <h4 className="mb-2">{receipt.name}</h4>
+                    <h4 className="mb-2">Receipt {index + 1}</h4>
                     <p className="mb-2 text-sm text-gray-500">
-                      Uploaded:{" "}
-                      {new Date(receipt.uploadedAt).toLocaleDateString()}
+                      Uploaded: {new Date().toLocaleDateString()}
                     </p>
 
-                    {receipt.extractedData && (
-                      <div className="mb-2 p-2 bg-gray-100 rounded">
-                        <div className="text-sm leading-6">
-                          <p className="mb-1">
-                            <strong>Vendor:</strong>{" "}
-                            {receipt.extractedData.vendor || "N/A"}
-                          </p>
-                          <p className="mb-1">
-                            <strong>Date:</strong>{" "}
-                            {receipt.extractedData.date || "N/A"}
-                          </p>
-                          <p className="mb-1">
-                            <strong>Total:</strong> $
-                            {receipt.extractedData.total?.toFixed(2) || "0.00"}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-
                     <img
-                      src={receipt.data}
-                      alt={receipt.name}
+                      src={receiptUrl}
+                      alt={`Receipt ${index + 1}`}
                       className="w-full h-auto rounded border border-gray-200"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'block';
+                      }}
                     />
+                    <div className="hidden text-center text-gray-500 p-4">
+                      Image failed to load
+                    </div>
+                    <button
+                      onClick={() => {
+                        const receiptIndex = job.receiptImageUrls.indexOf(receiptUrl);
+                        if (receiptIndex !== -1) {
+                          onRemoveReceipt(job.id, receiptIndex);
+                        }
+                      }}
+                      className="mt-2 px-2 py-1 bg-red-500 text-white border-none rounded text-sm cursor-pointer"
+                    >
+                      Remove Receipt
+                    </button>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-center text-gray-500 p-4">
+              <div className="text-center text-gray-500 p-4">
                 No receipts attached to this job yet.
-              </p>
+              </div>
             )}
           </div>
         )}
 
-        {/* Barcode Scanner Modal */}
-        <BarcodeScannerModal
-          isOpen={showBarcodeScanner}
-          onClose={() => setShowBarcodeScanner(false)}
-          onProductFound={handleBarcodeScan}
-          isMobile={isMobile}
-        />
+        {/* Barcode Scanner Modal removed in details view; materials are added from table */}
       </div>
     </div>
   );
