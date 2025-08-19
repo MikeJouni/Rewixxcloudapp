@@ -248,7 +248,6 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
   const handleQuantityConfirm = () => {
     if (product && quantity > 0) {
       const materialData = {
-        id: Date.now(),
         name: product.name,
         price: parseFloat(product.price.replace(/[^0-9.]/g, "")) || 0,
         quantity: quantity,
@@ -262,6 +261,10 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
         description: product.description,
         availability: product.availability,
         source: "Barcode Scan",
+        // Add fields needed for backend processing
+        productName: product.name,
+        unitPrice: parseFloat(product.price.replace(/[^0-9.]/g, "")) || 0,
+        notes: `Scanned from barcode: ${product.sku || 'N/A'}`
       };
 
       onProductFound(materialData);
