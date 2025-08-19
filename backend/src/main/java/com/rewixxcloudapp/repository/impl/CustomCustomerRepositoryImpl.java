@@ -19,7 +19,8 @@ public class CustomCustomerRepositoryImpl implements CustomCustomerRepository {
         String baseQuery = "SELECT c FROM Customer c WHERE " +
                 "(:searchTerm = '' OR LOWER(c.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
                 "OR LOWER(c.username) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
-                "OR (c.phone IS NOT NULL AND c.phone LIKE CONCAT('%', :searchTerm, '%')))";
+                "OR (c.phone IS NOT NULL AND c.phone LIKE CONCAT('%', :searchTerm, '%'))) " +
+                "ORDER BY c.name ASC";
         TypedQuery<Customer> query = entityManager.createQuery(baseQuery, Customer.class);
         query.setParameter("searchTerm", searchTerm);
         query.setFirstResult(page * pageSize);
