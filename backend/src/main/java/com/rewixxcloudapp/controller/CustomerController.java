@@ -86,7 +86,7 @@ public class CustomerController {
             Integer pageSize = (Integer) request.getOrDefault("pageSize", 10);
             Integer page = (Integer) request.getOrDefault("page", 0);
             String searchTerm = (String) request.getOrDefault("searchTerm", "");
-            if (pageSize < 1 || pageSize > 100) {
+            if (pageSize < 1 || pageSize > 10000) {
                 pageSize = 10;
             }
             if (page < 0) {
