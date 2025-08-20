@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import * as customerService from "../../../Customers/services/customerService";
+import MaterialForm from "../forms/MaterialForm";
 
 const JobTable = ({
   jobs,
@@ -10,6 +11,12 @@ const JobTable = ({
   onAddMaterial,
   processingReceiptJobId = null,
   isMobile = false,
+  showingMaterialFormForJob = null,
+  onCloseMaterialForm,
+  onMaterialSubmit,
+  products = [],
+  productsLoading = false,
+  productsError = null,
 }) => {
   const [editingId, setEditingId] = useState(null);
   const [editFormData, setEditFormData] = useState({});
@@ -421,6 +428,50 @@ const JobTable = ({
                             />
                           </div>
                         </div>
+                        
+                        {/* Edit Form Actions */}
+                        <div className="flex justify-end gap-2 mt-4">
+                          <button
+                            onClick={handleCancelEdit}
+                            className="px-3 py-1 text-sm bg-gray-500 text-white border-none rounded cursor-pointer hover:bg-gray-600"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={() => handleSaveEdit(job.id)}
+                            className="px-3 py-1 text-sm bg-blue-500 text-white border-none rounded cursor-pointer hover:bg-blue-600"
+                          >
+                            Save Changes
+                          </button>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+
+                {/* Material Form Row */}
+                {showingMaterialFormForJob === job.id && (
+                  <tr className="bg-green-50">
+                    <td colSpan="9" className="px-6 py-4">
+                      <div className="bg-white rounded-lg border border-green-200 p-4">
+                        <h4 className="text-sm font-medium text-gray-700 mb-3">
+                          Add Material to Job
+                          {productsLoading && <span className="ml-2 text-gray-500">(Loading products...)</span>}
+                          {!productsLoading && <span className="ml-2 text-gray-500">({products.length} products available)</span>}
+                        </h4>
+                        {productsError && (
+                          <div className="mb-3 p-2 bg-red-100 text-red-700 text-sm rounded">
+                            Error loading products: {productsError.message}
+                          </div>
+                        )}
+                        <MaterialForm
+                          onSubmit={onMaterialSubmit}
+                          onCancel={onCloseMaterialForm}
+                          products={products}
+                          isMobile={isMobile}
+                          productsLoading={productsLoading}
+                          productsError={productsError}
+                        />
                       </div>
                     </td>
                   </tr>

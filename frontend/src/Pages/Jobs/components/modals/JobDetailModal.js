@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import BarcodeScannerModal from "./BarcodeScannerModal";
 
-const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob, onRemoveReceipt, onClearAllReceipts }) => {
+const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob, onRemoveReceipt, onClearAllReceipts, onRemoveMaterial }) => {
   const [activeTab, setActiveTab] = useState("details");
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [showManualEntry, setShowManualEntry] = useState(false);
@@ -24,7 +24,7 @@ const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob, onRemoveReceipt, on
       if (sale.saleItems) {
         sale.saleItems.forEach(saleItem => {
           if (saleItem.product) {
-            allMaterials.push({
+            const material = {
               id: saleItem.id,
               name: saleItem.product.name,
               price: parseFloat(saleItem.unitPrice || saleItem.product.unitPrice || 0),
@@ -34,11 +34,14 @@ const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob, onRemoveReceipt, on
               notes: sale.description || "",
               saleId: sale.id,
               productId: saleItem.product.id
-            });
+            };
+            console.log("Created material object:", material);
+            allMaterials.push(material);
           }
         });
       }
     });
+    console.log("All materials extracted:", allMaterials);
     return allMaterials;
   }, [job]);
 
@@ -89,9 +92,37 @@ const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob, onRemoveReceipt, on
   };
 
   const removeMaterial = (materialId) => {
-    // For now, we'll just refresh the job data
-    // In a real implementation, you'd call a backend API to remove the material
-    onUpdateJob(job);
+    console.log("=== REMOVE MATERIAL DEBUG ===");
+    console.log("removeMaterial called with materialId:", materialId);
+    console.log("materialId type:", typeof materialId);
+    console.log("materialId === undefined:", materialId === undefined);
+    console.log("Available materials:", materials);
+    console.log("Materials length:", materials.length);
+    console.log("Job object:", job);
+    console.log("Job ID:", job?.id);
+    console.log("Job ID type:", typeof job?.id);
+    
+    if (onRemoveMaterial) {
+      console.log("onRemoveMaterial prop exists:", !!onRemoveMaterial);
+      
+      // Find the material to get the productId
+      const material = materials.find(m => m.id === materialId);
+      console.log("Found material:", material);
+      console.log("Material ID from find:", material?.id);
+      console.log("Material productId:", material?.productId);
+      
+      if (material && material.productId) {
+        console.log("Calling onRemoveMaterial with object:", { jobId: job.id, materialId: material.productId });
+        onRemoveMaterial({ jobId: job.id, materialId: material.productId });
+      } else {
+        console.error("Material or productId not found:", material);
+        console.error("Material ID was:", materialId);
+        console.error("Available material IDs:", materials.map(m => m.id));
+      }
+    } else {
+      console.error("onRemoveMaterial prop is not defined");
+    }
+    console.log("=== END DEBUG ===");
   };
 
   const updateMaterialQuantity = (materialId, newQuantity) => {
