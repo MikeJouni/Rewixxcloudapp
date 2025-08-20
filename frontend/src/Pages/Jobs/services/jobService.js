@@ -22,3 +22,6 @@ export const deleteJob = (id) =>
 
 export const addMaterialToJob = (jobId, material) =>
   Backend.post(`api/jobs/${jobId}/materials`, material);
+
+export const removeMaterialFromJob = (jobId, materialId) =>
+  Backend.delete(`api/jobs/${jobId}/materials/${materialId}`);
