@@ -216,4 +216,49 @@ public class JobService {
         
         return sale;
     }
+
+    public void removeMaterialFromJob(Long jobId, Long materialId) {
+        logger.info("Removing material {} from job {}", materialId, jobId);
+        
+        Optional<Job> jobOpt = jobRepository.findById(jobId);
+        if (!jobOpt.isPresent()) {
+            logger.error("Job not found with ID: {}", jobId);
+            throw new IllegalArgumentException("Job not found");
+        }
+
+        Job job = jobOpt.get();
+        logger.info("Found job: {} with {} sales", job.getTitle(), job.getSales() != null ? job.getSales().size() : 0);
+        
+        // Find and remove the sale that contains the material
+        if (job.getSales() != null) {
+            // Find sales to remove
+            List<Sale> salesToRemove = new ArrayList<>();
+            
+            for (Sale sale : job.getSales()) {
+                if (sale.getSaleItems() != null) {
+                    for (SaleItem item : sale.getSaleItems()) {
+                        if (item.getProduct() != null && item.getProduct().getId().equals(materialId)) {
+                            salesToRemove.add(sale);
+                            logger.info("Found sale to remove with product ID: {}", materialId);
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            logger.info("Found {} sales to remove", salesToRemove.size());
+            
+            // Remove each sale individually to trigger proper JPA cascade
+            for (Sale saleToRemove : salesToRemove) {
+                job.getSales().remove(saleToRemove);
+                logger.info("Removed sale with ID: {}", saleToRemove.getId());
+            }
+            
+            // Save the updated job
+            jobRepository.save(job);
+            logger.info("Job updated successfully, new sales count: {}", job.getSales().size());
+        } else {
+            logger.warn("Job has no sales to remove from");
+        }
+    }
 }
