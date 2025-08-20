@@ -52,15 +52,10 @@ const JobForm = ({ onSubmit, onCancel, initialData = null }) => {
 
   const fetchCustomers = async () => {
     try {
-      console.log("Fetching customers...");
       const response = await customerService.getCustomersList({ pageSize: 1000 });
-      console.log("Customers response:", response);
       if (response && response.customers) {
         setCustomers(response.customers);
         setFilteredCustomers(response.customers);
-        console.log(`Fetched ${response.customers.length} customers for job form`);
-      } else {
-        console.warn("No customers found in response:", response);
       }
     } catch (error) {
       console.error("Failed to fetch customers:", error);
@@ -72,19 +67,15 @@ const JobForm = ({ onSubmit, onCancel, initialData = null }) => {
     
     // Validate required fields (non-blocking)
     if (!formData.title.trim()) {
-      console.warn("Job title is required");
       return;
     }
     if (!formData.customerId) {
-      console.warn("Please select a customer");
       return;
     }
     if (!formData.status) {
-      console.warn("Please select a status");
       return;
     }
     if (!formData.priority) {
-      console.warn("Please select a priority");
       return;
     }
     
@@ -100,13 +91,7 @@ const JobForm = ({ onSubmit, onCancel, initialData = null }) => {
       customerId: parseInt(formData.customerId)
     };
     
-    console.log("Submitting job data:", submissionData);
-    console.log("Customer ID type:", typeof submissionData.customerId);
-    console.log("Title type:", typeof submissionData.title);
-    console.log("Status type:", typeof submissionData.status);
-    console.log("Priority type:", typeof submissionData.priority);
-    console.log("Start date:", submissionData.startDate);
-    console.log("End date:", submissionData.endDate);
+
     
     onSubmit(submissionData);
   };
