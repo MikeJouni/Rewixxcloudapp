@@ -16,9 +16,7 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
   const stopScanning = useCallback(async () => {
     if (html5QrcodeRef.current && html5QrcodeRef.current.isScanning) {
       try {
-        console.log("🛑 Stopping scanner...");
         await html5QrcodeRef.current.stop();
-        console.log("✅ Scanner stopped successfully");
       } catch (error) {
         console.error("❌ Error stopping scanner:", error);
       }
@@ -28,18 +26,13 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
 
   const onScanSuccess = useCallback(
     async (decodedText, decodedResult) => {
-      console.log("🎯 Barcode detected:", decodedText);
-      console.log("Full scan result:", decodedResult);
-
       // Prevent multiple scans of the same barcode
       if (decodedText === lastScannedBarcode.current) {
-        console.log("🔄 Duplicate barcode, ignoring");
         return;
       }
 
       // Prevent multiple simultaneous requests
       if (loading) {
-        console.log("⏳ Already loading, ignoring scan");
         return;
       }
 
@@ -54,20 +47,16 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
 
       // Add a small delay to prevent rapid-fire scanning
       scanTimeoutRef.current = setTimeout(async () => {
-        console.log("🚀 Making API call for barcode:", decodedText);
         // Use API URL from config
         const apiUrl = `${
           config.PYTHON_API_BASE
         }/api/materials/barcode-lookup?barcode=${encodeURIComponent(
           decodedText
         )}`;
-        console.log("🔗 API URL:", apiUrl);
         setLoading(true);
         setError("");
 
         try {
-          console.log("📡 Starting fetch request...");
-
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
@@ -83,24 +72,20 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
 
           clearTimeout(timeoutId);
 
-          console.log("📡 API Response status:", response.status);
-
           // Check if response is ok
           if (!response.ok) {
             let errorMessage = `HTTP ${response.status}`;
             try {
               const errorText = await response.text();
-              console.error("❌ API Error response:", errorText);
               errorMessage += `: ${errorText}`;
             } catch (e) {
-              console.error("❌ Could not read error response");
+              // Could not read error response
             }
             throw new Error(errorMessage);
           }
 
           // Get response as text first, then parse as JSON
           const responseText = await response.text();
-          console.log("📡 Raw response text:", responseText);
 
           if (!responseText.trim()) {
             throw new Error("Server returned empty response");
@@ -109,7 +94,6 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
           let productData;
           try {
             productData = JSON.parse(responseText);
-            console.log("📦 Product data received:", productData);
           } catch (jsonError) {
             console.error("❌ Failed to parse JSON:", jsonError);
             throw new Error(
@@ -118,12 +102,10 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
           }
 
           if (productData && productData.name) {
-            console.log("✅ Product found, showing quantity selector");
             setProduct(productData);
             setShowQuantitySelector(true);
             await stopScanning();
           } else {
-            console.log("❌ Product not found in response");
             setError("Product not found. Please try scanning again.");
             lastScannedBarcode.current = "";
           }
@@ -162,7 +144,6 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
 
   const startScanning = useCallback(async () => {
     try {
-      console.log("🎥 Starting barcode scanner...");
       setError("");
       lastScannedBarcode.current = "";
       setScannedBarcode("");
@@ -171,9 +152,7 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
       html5QrcodeRef.current = new Html5Qrcode("reader");
 
       // Get available cameras
-      console.log("📱 Getting available cameras...");
       const devices = await Html5Qrcode.getCameras();
-      console.log("📷 Available cameras:", devices);
 
       if (devices.length === 0) {
         throw new Error("No cameras found on this device");
@@ -192,10 +171,7 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
         backCamera = devices[0];
       }
 
-      console.log("📷 Using camera:", backCamera.label);
-
       // Start scanning with the selected camera
-      console.log("🚀 Starting scanner with camera ID:", backCamera.id);
       await html5QrcodeRef.current.start(
         { deviceId: backCamera.id },
         {
@@ -207,8 +183,6 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
         onScanSuccess,
         onScanFailure
       );
-
-      console.log("✅ Scanner started successfully");
     } catch (error) {
       console.error("💥 Error starting scanner:", error);
 
@@ -264,7 +238,6 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
         // Add fields needed for backend processing
         productName: product.name,
         unitPrice: parseFloat(product.price.replace(/[^0-9.]/g, "")) || 0,
-        notes: `Scanned from barcode: ${product.sku || 'N/A'}`
       };
 
       onProductFound(materialData);
@@ -276,7 +249,6 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
     await stopScanning();
     setProduct(null);
     setQuantity(1);
-    setShowQuantitySelector(false);
     setError("");
     setScannedBarcode("");
     lastScannedBarcode.current = "";

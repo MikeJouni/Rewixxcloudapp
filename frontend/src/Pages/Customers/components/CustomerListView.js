@@ -25,13 +25,10 @@ const CustomerListView = () => {
 
   const handleDelete = (id) => {
     if (isDeleting) {
-      console.log("Delete already in progress, ignoring duplicate call for customer ID:", id);
       return;
     }
     
-    console.log("handleDelete called for customer ID:", id);
     if (window.confirm("Are you sure you want to delete this customer?")) {
-      console.log("Delete confirmed, calling deleteCustomer.mutate for ID:", id);
       setIsDeleting(true);
       deleteCustomer.mutate(id, {
         onSuccess: () => {
@@ -41,8 +38,6 @@ const CustomerListView = () => {
           setIsDeleting(false);
         }
       });
-    } else {
-      console.log("Delete cancelled for customer ID:", id);
     }
   };
 
