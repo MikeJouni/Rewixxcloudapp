@@ -180,7 +180,7 @@ const CustomerTable = ({ customers, onDelete, onUpdate }) => {
                               name="name"
                               value={editFormData.name}
                               onChange={handleInputChange}
-                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                               required
                             />
                           </div>
@@ -195,7 +195,7 @@ const CustomerTable = ({ customers, onDelete, onUpdate }) => {
                               name="username"
                               value={editFormData.username}
                               onChange={handleInputChange}
-                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                               required
                             />
                           </div>
@@ -210,7 +210,7 @@ const CustomerTable = ({ customers, onDelete, onUpdate }) => {
                               name="phone"
                               value={editFormData.phone}
                               onChange={handleInputChange}
-                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                               required
                             />
                           </div>
@@ -225,7 +225,7 @@ const CustomerTable = ({ customers, onDelete, onUpdate }) => {
                               name="addressLine1"
                               value={editFormData.addressLine1}
                               onChange={handleInputChange}
-                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                               required
                             />
                           </div>
@@ -240,7 +240,7 @@ const CustomerTable = ({ customers, onDelete, onUpdate }) => {
                               name="addressLine2"
                               value={editFormData.addressLine2}
                               onChange={handleInputChange}
-                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                           </div>
                           
@@ -254,7 +254,7 @@ const CustomerTable = ({ customers, onDelete, onUpdate }) => {
                               name="city"
                               value={editFormData.city}
                               onChange={handleInputChange}
-                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                               required
                             />
                           </div>
@@ -269,7 +269,7 @@ const CustomerTable = ({ customers, onDelete, onUpdate }) => {
                               name="state"
                               value={editFormData.state}
                               onChange={handleInputChange}
-                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                               required
                             />
                           </div>
@@ -284,7 +284,7 @@ const CustomerTable = ({ customers, onDelete, onUpdate }) => {
                               name="zip"
                               value={editFormData.zip}
                               onChange={handleInputChange}
-                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                               required
                             />
                           </div>
