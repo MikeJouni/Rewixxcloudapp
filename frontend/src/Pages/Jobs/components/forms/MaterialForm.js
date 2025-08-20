@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import BarcodeScannerModal from "../modals/BarcodeScannerModal";
 
-const MaterialForm = ({ onSubmit, onCancel, products = [], isMobile = false }) => {
+const MaterialForm = ({ onSubmit, onCancel, products = [], isMobile = false, productsLoading = false, productsError = null }) => {
   const [formData, setFormData] = useState({
     productId: "",
     quantity: "",
