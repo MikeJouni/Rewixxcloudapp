@@ -26,7 +26,7 @@ const JobForm = ({ onSubmit, onCancel, initialData = null }) => {
   const [customerSearchTerm, setCustomerSearchTerm] = useState("");
   const [filteredCustomers, setFilteredCustomers] = useState([]);
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
-  const [selectedCustomerName, setSelectedCustomerName] = useState("");
+
 
   const statusOptions = ["PENDING", "IN_PROGRESS", "COMPLETED", "CANCELLED"];
   const priorityOptions = ["LOW", "MEDIUM", "HIGH", "URGENT"];
@@ -114,7 +114,6 @@ const JobForm = ({ onSubmit, onCancel, initialData = null }) => {
       customerId: customer.id
     });
     const customerDisplayName = customer.name || customer.username || "Unknown Customer";
-    setSelectedCustomerName(customerDisplayName);
     setCustomerSearchTerm(customerDisplayName);
     setShowCustomerDropdown(false);
   };

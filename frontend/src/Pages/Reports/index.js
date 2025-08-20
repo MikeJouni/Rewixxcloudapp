@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import * as customerService from "../Customers/services/customerService";
 import * as jobService from "../Jobs/services/jobService";

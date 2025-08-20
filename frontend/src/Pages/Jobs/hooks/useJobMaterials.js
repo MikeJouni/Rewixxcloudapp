@@ -25,7 +25,7 @@ export const useJobMaterials = () => {
     if (productsData.content && Array.isArray(productsData.content)) return productsData.content;
     console.warn("Unexpected products data structure:", productsData);
     return [];
-  }, [productsData, productsLoading, productsError]);
+  }, [productsData]);
 
   const openMaterialForm = (job) => {
     setShowingMaterialFormForJob(job.id);
@@ -39,7 +39,6 @@ export const useJobMaterials = () => {
     try {
       // First, try to find an existing product with the same name
       let productToUse = null;
-      let isReusingExistingProduct = false;
       try {
         const existingProducts = await productService.searchProductsByName(materialData.name);
         
@@ -52,7 +51,6 @@ export const useJobMaterials = () => {
           
           if (exactMatch) {
             productToUse = exactMatch;
-            isReusingExistingProduct = true;
           } else {
             // Look for case-insensitive name match with similar price (within 10% tolerance)
             const nameMatch = existingProducts.find(product => {
@@ -64,11 +62,9 @@ export const useJobMaterials = () => {
             
             if (nameMatch) {
               productToUse = nameMatch;
-              isReusingExistingProduct = true;
             } else {
               // Use the first product with the same name if no price match
               productToUse = existingProducts[0];
-              isReusingExistingProduct = true;
             }
           }
         }
@@ -88,7 +84,6 @@ export const useJobMaterials = () => {
         };
 
         productToUse = await productService.createProduct(productData);
-        isReusingExistingProduct = false;
 
         // Invalidate products query to refresh the products list
         queryClient.invalidateQueries({ queryKey: ["products"] });

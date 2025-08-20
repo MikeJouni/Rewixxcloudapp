@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useImperativeHandle, forwardRef } from "react";
+import React, { useState, useImperativeHandle, forwardRef } from "react";
 import BarcodeScannerModal from "../modals/BarcodeScannerModal";
 
 const MaterialForm = forwardRef(({ onSubmit, onCancel, products = [], isMobile = false, productsLoading = false, productsError = null }, ref) => {

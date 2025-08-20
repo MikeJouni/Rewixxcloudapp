@@ -1,8 +1,6 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 const CustomerTable = ({ customers, onDelete, onUpdate }) => {
-  const navigate = useNavigate();
   const [editingId, setEditingId] = useState(null);
   const [editFormData, setEditFormData] = useState({});
 
