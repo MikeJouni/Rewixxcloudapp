@@ -21,11 +21,13 @@ public class ProductController {
     @Autowired
     private ProductRepository productRepository;
 
-    @GetMapping
-    public ResponseEntity<List<Product>> getAllProducts() {
+    @PostMapping("/list")
+    public ResponseEntity<List<Product>> listAllProducts() {
         try {
             List<Product> products = productRepository.findAll();
-            return ResponseEntity.ok(products);
+            return ResponseEntity.ok()
+                .header("ngrok-skip-browser-warning", "true")
+                .body(products);
         } catch (Exception e) {
             logger.error("Error getting all products", e);
             return ResponseEntity.internalServerError().build();
