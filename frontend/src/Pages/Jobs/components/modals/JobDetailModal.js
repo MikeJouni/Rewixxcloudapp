@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo } from "react";
 import BarcodeScannerModal from "./BarcodeScannerModal";
 
-const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob, onRemoveReceipt, onClearAllReceipts }) => {
+const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob, onRemoveReceipt, onClearAllReceipts, onRemoveMaterial }) => {
   const [activeTab, setActiveTab] = useState("details");
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [localReceipts, setLocalReceipts] = useState([]);
   const [newMaterial, setNewMaterial] = useState({
     name: "",
     price: "",
@@ -24,7 +25,7 @@ const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob, onRemoveReceipt, on
       if (sale.saleItems) {
         sale.saleItems.forEach(saleItem => {
           if (saleItem.product) {
-            allMaterials.push({
+            const material = {
               id: saleItem.id,
               name: saleItem.product.name,
               price: parseFloat(saleItem.unitPrice || saleItem.product.unitPrice || 0),
@@ -34,7 +35,8 @@ const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob, onRemoveReceipt, on
               notes: sale.description || "",
               saleId: sale.id,
               productId: saleItem.product.id
-            });
+            };
+            allMaterials.push(material);
           }
         });
       }
@@ -57,6 +59,26 @@ const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob, onRemoveReceipt, on
       );
     setIsMobile(isMobileDevice);
   }, []);
+  
+  // Load receipts from localStorage when modal opens
+  useEffect(() => {
+    if (isOpen && job) {
+      try {
+        const storedReceipts = localStorage.getItem(`job_receipts_${job.id}`);
+        if (storedReceipts) {
+          const receipts = JSON.parse(storedReceipts);
+          setLocalReceipts(receipts);
+        } else {
+          setLocalReceipts([]);
+        }
+      } catch (error) {
+        console.error("Error loading receipts from localStorage:", error);
+        setLocalReceipts([]);
+      }
+    }
+  }, [isOpen, job]);
+
+
 
   if (!isOpen || !job) return null;
 
@@ -89,9 +111,14 @@ const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob, onRemoveReceipt, on
   };
 
   const removeMaterial = (materialId) => {
-    // For now, we'll just refresh the job data
-    // In a real implementation, you'd call a backend API to remove the material
-    onUpdateJob(job);
+    if (onRemoveMaterial) {
+      // Find the material to get the productId
+      const material = materials.find(m => m.id === materialId);
+      
+      if (material && material.productId) {
+        onRemoveMaterial({ jobId: job.id, materialId: material.productId });
+      }
+    }
   };
 
   const updateMaterialQuantity = (materialId, newQuantity) => {
@@ -146,7 +173,7 @@ const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob, onRemoveReceipt, on
                 : "bg-gray-100 text-gray-800"
             }`}
           >
-            Receipts ({job?.receiptImageUrls?.length || 0})
+            Receipts ({localReceipts.length})
           </button>
         </div>
 
@@ -198,9 +225,6 @@ const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob, onRemoveReceipt, on
               </div>
               <div>
                 <strong>Estimated End Date:</strong> {job.endDate}
-              </div>
-              <div>
-                <strong>Actual Hours:</strong> {job.actualHours || 0}
               </div>
             </div>
             <div>
@@ -255,11 +279,6 @@ const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob, onRemoveReceipt, on
                                   {material.category}
                                 </div>
                               )}
-                              {material.notes && (
-                                <div className="text-sm text-gray-500 italic">
-                                  {material.notes}
-                                </div>
-                              )}
                             </div>
                           </td>
                           <td className="px-4 py-2">
@@ -312,8 +331,8 @@ const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob, onRemoveReceipt, on
         {activeTab === "receipts" && (
           <div>
             <div className="flex justify-between items-center mb-4">
-              <h3 className="mb-2">Receipts</h3>
-              {job?.receiptImageUrls && job.receiptImageUrls.length > 0 && (
+              <h3 className="mb-2">Receipts ({localReceipts.length})</h3>
+              {localReceipts.length > 0 && (
                 <button
                   onClick={() => {
                     if (window.confirm("Are you sure you want to remove all receipts for this job?")) {
@@ -326,22 +345,21 @@ const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob, onRemoveReceipt, on
                 </button>
               )}
             </div>
-            {console.log("Job data in receipts tab:", job)}
-            {console.log("ReceiptImageUrls in receipts tab:", job?.receiptImageUrls)}
-            {job?.receiptImageUrls && job.receiptImageUrls.length > 0 ? (
+
+            {localReceipts.length > 0 ? (
               <div className="grid gap-4 grid-cols-auto-fit">
-                {job.receiptImageUrls.map((receiptUrl, index) => (
+                {localReceipts.map((receipt, index) => (
                   <div
                     key={index}
                     className="border border-gray-200 rounded p-4"
                   >
                     <h4 className="mb-2">Receipt {index + 1}</h4>
                     <p className="mb-2 text-sm text-gray-500">
-                      Uploaded: {new Date().toLocaleDateString()}
+                      Uploaded: {new Date(receipt.uploadedAt).toLocaleDateString()}
                     </p>
 
                     <img
-                      src={receiptUrl}
+                      src={receipt.data}
                       alt={`Receipt ${index + 1}`}
                       className="w-full h-auto rounded border border-gray-200"
                       onError={(e) => {
@@ -354,10 +372,7 @@ const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob, onRemoveReceipt, on
                     </div>
                     <button
                       onClick={() => {
-                        const receiptIndex = job.receiptImageUrls.indexOf(receiptUrl);
-                        if (receiptIndex !== -1) {
-                          onRemoveReceipt(job.id, receiptIndex);
-                        }
+                        onRemoveReceipt(job.id, index);
                       }}
                       className="mt-2 px-2 py-1 bg-red-500 text-white border-none rounded text-sm cursor-pointer"
                     >
