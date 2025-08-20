@@ -8,9 +8,10 @@ const ReceiptVerificationModal = ({
   jobId,
 }) => {
   const [items, setItems] = useState([]);
-  const [notes, setNotes] = useState("");
   const [currentStep, setCurrentStep] = useState(1);
   const [missingItems, setMissingItems] = useState([]);
+  const [status, setStatus] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     if (receiptData) {
@@ -85,19 +86,37 @@ const ReceiptVerificationModal = ({
     setMissingItems(missingItems.filter((_, i) => i !== index));
   };
 
-  const handleVerify = () => {
-    const allItems = [...items, ...missingItems];
-    // Use the receipt total (including tax) as the final total, not just the sum of items
-    const finalTotal = receiptData.total || 0;
+  const handleVerify = async () => {
+    setIsProcessing(true);
+    setStatus("Processing receipt verification...");
+    
+    try {
+      const allItems = [...items, ...missingItems];
+      // Use the receipt total (including tax) as the final total, not just the sum of items
+      const finalTotal = receiptData.total || 0;
 
-    onVerify({
-      receipt_id: `receipt_${Date.now()}`,
-      items: allItems,
-      total: finalTotal,
-      notes: notes,
-    });
+      setStatus(`Adding ${allItems.length} items to job...`);
 
-    onClose();
+      const receiptDataToSend = {
+        receipt_id: `receipt_${Date.now()}`,
+        items: allItems,
+        total: finalTotal,
+      };
+
+      // Call onVerify and wait for it to complete
+      await onVerify(receiptDataToSend);
+      
+      setStatus("✅ Materials added successfully! Closing modal...");
+      
+      // Wait a moment to show success message
+      setTimeout(() => {
+        onClose();
+      }, 1500);
+      
+    } catch (error) {
+      setStatus(`❌ Error: ${error.message}`);
+      setIsProcessing(false);
+    }
   };
 
   const nextStep = () => {
@@ -760,23 +779,25 @@ const ReceiptVerificationModal = ({
               </div>
             </div>
 
-            <div style={{ marginBottom: "1rem" }}>
-              <label style={{ display: "block", marginBottom: "0.5rem" }}>
-                <strong>Notes (optional):</strong>
-              </label>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Add any notes about this receipt..."
+
+
+            {/* Status Display */}
+            {status && (
+              <div
                 style={{
-                  width: "100%",
-                  padding: "0.5rem",
-                  border: "1px solid #ddd",
+                  marginTop: "1rem",
+                  padding: "1rem",
+                  backgroundColor: status.includes("✅") ? "#d4edda" : status.includes("❌") ? "#f8d7da" : "#d1ecf1",
+                  border: status.includes("✅") ? "1px solid #c3e6cb" : status.includes("❌") ? "1px solid #f5c6cb" : "1px solid #bee5eb",
                   borderRadius: "4px",
-                  minHeight: "80px",
+                  color: status.includes("✅") ? "#155724" : status.includes("❌") ? "#721c24" : "#0c5460",
+                  textAlign: "center",
+                  fontWeight: "bold",
                 }}
-              />
-            </div>
+              >
+                {status}
+              </div>
+            )}
 
             <div
               style={{
@@ -787,29 +808,31 @@ const ReceiptVerificationModal = ({
             >
               <button
                 onClick={prevStep}
+                disabled={isProcessing}
                 style={{
                   padding: "0.75rem 1.5rem",
-                  backgroundColor: "#95a5a6",
+                  backgroundColor: isProcessing ? "#bdc3c7" : "#95a5a6",
                   color: "white",
                   border: "none",
                   borderRadius: "4px",
-                  cursor: "pointer",
+                  cursor: isProcessing ? "not-allowed" : "pointer",
                 }}
               >
                 Back
               </button>
               <button
                 onClick={handleVerify}
+                disabled={isProcessing}
                 style={{
                   padding: "0.75rem 1.5rem",
-                  backgroundColor: "#27ae60",
+                  backgroundColor: isProcessing ? "#95a5a6" : "#27ae60",
                   color: "white",
                   border: "none",
                   borderRadius: "4px",
-                  cursor: "pointer",
+                  cursor: isProcessing ? "not-allowed" : "pointer",
                 }}
               >
-                Confirm & Add to Job
+                {isProcessing ? "Processing..." : "Confirm & Add to Job"}
               </button>
             </div>
           </div>
