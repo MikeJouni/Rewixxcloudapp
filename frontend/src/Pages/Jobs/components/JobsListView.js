@@ -1,9 +1,8 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import MaterialForm from "./forms/MaterialForm";
 import JobTable from "./tables/JobTable";
-import ReceiptVerificationModal from "./modals/ReceiptVerificationModal";
 import JobDetailModal from "./modals/JobDetailModal";
+import ReceiptVerificationModal from "./modals/ReceiptVerificationModal";
 import useJobs from "../hooks/useJobs";
 
 const JobsListView = () => {
@@ -18,25 +17,14 @@ const JobsListView = () => {
     statusFilter,
     setStatusFilter,
     statusOptions,
-    editingJob,
-    showVerificationModal,
-    setShowVerificationModal,
-    currentReceiptData,
     selectedJobForDetails,
     setSelectedJobForDetails,
     showJobDetailModal,
     setShowJobDetailModal,
     deleteJob,
     updateJob,
-    removeMaterialFromJob,
-    startEditing,
-    cancelEditing,
     handleReceiptUpload,
-    handleReceiptVerification,
-    removeReceipt,
-    clearAllReceipts,
     viewJobDetails,
-    handleJobUpdate,
     openMaterialForm,
     closeMaterialForm,
     handleAddMaterial,
@@ -48,13 +36,19 @@ const JobsListView = () => {
     totalPages,
     hasNext,
     hasPrevious,
-    showMaterialForm,
-    selectedJobForMaterial,
     products,
     productsLoading,
     productsError,
     addMaterialToJob,
-    receipts, // Add the receipts object
+    // Receipt-related functions
+    showVerificationModal,
+    setShowVerificationModal,
+    currentReceiptData,
+    handleReceiptVerification,
+    removeReceipt,
+    clearAllReceipts,
+    // Material removal function
+    removeMaterialFromJob,
   } = useJobs();
 
   // Create a wrapper for handleAddMaterial that provides the correct parameters
@@ -71,7 +65,7 @@ const JobsListView = () => {
         );
       } else {
         // Use the addMaterialToJob mutation directly for regular materials
-        const result = await addMaterialToJob.mutateAsync({
+        await addMaterialToJob.mutateAsync({
           jobId: materialData.jobId,
           material: materialData.material
         });

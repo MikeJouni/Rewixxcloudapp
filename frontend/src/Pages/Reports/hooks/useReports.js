@@ -1,11 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 
 export const useReports = (jobs, customers) => {
   const [selectedReportType, setSelectedReportType] = useState("customer");
   const [selectedCustomerId, setSelectedCustomerId] = useState(null);
   const [selectedJobId, setSelectedJobId] = useState(null);
 
-  const generateCustomerReport = (customerId) => {
+  const generateCustomerReport = useCallback((customerId) => {
     const customer = customers.find(c => c.id === customerId);
     if (!customer) return null;
 
@@ -79,10 +79,10 @@ export const useReports = (jobs, customers) => {
         })()
       }))
     };
-  };
+  }, [customers, jobs]);
 
   // Generate job report
-  const generateJobReport = (jobId) => {
+  const generateJobReport = useCallback((jobId) => {
     const job = jobs.find(j => j.id === jobId);
     if (!job) return null;
 
@@ -145,7 +145,7 @@ export const useReports = (jobs, customers) => {
       materials,
       receipts: job.receiptImageUrls ? job.receiptImageUrls.length : 0
     };
-  };
+  }, [jobs]);
 
   // Get current report based on selection
   const currentReport = useMemo(() => {
@@ -155,7 +155,7 @@ export const useReports = (jobs, customers) => {
       return generateJobReport(selectedJobId);
     }
     return null;
-  }, [selectedReportType, selectedCustomerId, selectedJobId, jobs, customers]);
+  }, [selectedReportType, selectedCustomerId, selectedJobId, generateCustomerReport, generateJobReport]);
 
   // Export report as CSV
   const exportReport = (report) => {

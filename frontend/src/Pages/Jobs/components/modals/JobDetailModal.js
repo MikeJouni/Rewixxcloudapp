@@ -1,20 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
-import BarcodeScannerModal from "./BarcodeScannerModal";
 
 const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob, onRemoveReceipt, onClearAllReceipts, onRemoveMaterial }) => {
   const [activeTab, setActiveTab] = useState("details");
-  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
-  const [showManualEntry, setShowManualEntry] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
   const [localReceipts, setLocalReceipts] = useState([]);
-  const [newMaterial, setNewMaterial] = useState({
-    name: "",
-    price: "",
-    quantity: 1,
-    supplier: "",
-    category: "",
-    notes: "",
-  });
 
   // Extract materials from sales data
   const materials = useMemo(() => {
@@ -41,7 +29,6 @@ const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob, onRemoveReceipt, on
         });
       }
     });
-    console.log("All materials extracted:", allMaterials);
     return allMaterials;
   }, [job]);
 
@@ -52,15 +39,6 @@ const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob, onRemoveReceipt, on
     }, 0);
   }, [materials]);
 
-  useEffect(() => {
-    // Detect if device is mobile
-    const isMobileDevice =
-      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-        navigator.userAgent
-      );
-    setIsMobile(isMobileDevice);
-  }, []);
-  
   // Load receipts from localStorage when modal opens
   useEffect(() => {
     if (isOpen && job) {
@@ -79,37 +57,7 @@ const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob, onRemoveReceipt, on
     }
   }, [isOpen, job]);
 
-
-
   if (!isOpen || !job) return null;
-
-  const handleAddMaterial = (material) => {
-    // This function now just calls the parent's onUpdateJob
-    // The actual material addition is handled by the backend API
-    // and will be reflected when the job data is refreshed
-    onUpdateJob(job);
-  };
-
-  const handleBarcodeScan = (materialData) => {
-    // For barcode scanned materials, we need to create a product first and then add it as a material
-    // This will be handled by the parent component through the backend API
-    // Pass the material data to the parent for processing
-    onUpdateJob(job, materialData);
-    setShowBarcodeScanner(false);
-  };
-
-  const handleManualSubmit = (e) => {
-    e.preventDefault();
-    if (!newMaterial.name.trim()) return;
-
-    const material = {
-      ...newMaterial,
-      price: parseFloat(newMaterial.price) || 0,
-      quantity: parseInt(newMaterial.quantity) || 1,
-    };
-
-    handleAddMaterial(material);
-  };
 
   const removeMaterial = (materialId) => {
     if (onRemoveMaterial) {
