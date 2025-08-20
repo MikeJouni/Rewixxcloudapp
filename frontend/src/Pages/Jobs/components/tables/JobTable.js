@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import * as customerService from "../../../Customers/services/customerService";
+import MaterialForm from "../forms/MaterialForm";
 
 const JobTable = ({
   jobs,
@@ -10,6 +11,13 @@ const JobTable = ({
   onAddMaterial,
   processingReceiptJobId = null,
   isMobile = false,
+  showingMaterialFormForJob = null,
+  onCloseMaterialForm,
+  onMaterialSubmit,
+  products = [],
+  productsLoading = false,
+  productsError = null,
+
 }) => {
   const [editingId, setEditingId] = useState(null);
   const [editFormData, setEditFormData] = useState({});
@@ -17,9 +25,27 @@ const JobTable = ({
   const [customerSearchTerm, setCustomerSearchTerm] = useState("");
   const [filteredCustomers, setFilteredCustomers] = useState([]);
   const [showCustomerDropdown, setShowCustomerDropdown] = useState({});
+  const materialFormRef = useRef(null);
 
   const statusOptions = ["PENDING", "IN_PROGRESS", "COMPLETED", "CANCELLED"];
   const priorityOptions = ["LOW", "MEDIUM", "HIGH", "URGENT"];
+
+  const handleMaterialSubmit = async (materialData) => {
+    try {
+      // Ensure the material data has the correct structure
+      const formattedMaterialData = {
+        jobId: showingMaterialFormForJob,
+        material: materialData
+      };
+      
+      // Pass the formatted data to the parent
+      await onMaterialSubmit(formattedMaterialData);
+      
+      // Don't close here - let the parent handle it
+    } catch (error) {
+      console.error("Failed to submit material:", error);
+    }
+  };
 
   // Fetch customers on component mount
   useEffect(() => {
@@ -32,7 +58,7 @@ const JobTable = ({
       if (response && response.customers) {
         setCustomers(response.customers);
         setFilteredCustomers(response.customers);
-        console.log(`Fetched ${response.customers.length} customers for job editing`);
+
       }
     } catch (error) {
       console.error("Failed to fetch customers:", error);
@@ -62,9 +88,7 @@ const JobTable = ({
 
   const handleSaveEdit = async (jobId) => {
     try {
-      console.log("Saving job update:", { ...editFormData, id: jobId });
       await onEdit({ ...editFormData, id: jobId });
-      console.log("Job update successful");
       setEditingId(null);
       setEditFormData({});
       setShowCustomerDropdown({});
@@ -229,6 +253,25 @@ const JobTable = ({
                             Cancel
                           </button>
                         </>
+                      ) : showingMaterialFormForJob === job.id ? (
+                        <>
+                          <button
+                            onClick={() => {
+                              if (materialFormRef.current) {
+                                materialFormRef.current.submit();
+                              }
+                            }}
+                            className="px-2 py-1 text-xs bg-green-500 text-white border-none rounded cursor-pointer hover:bg-green-600"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={onCloseMaterialForm}
+                            className="px-2 py-1 text-xs bg-gray-500 text-white border-none rounded cursor-pointer hover:bg-gray-600"
+                          >
+                            Cancel
+                          </button>
+                        </>
                       ) : (
                         <>
                           <button
@@ -249,6 +292,30 @@ const JobTable = ({
                           >
                             Add Material
                           </button>
+                          {/* Receipt upload button - only visible on mobile and when not editing/adding materials */}
+                          {isMobile && (
+                            <label
+                              className={`px-2 py-1 text-xs text-white border-none rounded cursor-pointer ${
+                                processingReceiptJobId && processingReceiptJobId !== job.id
+                                  ? "bg-gray-400 cursor-not-allowed opacity-70"
+                                  : "bg-green-500 hover:bg-green-600"
+                              }`}
+                            >
+                              {processingReceiptJobId === job.id ? "Loading receipt..." : "Attach Receipt"}
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const file = e.target.files[0];
+                                  if (file && onReceiptUpload) {
+                                    onReceiptUpload(file, job.id);
+                                  }
+                                }}
+                                className="hidden"
+                                disabled={Boolean(processingReceiptJobId)}
+                              />
+                            </label>
+                          )}
                           <button
                             onClick={() => {
                               if (window.confirm("Are you sure you want to delete this job?")) {
@@ -261,24 +328,7 @@ const JobTable = ({
                           </button>
                         </>
                       )}
-                      {isMobile && (
-                        <label
-                          className={`px-2 py-1 text-xs text-white border-none rounded cursor-pointer ${
-                            processingReceiptJobId && processingReceiptJobId !== job.id
-                              ? "bg-gray-400 cursor-not-allowed opacity-70"
-                              : "bg-green-500 hover:bg-green-600"
-                          }`}
-                        >
-                          {processingReceiptJobId === job.id ? "Loading receipt..." : "Attach Receipt"}
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => onReceiptUpload(job.id, e)}
-                            className="hidden"
-                            disabled={Boolean(processingReceiptJobId)}
-                          />
-                        </label>
-                      )}
+
                     </div>
                   </td>
                 </tr>
@@ -421,6 +471,38 @@ const JobTable = ({
                             />
                           </div>
                         </div>
+                        
+                        {/* Edit Form Actions - REMOVED DUPLICATE BUTTONS */}
+                      </div>
+                    </td>
+                  </tr>
+                )}
+
+                {/* Material Form Row */}
+                {showingMaterialFormForJob === job.id && (
+                  <tr className="bg-green-50">
+                    <td colSpan="9" className="px-6 py-4">
+                      <div className="bg-white rounded-lg border border-green-200 p-4">
+                        <h4 className="text-sm font-medium text-gray-700 mb-3">
+                          Add Material to Job
+                          {productsLoading && <span className="ml-2 text-gray-500">(Loading products...)</span>}
+                          {!productsLoading && products.length > 0 && <span className="ml-2 text-gray-500">({products.length} products available)</span>}
+                          {!productsLoading && products.length === 0 && <span className="ml-2 text-red-500">(No products available)</span>}
+                        </h4>
+                        {productsError && (
+                          <div className="mb-3 p-2 bg-red-100 text-red-700 text-sm rounded">
+                            Error loading products: {productsError.message}
+                          </div>
+                        )}
+                        <MaterialForm
+                          ref={materialFormRef}
+                          onSubmit={handleMaterialSubmit}
+                          onCancel={onCloseMaterialForm}
+                          products={products}
+                          isMobile={isMobile}
+                          productsLoading={productsLoading}
+                          productsError={productsError}
+                        />
                       </div>
                     </td>
                   </tr>
