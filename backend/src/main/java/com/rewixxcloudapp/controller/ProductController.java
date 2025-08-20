@@ -21,11 +21,13 @@ public class ProductController {
     @Autowired
     private ProductRepository productRepository;
 
-    @GetMapping
-    public ResponseEntity<List<Product>> getAllProducts() {
+    @PostMapping("/list")
+    public ResponseEntity<List<Product>> listAllProducts() {
         try {
             List<Product> products = productRepository.findAll();
-            return ResponseEntity.ok(products);
+            return ResponseEntity.ok()
+                .header("ngrok-skip-browser-warning", "true")
+                .body(products);
         } catch (Exception e) {
             logger.error("Error getting all products", e);
             return ResponseEntity.internalServerError().build();
@@ -51,6 +53,35 @@ public class ProductController {
             return ResponseEntity.ok(savedProduct);
         } catch (Exception e) {
             logger.error("Error creating product", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PostMapping("/search")
+    public ResponseEntity<List<Product>> searchProductsByName(@RequestBody java.util.Map<String, String> request) {
+        try {
+            String name = request.get("name");
+            if (name == null || name.trim().isEmpty()) {
+                return ResponseEntity.badRequest().build();
+            }
+            
+            String trimmedName = name.trim();
+            logger.info("Searching for products with name: '{}'", trimmedName);
+            
+            // First try exact match (case-insensitive)
+            List<Product> exactMatches = productRepository.findByNameIgnoreCase(trimmedName);
+            if (!exactMatches.isEmpty()) {
+                logger.info("Found {} exact matches for '{}'", exactMatches.size(), trimmedName);
+                return ResponseEntity.ok(exactMatches);
+            }
+            
+            // Fall back to partial match if no exact matches
+            List<Product> partialMatches = productRepository.findByNameContainingIgnoreCase(trimmedName);
+            logger.info("Found {} partial matches for '{}'", partialMatches.size(), trimmedName);
+            return ResponseEntity.ok(partialMatches);
+            
+        } catch (Exception e) {
+            logger.error("Error searching products by name", e);
             return ResponseEntity.internalServerError().build();
         }
     }
