@@ -23,10 +23,12 @@ const JobsListView = () => {
     setShowVerificationModal,
     currentReceiptData,
     selectedJobForDetails,
+    setSelectedJobForDetails,
     showJobDetailModal,
     setShowJobDetailModal,
     deleteJob,
     updateJob,
+    removeMaterialFromJob,
     startEditing,
     cancelEditing,
     handleReceiptUpload,
@@ -38,6 +40,7 @@ const JobsListView = () => {
     openMaterialForm,
     closeMaterialForm,
     handleAddMaterial,
+    showingMaterialFormForJob,
     page,
     setPage,
     pageSize,
@@ -48,7 +51,39 @@ const JobsListView = () => {
     showMaterialForm,
     selectedJobForMaterial,
     products,
+    productsLoading,
+    productsError,
+    addMaterialToJob,
+    receipts, // Add the receipts object
   } = useJobs();
+
+  // Create a wrapper for handleAddMaterial that provides the correct parameters
+  const handleMaterialSubmit = async (materialData) => {
+    try {
+      // Check if this is a barcode scanned material
+      if (materialData.material && materialData.material.source === "Barcode Scan") {
+        // For barcode materials, use the materials hook which handles product creation
+        await handleAddMaterial(
+          materialData.material,
+          addMaterialToJob,
+          selectedJobForDetails,
+          setSelectedJobForDetails
+        );
+      } else {
+        // Use the addMaterialToJob mutation directly for regular materials
+        const result = await addMaterialToJob.mutateAsync({
+          jobId: materialData.jobId,
+          material: materialData.material
+        });
+      }
+      
+      // Close the material form for both types
+      closeMaterialForm();
+      
+    } catch (error) {
+      console.error("Failed to submit material:", error);
+    }
+  };
 
   return (
     <div className="p-4 sm:p-6 w-full h-full">
@@ -64,16 +99,6 @@ const JobsListView = () => {
           Add New Job
         </button>
       </div>
-
-      {/* Add Material Form */}
-      {showMaterialForm && selectedJobForMaterial && (
-        <MaterialForm
-          onSubmit={handleAddMaterial}
-          onCancel={closeMaterialForm}
-          products={products}
-          isMobile={isMobile}
-        />
-      )}
 
       {/* Filters and Search */}
       <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -117,6 +142,13 @@ const JobsListView = () => {
           onReceiptUpload={handleReceiptUpload}
           processingReceiptJobId={processingReceiptJobId}
           isMobile={isMobile}
+          showingMaterialFormForJob={showingMaterialFormForJob}
+          onCloseMaterialForm={closeMaterialForm}
+          onMaterialSubmit={handleMaterialSubmit}
+          products={products}
+          productsLoading={productsLoading}
+          productsError={productsError}
+
         />
       )}
 
@@ -174,10 +206,11 @@ const JobsListView = () => {
         <JobDetailModal
           job={selectedJobForDetails}
           isOpen={showJobDetailModal}
-          onUpdateJob={handleJobUpdate}
           onClose={() => setShowJobDetailModal(false)}
+          onUpdateJob={updateJob.mutateAsync}
           onRemoveReceipt={removeReceipt}
           onClearAllReceipts={clearAllReceipts}
+          onRemoveMaterial={removeMaterialFromJob.mutateAsync}
         />
       )}
     </div>
