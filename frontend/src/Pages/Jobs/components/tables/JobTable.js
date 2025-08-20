@@ -17,7 +17,6 @@ const JobTable = ({
   products = [],
   productsLoading = false,
   productsError = null,
-
 }) => {
   const [editingId, setEditingId] = useState(null);
   const [editFormData, setEditFormData] = useState({});

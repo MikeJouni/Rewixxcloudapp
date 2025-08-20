@@ -36,11 +36,12 @@ const JobDetailModal = ({ job, isOpen, onClose, onUpdateJob, onRemoveReceipt, on
               saleId: sale.id,
               productId: saleItem.product.id
             };
-            allMaterials.push(material);
+              allMaterials.push(material);  
           }
         });
       }
     });
+    console.log("All materials extracted:", allMaterials);
     return allMaterials;
   }, [job]);
 
