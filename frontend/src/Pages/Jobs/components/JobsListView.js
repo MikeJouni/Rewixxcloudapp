@@ -27,6 +27,7 @@ const JobsListView = () => {
     setShowJobDetailModal,
     deleteJob,
     updateJob,
+    removeMaterialFromJob,
     startEditing,
     cancelEditing,
     handleReceiptUpload,
@@ -38,6 +39,7 @@ const JobsListView = () => {
     openMaterialForm,
     closeMaterialForm,
     handleAddMaterial,
+    showingMaterialFormForJob,
     page,
     setPage,
     pageSize,
@@ -48,6 +50,8 @@ const JobsListView = () => {
     showMaterialForm,
     selectedJobForMaterial,
     products,
+    productsLoading,
+    productsError,
   } = useJobs();
 
   return (
@@ -64,16 +68,6 @@ const JobsListView = () => {
           Add New Job
         </button>
       </div>
-
-      {/* Add Material Form */}
-      {showMaterialForm && selectedJobForMaterial && (
-        <MaterialForm
-          onSubmit={handleAddMaterial}
-          onCancel={closeMaterialForm}
-          products={products}
-          isMobile={isMobile}
-        />
-      )}
 
       {/* Filters and Search */}
       <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -117,6 +111,12 @@ const JobsListView = () => {
           onReceiptUpload={handleReceiptUpload}
           processingReceiptJobId={processingReceiptJobId}
           isMobile={isMobile}
+          showingMaterialFormForJob={showingMaterialFormForJob}
+          onCloseMaterialForm={closeMaterialForm}
+          onMaterialSubmit={handleAddMaterial}
+          products={products}
+          productsLoading={productsLoading}
+          productsError={productsError}
         />
       )}
 
@@ -174,10 +174,11 @@ const JobsListView = () => {
         <JobDetailModal
           job={selectedJobForDetails}
           isOpen={showJobDetailModal}
-          onUpdateJob={handleJobUpdate}
           onClose={() => setShowJobDetailModal(false)}
+          onUpdateJob={updateJob.mutateAsync}
           onRemoveReceipt={removeReceipt}
           onClearAllReceipts={clearAllReceipts}
+          onRemoveMaterial={removeMaterialFromJob.mutateAsync}
         />
       )}
     </div>
