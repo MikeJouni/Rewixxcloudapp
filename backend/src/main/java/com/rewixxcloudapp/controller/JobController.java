@@ -133,4 +133,17 @@ public class JobController {
             return ResponseEntity.internalServerError().body("Error adding material to job: " + e.getMessage());
         }
     }
+
+    @DeleteMapping("/{id}/materials/{materialId}")
+    public ResponseEntity<?> removeMaterialFromJob(@PathVariable Long id, @PathVariable Long materialId) {
+        try {
+            jobService.removeMaterialFromJob(id, materialId);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            logger.error("Error removing material from job: {}", id, e);
+            return ResponseEntity.internalServerError().body("Error removing material from job: " + e.getMessage());
+        }
+    }
 }
