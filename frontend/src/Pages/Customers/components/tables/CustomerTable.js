@@ -33,6 +33,16 @@ const CustomerTable = ({ onDelete }) => {
     },
   };
 
+  // Handle row click for navigation
+  const handleRowClick = (record) => {
+    navigate(`/customers/${record.id}`);
+  };
+
+  // Handle button clicks to prevent row navigation
+  const handleButtonClick = (e) => {
+    e.stopPropagation();
+  };
+
   if (!customers || customers.length === 0) {
     return (
       <p className="text-center text-gray-500 mt-8">
@@ -98,7 +108,10 @@ const CustomerTable = ({ onDelete }) => {
             onMouseLeave={(e) =>
               (e.currentTarget.style.backgroundColor = "#6b7280")
             }
-            onClick={() => navigate(`/customers/${customer.id}`)}
+            onClick={(e) => {
+              handleButtonClick(e);
+              navigate(`/customers/${customer.id}`);
+            }}
           >
             Edit
           </Button>
@@ -108,7 +121,12 @@ const CustomerTable = ({ onDelete }) => {
             okText="Yes"
             cancelText="No"
           >
-            <Button danger type="primary" size="small">
+            <Button
+              danger
+              type="primary"
+              size="small"
+              onClick={handleButtonClick}
+            >
               Delete
             </Button>
           </Popconfirm>
@@ -124,6 +142,10 @@ const CustomerTable = ({ onDelete }) => {
       rowKey="id"
       pagination={pagination}
       loading={isLoading}
+      onRow={(record) => ({
+        onClick: () => handleRowClick(record),
+        style: { cursor: "pointer" },
+      })}
     />
   );
 };
