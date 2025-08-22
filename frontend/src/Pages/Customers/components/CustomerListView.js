@@ -5,21 +5,7 @@ import useCustomers from "../hooks/useCustomers";
 
 const CustomerListView = () => {
   const navigate = useNavigate();
-  const {
-    customers,
-    searchTerm,
-    setSearchTerm,
-    deleteCustomer,
-    isLoading,
-    error,
-    page,
-    setPage,
-    pageSize,
-    setPageSize,
-    totalPages,
-    hasNext,
-    hasPrevious,
-  } = useCustomers();
+  const { searchTerm, setSearchTerm, deleteCustomer, error } = useCustomers();
 
   const handleDelete = (id) => {
     if (window.confirm("Are you sure you want to delete this customer?")) {
@@ -53,60 +39,13 @@ const CustomerListView = () => {
         />
       </div>
 
-      {/* Loading/Error States */}
-      {isLoading && (
-        <p className="text-center text-gray-500">Loading customers...</p>
-      )}
+      {/* Error State */}
       {error && (
         <p className="text-center text-red-500">Error loading customers.</p>
       )}
 
       {/* Customers Table */}
-      <CustomerTable
-        customers={customers}
-        onDelete={handleDelete}
-        isDeleting={deleteCustomer.isLoading}
-        deleteError={deleteCustomer.error}
-      />
-
-      {/* Pagination Controls */}
-      <div className="flex flex-col sm:flex-row items-center justify-between mt-4 gap-2">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setPage(page - 1)}
-            disabled={!hasPrevious}
-            className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
-          >
-            Previous
-          </button>
-          <span>
-            Page {page + 1} of {totalPages}
-          </span>
-          <button
-            onClick={() => setPage(page + 1)}
-            disabled={!hasNext}
-            className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
-          >
-            Next
-          </button>
-        </div>
-        <div className="flex items-center gap-2">
-          <label htmlFor="pageSize" className="text-sm">
-            Rows per page:
-          </label>
-          <select
-            id="pageSize"
-            value={pageSize}
-            onChange={(e) => setPageSize(Number(e.target.value))}
-            className="border border-gray-300 rounded px-2 py-1"
-          >
-            <option value={5}>5</option>
-            <option value={10}>10</option>
-            <option value={25}>25</option>
-            <option value={50}>50</option>
-          </select>
-        </div>
-      </div>
+      <CustomerTable onDelete={handleDelete} />
     </div>
   );
 };
