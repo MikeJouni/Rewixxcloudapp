@@ -49,10 +49,7 @@ const useCustomers = () => {
     setPage,
     pageSize,
     setPageSize,
-    totalPages: data?.totalPages || 1,
     totalCustomers: data?.totalCustomers || 0,
-    hasNext: data?.hasNext || false,
-    hasPrevious: data?.hasPrevious || false,
   };
 };
 
