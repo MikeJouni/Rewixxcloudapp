@@ -5,7 +5,7 @@ import useCustomers from "../hooks/useCustomers";
 
 const CustomerListView = () => {
   const navigate = useNavigate();
-  const { searchTerm, setSearchTerm, deleteCustomer, error } = useCustomers();
+  const { deleteCustomer, error } = useCustomers();
 
   const handleDelete = (id) => {
     deleteCustomer.mutate(id);
@@ -26,20 +26,11 @@ const CustomerListView = () => {
         </button>
       </div>
 
-      {/* Search */}
-      <div className="mb-6">
-        <input
-          type="text"
-          placeholder="Search customers..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
-
       {/* Error State */}
       {error && (
-        <p className="text-center text-red-500">Error loading customers.</p>
+        <p className="text-center text-red-500 mb-6">
+          Error loading customers.
+        </p>
       )}
 
       {/* Customers Table Container */}

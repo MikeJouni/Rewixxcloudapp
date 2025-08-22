@@ -1,7 +1,9 @@
 import React from "react";
-import { Table, Button, Popconfirm, Space } from "antd";
+import { Table, Button, Popconfirm, Space, Input } from "antd";
 import { useNavigate } from "react-router-dom";
 import useCustomers from "../../hooks/useCustomers";
+
+const { Search } = Input;
 
 const CustomerTable = ({ onDelete }) => {
   const navigate = useNavigate();
@@ -13,6 +15,8 @@ const CustomerTable = ({ onDelete }) => {
     pageSize,
     setPageSize,
     totalCustomers,
+    searchTerm,
+    setSearchTerm,
   } = useCustomers();
 
   // Ant Design pagination configuration
@@ -46,11 +50,30 @@ const CustomerTable = ({ onDelete }) => {
     e.stopPropagation();
   };
 
+  // Handle search
+  const handleSearch = (value) => {
+    setSearchTerm(value);
+    setPage(0); // Reset to first page when searching
+  };
+
   if (!customers || customers.length === 0) {
     return (
-      <p className="text-center text-gray-500 mt-8">
-        No customers found matching your search.
-      </p>
+      <div className="space-y-4">
+        {/* Search Bar */}
+        <Search
+          placeholder="Search customers..."
+          allowClear
+          enterButton
+          size="large"
+          onSearch={handleSearch}
+          defaultValue={searchTerm}
+          style={{ maxWidth: 400 }}
+        />
+
+        <p className="text-center text-gray-500 mt-8">
+          No customers found matching your search.
+        </p>
+      </div>
     );
   }
 
@@ -150,21 +173,35 @@ const CustomerTable = ({ onDelete }) => {
   ];
 
   return (
-    <Table
-      key={`customers-table-${customers.length}-${page}`}
-      columns={columns}
-      dataSource={customers}
-      rowKey="id"
-      pagination={pagination}
-      loading={isLoading}
-      onRow={(record) => ({
-        onClick: () => handleRowClick(record),
-        style: { cursor: "pointer" },
-      })}
-      scroll={{ x: "max-content" }}
-      size="small"
-      style={{ width: "100%" }}
-    />
+    <div className="space-y-4">
+      {/* Search Bar */}
+      <Search
+        placeholder="Search customers..."
+        allowClear
+        enterButton
+        size="large"
+        onSearch={handleSearch}
+        defaultValue={searchTerm}
+        style={{ maxWidth: 400 }}
+      />
+
+      {/* Table */}
+      <Table
+        key={`customers-table-${customers.length}-${page}`}
+        columns={columns}
+        dataSource={customers}
+        rowKey="id"
+        pagination={pagination}
+        loading={isLoading}
+        onRow={(record) => ({
+          onClick: () => handleRowClick(record),
+          style: { cursor: "pointer" },
+        })}
+        scroll={{ x: "max-content" }}
+        size="small"
+        style={{ width: "100%" }}
+      />
+    </div>
   );
 };
 
