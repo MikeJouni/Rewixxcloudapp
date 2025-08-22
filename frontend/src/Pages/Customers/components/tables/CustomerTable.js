@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { Table, Button, Popconfirm, Space, Input } from "antd";
 import { useNavigate } from "react-router-dom";
 import useCustomers from "../../hooks/useCustomers";
@@ -50,11 +50,28 @@ const CustomerTable = ({ onDelete }) => {
     e.stopPropagation();
   };
 
-  // Handle search
-  const handleSearch = (value) => {
-    setSearchTerm(value);
-    setPage(0); // Reset to first page when searching
-  };
+  // Handle search with debouncing
+  const handleSearch = useCallback(
+    (value) => {
+      setSearchTerm(value);
+      setPage(0); // Reset to first page when searching
+    },
+    [setSearchTerm, setPage]
+  );
+
+  // Debounced search function
+  const debouncedSearch = useCallback(
+    (() => {
+      let timeoutId;
+      return (value) => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          handleSearch(value);
+        }, 300); // 300ms delay
+      };
+    })(),
+    [handleSearch]
+  );
 
   if (!customers || customers.length === 0) {
     return (
@@ -63,9 +80,8 @@ const CustomerTable = ({ onDelete }) => {
         <Search
           placeholder="Search customers..."
           allowClear
-          enterButton
           size="large"
-          onSearch={handleSearch}
+          onChange={(e) => debouncedSearch(e.target.value)}
           defaultValue={searchTerm}
           style={{ maxWidth: 400 }}
         />
@@ -178,9 +194,8 @@ const CustomerTable = ({ onDelete }) => {
       <Search
         placeholder="Search customers..."
         allowClear
-        enterButton
         size="large"
-        onSearch={handleSearch}
+        onChange={(e) => debouncedSearch(e.target.value)}
         defaultValue={searchTerm}
         style={{ maxWidth: 400 }}
       />
