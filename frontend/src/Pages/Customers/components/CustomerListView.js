@@ -14,7 +14,7 @@ const CustomerListView = () => {
   };
 
   return (
-    <div className="p-4 sm:p-6 w-full h-full">
+    <div className="p-4 sm:p-6 w-full h-full overflow-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 sm:gap-0">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
@@ -44,8 +44,10 @@ const CustomerListView = () => {
         <p className="text-center text-red-500">Error loading customers.</p>
       )}
 
-      {/* Customers Table */}
-      <CustomerTable onDelete={handleDelete} />
+      {/* Customers Table Container */}
+      <div className="w-full overflow-x-auto">
+        <CustomerTable onDelete={handleDelete} />
+      </div>
     </div>
   );
 };

@@ -146,6 +146,9 @@ const CustomerTable = ({ onDelete }) => {
         onClick: () => handleRowClick(record),
         style: { cursor: "pointer" },
       })}
+      scroll={{ x: "max-content" }}
+      size="small"
+      style={{ width: "100%" }}
     />
   );
 };
