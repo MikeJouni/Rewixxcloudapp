@@ -8,9 +8,7 @@ const CustomerListView = () => {
   const { searchTerm, setSearchTerm, deleteCustomer, error } = useCustomers();
 
   const handleDelete = (id) => {
-    if (window.confirm("Are you sure you want to delete this customer?")) {
-      deleteCustomer.mutate(id);
-    }
+    deleteCustomer.mutate(id);
   };
 
   return (

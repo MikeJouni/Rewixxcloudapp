@@ -35,7 +35,10 @@ const CustomerTable = ({ onDelete }) => {
 
   // Handle row click for navigation
   const handleRowClick = (record) => {
-    navigate(`/customers/${record.id}`);
+    // Safety check to ensure the record exists and has an id
+    if (record && record.id) {
+      navigate(`/customers/${record.id}`);
+    }
   };
 
   // Handle button clicks to prevent row navigation
@@ -117,15 +120,26 @@ const CustomerTable = ({ onDelete }) => {
           </Button>
           <Popconfirm
             title="Are you sure you want to delete this customer?"
-            onConfirm={() => onDelete(customer.id)}
+            onConfirm={(e) => {
+              // Prevent any event bubbling
+              if (e) e.stopPropagation();
+              onDelete(customer.id);
+            }}
             okText="Yes"
             cancelText="No"
+            onCancel={(e) => {
+              // Prevent row click when canceling
+              if (e) e.stopPropagation();
+            }}
           >
             <Button
               danger
               type="primary"
               size="small"
-              onClick={handleButtonClick}
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+              }}
             >
               Delete
             </Button>
@@ -137,6 +151,7 @@ const CustomerTable = ({ onDelete }) => {
 
   return (
     <Table
+      key={`customers-table-${customers.length}-${page}`}
       columns={columns}
       dataSource={customers}
       rowKey="id"
