@@ -1,18 +1,19 @@
 import React from "react";
-import { Table, Button, Popconfirm, Space, Tag } from "antd";
+import { Table, Button } from "antd";
 
 const JobTable = ({
   jobs,
   onViewDetails,
   onEdit,
-  onDelete,
   onReceiptUpload,
   processingReceipt = false,
   isMobile = false,
 }) => {
   if (!jobs || jobs.length === 0) {
     return (
-      <p className="text-center text-gray-500 mt-8">No jobs found matching your criteria.</p>
+      <p className="text-center text-gray-500 mt-8">
+        No jobs found matching your criteria.
+      </p>
     );
   }
 
@@ -86,11 +87,19 @@ const JobTable = ({
       key: "actions",
       render: (_, job) => (
         <div className="flex gap-1 flex-wrap">
-         <Button
+          <Button
             size="small"
-            style={{ backgroundColor: "#6b7280", color: "#fff", border: "none" }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#4b5563")}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#6b7280")}
+            style={{
+              backgroundColor: "#6b7280",
+              color: "#fff",
+              border: "none",
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.backgroundColor = "#4b5563")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.backgroundColor = "#6b7280")
+            }
             onClick={() => onEdit(job)}
           >
             Edit
@@ -98,9 +107,17 @@ const JobTable = ({
 
           <Button
             size="small"
-            style={{ backgroundColor: "#2563eb", color: "#fff", border: "none" }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#1d4ed8")}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#2563eb")}
+            style={{
+              backgroundColor: "#2563eb",
+              color: "#fff",
+              border: "none",
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.backgroundColor = "#1d4ed8")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.backgroundColor = "#2563eb")
+            }
             onClick={() => onViewDetails(job)}
           >
             View
