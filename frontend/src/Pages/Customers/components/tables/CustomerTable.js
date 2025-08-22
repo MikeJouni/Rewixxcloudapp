@@ -1,7 +1,7 @@
 import React from "react";
 import { Table, Button, Popconfirm, Space } from "antd";
 import { useNavigate } from "react-router-dom";
-import useCustomers from "../hooks/useCustomers";
+import useCustomers from "../../hooks/useCustomers";
 
 const CustomerTable = ({ onDelete }) => {
   const navigate = useNavigate();
