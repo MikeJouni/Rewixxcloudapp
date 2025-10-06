@@ -25,3 +25,6 @@ export const addMaterialToJob = (jobId, material) =>
 
 export const removeMaterialFromJob = (jobId, materialId) =>
   Backend.delete(`api/jobs/${jobId}/materials/${materialId}`);
+
+export const updateMaterialInJob = (jobId, materialId, updates) =>
+  Backend.put(`api/jobs/${jobId}/materials/${materialId}`, updates);

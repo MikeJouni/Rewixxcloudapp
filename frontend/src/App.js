@@ -6,6 +6,7 @@ import {
   Navigate,
 } from "react-router-dom";
 import "./index.css";
+import "./antd-table-overrides.css";
 import Navigation from "./components/Navigation";
 import NotFound from "./components/NotFound";
 import CustomersPage from "./Pages/Customers";
@@ -31,7 +32,7 @@ function AppContent() {
     <div className="min-h-screen flex flex-col bg-gray-50 w-full h-full">
       <header className="w-full bg-gray-800 text-white px-4 sm:px-8 py-6 shadow-lg">
         <h1 className="text-2xl sm:text-3xl font-light mb-4">
-          Cloud App/Electrician System
+          Imad's Electrician Cloud App
         </h1>
         <Navigation />
       </header>

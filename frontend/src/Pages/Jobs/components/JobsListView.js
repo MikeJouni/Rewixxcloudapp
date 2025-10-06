@@ -2,7 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import JobTable from "./tables/JobTable";
 import JobDetailModal from "./modals/JobDetailModal";
-import ReceiptVerificationModal from "./modals/ReceiptVerificationModal";
+import ReceiptTableModal from "./modals/ReceiptTableModal";
 import useJobs from "../hooks/useJobs";
 
 const JobsListView = () => {
@@ -10,13 +10,9 @@ const JobsListView = () => {
   const {
     filteredJobs,
     isLoading,
-    isMobile,
     processingReceiptJobId,
     searchTerm,
     setSearchTerm,
-    statusFilter,
-    setStatusFilter,
-    statusOptions,
     selectedJobForDetails,
     setSelectedJobForDetails,
     showJobDetailModal,
@@ -25,10 +21,8 @@ const JobsListView = () => {
     updateJob,
     handleReceiptUpload,
     viewJobDetails,
-    openMaterialForm,
     closeMaterialForm,
     handleAddMaterial,
-    showingMaterialFormForJob,
     page,
     setPage,
     pageSize,
@@ -41,6 +35,7 @@ const JobsListView = () => {
     productsError,
     addMaterialToJob,
     // Receipt-related functions
+    setProcessingReceiptJobId,
     showVerificationModal,
     setShowVerificationModal,
     currentReceiptData,
@@ -51,33 +46,6 @@ const JobsListView = () => {
     removeMaterialFromJob,
   } = useJobs();
 
-  // Create a wrapper for handleAddMaterial that provides the correct parameters
-  const handleMaterialSubmit = async (materialData) => {
-    try {
-      // Check if this is a barcode scanned material
-      if (materialData.material && materialData.material.source === "Barcode Scan") {
-        // For barcode materials, use the materials hook which handles product creation
-        await handleAddMaterial(
-          materialData.material,
-          addMaterialToJob,
-          selectedJobForDetails,
-          setSelectedJobForDetails
-        );
-      } else {
-        // Use the addMaterialToJob mutation directly for regular materials
-        await addMaterialToJob.mutateAsync({
-          jobId: materialData.jobId,
-          material: materialData.material
-        });
-      }
-      
-      // Close the material form for both types
-      closeMaterialForm();
-      
-    } catch (error) {
-      console.error("Failed to submit material:", error);
-    }
-  };
 
   return (
     <div className="p-4 sm:p-6 w-full h-full">
@@ -94,30 +62,15 @@ const JobsListView = () => {
         </button>
       </div>
 
-      {/* Filters and Search */}
-      <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <input
-            type="text"
-            placeholder="Search jobs..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-        <div>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {statusOptions.map((status) => (
-              <option key={status} value={status}>
-                {status}
-              </option>
-            ))}
-          </select>
-        </div>
+      {/* Search */}
+      <div className="mb-6">
+        <input
+          type="text"
+          placeholder="Search jobs by title or customer name..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
       </div>
 
       {/* Jobs Table */}
@@ -132,17 +85,6 @@ const JobsListView = () => {
           onViewDetails={viewJobDetails}
           onEdit={updateJob.mutateAsync}
           onDelete={(id) => deleteJob.mutate(id)}
-          onAddMaterial={openMaterialForm}
-          onReceiptUpload={handleReceiptUpload}
-          processingReceiptJobId={processingReceiptJobId}
-          isMobile={isMobile}
-          showingMaterialFormForJob={showingMaterialFormForJob}
-          onCloseMaterialForm={closeMaterialForm}
-          onMaterialSubmit={handleMaterialSubmit}
-          products={products}
-          productsLoading={productsLoading}
-          productsError={productsError}
-
         />
       )}
 
@@ -189,22 +131,52 @@ const JobsListView = () => {
       </div>
 
       {/* Modals */}
-      <ReceiptVerificationModal
+      <ReceiptTableModal
+        key={currentReceiptData?.receipt_id || Date.now()}
         isOpen={showVerificationModal}
         onClose={() => setShowVerificationModal(false)}
         receiptData={currentReceiptData}
         onVerify={handleReceiptVerification}
       />
 
-      {showJobDetailModal && selectedJobForDetails && (
-        <JobDetailModal
-          job={selectedJobForDetails}
+  {showJobDetailModal && selectedJobForDetails && (
+    <JobDetailModal
+      job={selectedJobForDetails}
           isOpen={showJobDetailModal}
-          onClose={() => setShowJobDetailModal(false)}
+          onClose={() => {
+            setShowJobDetailModal(false);
+            setSelectedJobForDetails(null);
+          }}
           onUpdateJob={updateJob.mutateAsync}
           onRemoveReceipt={removeReceipt}
           onClearAllReceipts={clearAllReceipts}
           onRemoveMaterial={removeMaterialFromJob.mutateAsync}
+          onAddMaterial={addMaterialToJob.mutateAsync}
+          onAddReceipt={handleReceiptUpload}
+          products={products}
+          productsLoading={productsLoading}
+          productsError={productsError}
+          showReceiptLoading={processingReceiptJobId === selectedJobForDetails?.id}
+          setShowReceiptLoading={(show) => {
+            if (!show) {
+              // Reset processing state when loading is hidden
+              setProcessingReceiptJobId(null);
+            }
+          }}
+          onCompleteJob={async (jobId) => {
+            const today = new Date().toISOString().split('T')[0];
+            const updatedJob = {
+              ...selectedJobForDetails,
+              status: "COMPLETED",
+              endDate: today
+            };
+            setSelectedJobForDetails(updatedJob);
+            await updateJob.mutateAsync({ 
+              id: jobId, 
+              status: "COMPLETED", 
+              endDate: today 
+            });
+          }}
         />
       )}
     </div>

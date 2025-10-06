@@ -22,6 +22,12 @@ const useJobs = () => {
     queryFn: () => jobService.getJobsList({ searchTerm: "", page: 0, pageSize: 10, statusFilter: "All" }),
   });
 
+  // Fetch products data
+  const { data: products, isLoading: productsLoading, error: productsError } = useQuery({
+    queryKey: ["products"],
+    queryFn: () => productService.getProducts(),
+  });
+
   const jobs = data?.jobs || [];
 
   // Use separated hooks
@@ -81,13 +87,8 @@ const useJobs = () => {
             // Don't let this error break the flow
           }
         }
-        // Invalidate and refetch to ensure we have the latest data including materials
-        try {
-          queryClient.invalidateQueries({ queryKey: ["jobs"] });
-        } catch (error) {
-          console.error("Failed to invalidate queries:", error);
-          // Don't let this error break the flow
-        }
+        // Skip invalidating queries to preserve job context
+        console.log("Skipping query invalidation in handleJobUpdate to preserve job context");
       },
       onError: (error) => {
         console.error("Failed to update job:", error);
@@ -107,10 +108,9 @@ const useJobs = () => {
   const handleReceiptVerification = async (receiptData) => {
     try {
       // Add materials from the receipt to the job
-      if (receiptData.items && receiptData.items.length > 0) {
-        const currentJob = selectedJobForDetails;
-        
-        if (currentJob) {
+      const currentJob = selectedJobForDetails;
+      
+      if (receiptData.items && receiptData.items.length > 0 && currentJob) {
           // Convert receipt items to materials and add them to the job
           for (const item of receiptData.items) {
             if (item.name && item.price) {
@@ -125,6 +125,9 @@ const useJobs = () => {
                 };
                 
                 const createdProduct = await productService.createProduct(productData);
+                
+                // Invalidate products query to refresh dropdown
+                queryClient.invalidateQueries({ queryKey: ["products"] });
                 
                 // Now add the material to the job using the created product
                 const materialDto = {
@@ -145,18 +148,24 @@ const useJobs = () => {
             }
           }
           
-          // Refresh the job data to show the new materials
-          queryClient.invalidateQueries({ queryKey: ["jobs"] });
-        }
+          // Simple refresh - just invalidate jobs queries
+          queryClient.invalidateQueries({ 
+            queryKey: ["jobs"], 
+            exact: false 
+          });
       }
       
-      // Close the verification modal
+      // Close the verification modal - simple!
       receipts.setShowVerificationModal(false);
+      
+      console.log("Receipt verification completed - modal closed");
+      return { success: true };
       
     } catch (error) {
       console.error("Error adding materials:", error);
       // Still close the modal even if there's an error
       receipts.setShowVerificationModal(false);
+      throw error;
     }
   };
 
@@ -191,6 +200,11 @@ const useJobs = () => {
     selectedJobForDetails,
     setSelectedJobForDetails,
     showJobDetailModal,
+    
+    // Products
+    products,
+    productsLoading,
+    productsError,
     setShowJobDetailModal,
     viewJobDetails,
     

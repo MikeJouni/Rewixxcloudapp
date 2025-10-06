@@ -1,6 +1,7 @@
 package com.rewixxcloudapp.controller;
 
 import com.rewixxcloudapp.entity.Job;
+import com.rewixxcloudapp.entity.JobStatus;
 import com.rewixxcloudapp.service.JobService;
 import com.rewixxcloudapp.dto.JobDto;
 import com.rewixxcloudapp.dto.MaterialDto;
@@ -64,20 +65,24 @@ public class JobController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Job> updateJob(@PathVariable Long id, @RequestBody JobDto dto) {
+    public ResponseEntity<?> updateJob(@PathVariable Long id, @RequestBody JobDto dto) {
         try {
             Optional<Job> jobOpt = jobService.getJobById(id);
             if (jobOpt.isPresent()) {
-                Job updatedJob = jobService.updateJobFromDto(jobOpt.get(), dto);
+                Job existing = jobOpt.get();
+                if (existing.getStatus() == JobStatus.COMPLETED) {
+                    return ResponseEntity.status(409).body("Completed jobs cannot be edited");
+                }
+                Job updatedJob = jobService.updateJobFromDto(existing, dto);
                 return ResponseEntity.ok(updatedJob);
             } else {
                 return ResponseEntity.notFound().build();
             }
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
             logger.error("Error updating job: {}", id, e);
-            return ResponseEntity.internalServerError().build();
+            return ResponseEntity.internalServerError().body("Error updating job: " + e.getMessage());
         }
     }
 

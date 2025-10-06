@@ -26,14 +26,14 @@ public class CustomerController {
     public ResponseEntity<?> createCustomer(@RequestBody CustomerDto dto) {
         try {
             if (dto.getUsername() == null || dto.getName() == null) {
-                return ResponseEntity.badRequest().body("Username and name are required");
+                return ResponseEntity.badRequest().body(Map.of("message", "Username and name are required"));
             }
             Customer customer = customerService.createCustomer(dto);
             return ResponseEntity.ok(customer);
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Error creating customer: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(Map.of("message", "Error creating customer: " + e.getMessage()));
         }
     }
 
@@ -49,7 +49,7 @@ public class CustomerController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Customer> updateCustomer(@PathVariable Long id, @RequestBody CustomerDto dto) {
+    public ResponseEntity<?> updateCustomer(@PathVariable Long id, @RequestBody CustomerDto dto) {
         try {
             Optional<Customer> customerOpt = customerService.getCustomerById(id);
             if (customerOpt.isPresent()) {
@@ -58,10 +58,10 @@ public class CustomerController {
             } else {
                 return ResponseEntity.notFound().build();
             }
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
+            return ResponseEntity.internalServerError().body(Map.of("message", "Error updating customer: " + e.getMessage()));
         }
     }
 

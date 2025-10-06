@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Html5Qrcode } from "html5-qrcode";
 import config from "../../../../config";
 
-const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
+const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile, jobId }) => {
+  const queryClient = useQueryClient();
+  
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -101,7 +104,8 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
             );
           }
 
-          if (productData && productData.name) {
+          // Check if this is a successful product lookup (not a fallback response)
+          if (productData && productData.name && productData.supplier !== "Unknown") {
             setProduct(productData);
             setShowQuantitySelector(true);
             await stopScanning();
@@ -219,29 +223,51 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
     };
   }, [isOpen, isMobile, startScanning, stopScanning]);
 
-  const handleQuantityConfirm = () => {
+  const handleQuantityConfirm = async () => {
     if (product && quantity > 0) {
-      const materialData = {
-        name: product.name,
-        price: parseFloat(product.price.replace(/[^0-9.]/g, "")) || 0,
-        quantity: quantity,
-        total:
-          (parseFloat(product.price.replace(/[^0-9.]/g, "")) || 0) * quantity,
-        supplier: product.supplier,
-        category: product.category,
-        sku: product.sku,
-        url: product.url,
-        image_url: product.image_url,
-        description: product.description,
-        availability: product.availability,
-        source: "Barcode Scan",
-        // Add fields needed for backend processing
-        productName: product.name,
-        unitPrice: parseFloat(product.price.replace(/[^0-9.]/g, "")) || 0,
-      };
+      try {
+        // First, create or find the product in the database
+        // First, create or find the product in the database via shared service
+        const productPayload = {
+          name: product.name,
+          name: product.name,
+          description: product.description || `Product from barcode scan: ${product.name}`,
+          unitPrice: parseFloat(product.price.replace(/[^0-9.]/g, "")) || 0,
+        };
 
-      onProductFound(materialData);
-      handleClose();
+        const productService = await import("../../services/productService");
+        const createdProduct = await productService.createProduct(productPayload);
+        if (!createdProduct || !createdProduct.id) {
+          throw new Error('Failed to create product');
+        }
+        
+        // Invalidate products query to refresh dropdown
+        queryClient.invalidateQueries({ queryKey: ["products"] });
+
+        const unitPriceNumber = parseFloat(product.price.replace(/[^0-9.]/g, "")) || 0;
+        // Minimal DTO expected by backend
+
+        // Now create the material data with the database product ID
+        const materialData = {
+          productId: createdProduct.id,
+          quantity: Number(quantity) || 1,
+          unitPrice: unitPriceNumber,
+          source: "Barcode Scan",
+        };
+
+        console.log('Barcode scanner calling onProductFound with:', {
+          jobId: jobId,
+          material: materialData
+        });
+        onProductFound({
+          jobId: jobId,
+          material: materialData
+        });
+        handleClose();
+      } catch (error) {
+        console.error('Error creating product:', error);
+        setError(`Failed to add to materials: ${error.message}`);
+      }
     }
   };
 
