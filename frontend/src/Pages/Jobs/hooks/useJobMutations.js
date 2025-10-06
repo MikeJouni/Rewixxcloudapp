@@ -70,28 +70,31 @@ export const useJobMutations = (selectedJobForDetails, setSelectedJobForDetails,
           setSelectedJobForDetails({ ...selectedJobForDetails, sales: [...currentSales, sale] });
         }
 
-        // Refresh the jobs data to show the new material
-        // Use a more targeted invalidation to prevent job disappearance
+        // Update the jobs cache in place to avoid losing context
         try {
-          queryClient.invalidateQueries({ queryKey: ["jobs"] });
+          const currentJobsData = queryClient.getQueryData(["jobs", { searchTerm: searchTerm, page, pageSize, statusFilter }]);
+          if (currentJobsData && currentJobsData.jobs) {
+            const updatedJobs = currentJobsData.jobs.map(job => {
+              if (job.id === variables.jobId) {
+                // Update the specific job with new sales
+                const currentSales = Array.isArray(job.sales) ? job.sales : [];
+                return { ...job, sales: [...currentSales, sale] };
+              }
+              return job;
+            });
+            
+            queryClient.setQueryData(
+              ["jobs", { searchTerm: searchTerm, page, pageSize, statusFilter }], 
+              { ...currentJobsData, jobs: updatedJobs }
+            );
+          }
         } catch (error) {
-          console.error("Failed to invalidate queries:", error);
-          // Don't let this error break the flow
+          console.error("Failed to update jobs cache:", error);
+          // Skip invalidation to preserve job context
+          console.log("Skipping query invalidation to preserve job context");
         }
         
-        // Update the selected job details if it's currently open
-        if (selectedJobForDetails && selectedJobForDetails.id === variables.jobId) {
-          try {
-            // Refetch the specific job to get updated data
-            const updatedJob = await jobService.getJob(variables.jobId);
-            if (updatedJob) {
-              setSelectedJobForDetails(updatedJob);
-            }
-          } catch (error) {
-            console.error("Failed to refetch job:", error);
-            // Don't let this error break the flow
-          }
-        }
+        // Do not refetch the job here; rely on optimistic updates above to keep UI stable
         
         // Material added successfully (non-blocking)
       } catch (error) {
@@ -127,23 +130,8 @@ export const useJobMutations = (selectedJobForDetails, setSelectedJobForDetails,
 
         }
         
-        // CRITICAL: Invalidate and refetch queries to ensure persistence
-        try {
-          // Invalidate all jobs queries to force refresh
-          queryClient.invalidateQueries({ queryKey: ["jobs"] });
-          
-          // Also refetch the specific job to ensure we have the latest data
-          if (selectedJobForDetails && selectedJobForDetails.id === variables.jobId) {
-            const refetchedJob = await jobService.getJob(variables.jobId);
-            if (refetchedJob) {
-              setSelectedJobForDetails(refetchedJob);
-            }
-          }
-          
-
-        } catch (error) {
-          console.error("Failed to invalidate queries or refetch job:", error);
-        }
+        // Do not invalidate the whole jobs list to avoid losing context
+        // Selected job is already refreshed above when applicable
         
 
       } catch (error) {

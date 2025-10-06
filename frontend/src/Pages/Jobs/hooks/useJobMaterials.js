@@ -33,6 +33,8 @@ export const useJobMaterials = () => {
 
   const closeMaterialForm = () => {
     setShowingMaterialFormForJob(null);
+    setShowMaterialForm(false);
+    setSelectedJobForMaterial(null);
   };
 
   const handleBarcodeMaterial = async (jobId, materialData, addMaterialToJob, selectedJobForDetails, setSelectedJobForDetails, queryClient, searchTerm, page, pageSize, statusFilter) => {
@@ -106,14 +108,8 @@ export const useJobMaterials = () => {
         setSelectedJobForDetails({ ...selectedJobForDetails, sales: [...currentSales, sale] });
       }
 
-      // Refresh the jobs data to show the new material
-      // Use a more targeted invalidation to prevent job disappearance
-      try {
-        queryClient.invalidateQueries({ queryKey: ["jobs"] });
-      } catch (error) {
-        console.error("Failed to invalidate queries:", error);
-        // Don't let this error break the flow
-      }
+      // Avoid invalidating the entire jobs list to preserve context
+      // The selected job detail is refreshed below when applicable
       
       // Update the selected job details if it's currently open
       if (selectedJobForDetails && selectedJobForDetails.id === jobId) {

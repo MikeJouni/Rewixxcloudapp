@@ -37,7 +37,12 @@ public class CustomerService {
 
     public Customer createCustomer(CustomerDto dto) {
         if (customerRepository.findByUsername(dto.getUsername()).isPresent()) {
-            throw new RuntimeException("Username already exists");
+            throw new RuntimeException("Email already exists");
+        }
+        if (dto.getPhone() != null && !dto.getPhone().trim().isEmpty()) {
+            if (customerRepository.findByPhone(dto.getPhone()).isPresent()) {
+                throw new RuntimeException("Phone number already exists");
+            }
         }
         if (dto.getUsername() == null || dto.getUsername().trim().isEmpty()) {
             throw new IllegalArgumentException("Username cannot be empty");
@@ -59,12 +64,24 @@ public class CustomerService {
     }
 
     public Customer updateCustomerFromDto(Customer customer, CustomerDto dto) {
-        if (dto.getUsername() != null)
+        if (dto.getUsername() != null) {
+            // Check if username is being changed and if it already exists
+            if (!dto.getUsername().equals(customer.getUsername()) && 
+                customerRepository.findByUsername(dto.getUsername()).isPresent()) {
+                throw new RuntimeException("Email already exists");
+            }
             customer.setUsername(dto.getUsername());
+        }
         if (dto.getName() != null)
             customer.setName(dto.getName());
-        if (dto.getPhone() != null)
+        if (dto.getPhone() != null) {
+            // Check if phone is being changed and if it already exists
+            if (!dto.getPhone().equals(customer.getPhone()) && 
+                customerRepository.findByPhone(dto.getPhone()).isPresent()) {
+                throw new RuntimeException("Phone number already exists");
+            }
             customer.setPhone(dto.getPhone());
+        }
         if (dto.getAddressLine1() != null)
             customer.setAddressLine1(dto.getAddressLine1());
         if (dto.getAddressLine2() != null)

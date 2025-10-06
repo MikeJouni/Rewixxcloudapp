@@ -30,57 +30,57 @@ app.add_middleware(
 @app.get("/api/materials/barcode-lookup")
 def barcode_lookup(barcode):
     try:
-        search_url = f"https://www.homedepot.com/s/{barcode}"
-        headers = {
-            "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 14_7_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.2 Mobile/15E148 Safari/604.1",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.5",
-            "Accept-Encoding": "gzip, deflate, br",
-            "Connection": "keep-alive",
-            "Upgrade-Insecure-Requests": "1"
-        }
-        response = requests.get(search_url, headers=headers, timeout=10, allow_redirects=True)
-        product_id_match = re.search(r'/p/[^/]+/(\d+)$', response.url)
+        # Check if SerpAPI key is available
+        if not SERPAPI_KEY:
+            raise Exception("SerpAPI key not configured")
         
-        if not product_id_match:
-            raise Exception("Product ID not found")
+        # Try multiple search approaches with SerpAPI
+        search_attempts = [
+            {"q": barcode, "description": f"barcode {barcode}"},
+            {"q": f"UPC {barcode}", "description": f"UPC {barcode}"}
+        ]
         
-        product_id = product_id_match.group(1)
+        for attempt in search_attempts:
+            params = {
+                "api_key": SERPAPI_KEY,
+                "engine": "home_depot",
+                "q": attempt["q"],
+                "num": 1
+            }
+            
+            response = requests.get(SERPAPI_BASE_URL, params=params, timeout=10)
+            
+            if response.status_code != 200:
+                continue
+            
+            data = response.json()
+            
+            if "products" not in data or not data["products"]:
+                continue
+            
+            product = data["products"][0]
+            
+            price = product.get("price")
+            if price:
+                price_str = str(price)
+            else:
+                price_str = ""
+            return {
+                "name": product.get("title", ""),
+                "price": price_str,
+                "category": product.get("category", ""),
+                "sku": barcode,
+                "supplier": "Home Depot",
+                "url": product.get("link", ""),
+                "image_url": product.get("thumbnail", ""),
+                "description": product.get("description", ""),
+                "availability": product.get("availability", "")
+            }
         
-        params = {
-            "api_key": SERPAPI_KEY,
-            "engine": "home_depot",
-            "q": product_id,
-            "num": 1
-        }
-        response = requests.get(SERPAPI_BASE_URL, params=params, timeout=10)
+        # If all attempts failed, raise an exception
+        raise Exception("Product not found")
         
-        if response.status_code != 200:
-            raise Exception("SerpAPI request failed")
-        
-        data = response.json()
-        if "products" not in data:
-            raise Exception("No product found")
-        
-        product = data["products"][0]
-        price = product.get("price")
-        if price:
-            price_str = str(price)
-        else:
-            price_str = ""
-        return {
-            "name": product.get("title", ""),
-            "price": price_str,
-            "category": product.get("category", ""),
-            "sku": barcode,
-            "supplier": "Home Depot",
-            "url": product.get("link", ""),
-            "image_url": product.get("thumbnail", ""),
-            "description": product.get("description", ""),
-            "availability": product.get("availability", "")
-        }
-        
-    except Exception:
+    except Exception as e:
         return {
             "name": f"Product (UPC: {barcode})",
             "price": "",

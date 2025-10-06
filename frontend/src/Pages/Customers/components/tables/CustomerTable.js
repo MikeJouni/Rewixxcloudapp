@@ -1,295 +1,203 @@
 import React, { useState } from "react";
+import { Table, Button, Input, Space } from "antd";
+import CustomerForm from "../forms/CustomerForm";
 
 const CustomerTable = ({ customers, onDelete, onUpdate }) => {
-  const [editingId, setEditingId] = useState(null);
-  const [editFormData, setEditFormData] = useState({});
+  const [editingCustomer, setEditingCustomer] = useState(null);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [updateError, setUpdateError] = useState(null);
 
-  if (customers.length === 0) {
-    return (
-      <p className="text-center text-gray-500 mt-8">
-        No customers found matching your search.
-      </p>
-    );
-  }
+
 
   const handleEdit = (customer) => {
-    setEditingId(customer.id);
-    const formData = {
-      name: customer.name || "",
-      username: customer.username || "",
-      phone: customer.phone || "",
-      addressLine1: customer.addressLine1 || "",
-      addressLine2: customer.addressLine2 || "",
-      city: customer.city || "",
-      state: customer.state || "",
-      zip: customer.zip || "",
-    };
-    setEditFormData(formData);
+    setEditingCustomer(customer);
+    setUpdateError(null);
   };
 
   const handleCancelEdit = () => {
-    setEditingId(null);
-    setEditFormData({});
+    setEditingCustomer(null);
+    setUpdateError(null);
   };
 
-  const handleSaveEdit = async (customerId) => {
+  const handleSaveEdit = async (formData) => {
     try {
-      await onUpdate({ id: customerId, ...editFormData });
-      setEditingId(null);
-      setEditFormData({});
+      setIsUpdating(true);
+      setUpdateError(null);
+      await onUpdate({ id: editingCustomer.id, ...formData });
+      setEditingCustomer(null);
     } catch (error) {
       console.error("Failed to update customer:", error);
+      setUpdateError(error);
+    } finally {
+      setIsUpdating(false);
     }
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setEditFormData({
-      ...editFormData,
-      [name]: value,
-    });
-  };
+
+  const columns = [
+    {
+      title: 'ID',
+      dataIndex: 'id',
+      key: 'id',
+      width: 80,
+    },
+    {
+      title: 'Name',
+      dataIndex: 'name',
+      key: 'name',
+      sorter: (a, b) => a.name.localeCompare(b.name),
+    },
+    {
+      title: 'Email',
+      dataIndex: 'username',
+      key: 'username',
+      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+        <div style={{ padding: 8 }}>
+          <Input
+            placeholder="Search by email"
+            value={selectedKeys[0]}
+            onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+            onPressEnter={() => confirm()}
+            style={{ width: 188, marginBottom: 8, display: 'block' }}
+          />
+          <Space>
+            <Button 
+              onClick={() => {
+                clearFilters();
+                confirm();
+              }} 
+              size="small" 
+              style={{ width: 90 }}
+              disabled={!selectedKeys[0]}
+            >
+              Reset
+            </Button>
+            <Button
+              type="primary"
+              onClick={() => confirm()}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Search
+            </Button>
+          </Space>
+        </div>
+      ),
+      onFilter: (value, record) => record.username.toLowerCase().includes(value.toLowerCase()),
+    },
+    {
+      title: 'Phone',
+      dataIndex: 'phone',
+      key: 'phone',
+      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+        <div style={{ padding: 8 }}>
+          <Input
+            placeholder="Search by phone"
+            value={selectedKeys[0]}
+            onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+            onPressEnter={() => confirm()}
+            style={{ width: 188, marginBottom: 8, display: 'block' }}
+          />
+          <Space>
+            <Button 
+              onClick={() => {
+                clearFilters();
+                confirm();
+              }} 
+              size="small" 
+              style={{ width: 90 }}
+              disabled={!selectedKeys[0]}
+            >
+              Reset
+            </Button>
+            <Button
+              type="primary"
+              onClick={() => confirm()}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Search
+            </Button>
+          </Space>
+        </div>
+      ),
+      onFilter: (value, record) => {
+        // Remove all non-digit characters from both the search value and record phone
+        const searchDigits = value.replace(/\D/g, '');
+        const recordDigits = record.phone.replace(/\D/g, '');
+        return recordDigits.includes(searchDigits);
+      },
+    },
+    {
+      title: 'Address',
+      key: 'address',
+      render: (_, record) => (
+        <div>
+          <div>{[record.addressLine1, record.addressLine2].filter(Boolean).join(", ")}</div>
+          <div className="text-gray-500 text-sm">
+            {[record.city, record.state, record.zip].filter(Boolean).join(", ")}
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      width: 150,
+      render: (_, record) => (
+        <div className="flex gap-2">
+          <button
+            className="px-3 py-1 bg-yellow-500 text-white rounded text-sm hover:bg-yellow-600"
+            onClick={() => handleEdit(record)}
+          >
+            Edit
+          </button>
+          <button
+            className="px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600"
+            onClick={() => onDelete(record)}
+          >
+            Delete
+          </button>
+        </div>
+      ),
+    },
+  ];
 
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                ID
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Name
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Email
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Phone
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Address
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {customers.map((customer) => (
-              <React.Fragment key={customer.id}>
-                {/* Main Row */}
-                <tr
-                  className={`hover:bg-gray-50 ${
-                    editingId === customer.id ? "bg-blue-50" : ""
-                  }`}
-                >
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {customer.id}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {customer.name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {customer.username}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {customer.phone}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-900">
-                    {[customer.addressLine1, customer.addressLine2]
-                      .filter(Boolean)
-                      .join(", ")}
-                    <br />
-                    {[customer.city, customer.state, customer.zip]
-                      .filter(Boolean)
-                      .join(", ")}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex gap-2">
-                      {editingId === customer.id ? (
-                        <>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleSaveEdit(customer.id);
-                            }}
-                            className="px-2 py-1 text-xs bg-green-500 text-white border-none rounded cursor-pointer hover:bg-green-600"
-                          >
-                            Save
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleCancelEdit();
-                            }}
-                            className="px-2 py-1 text-xs bg-gray-500 text-white border-none rounded cursor-pointer hover:bg-gray-600"
-                          >
-                            Cancel
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEdit(customer);
-                            }}
-                            className="px-2 py-1 text-xs bg-gray-500 text-white border-none rounded cursor-pointer hover:bg-gray-600"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onDelete(customer.id);
-                            }}
-                            className="px-2 py-1 text-xs bg-red-500 text-white border-none rounded cursor-pointer hover:bg-red-600"
-                          >
-                            Delete
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-                
-                {/* Edit Form Row */}
-                {editingId === customer.id && (
-                  <tr className="bg-blue-50">
-                    <td colSpan="6" className="px-6 py-4">
-                      <div className="bg-white rounded-lg border border-blue-200 p-4">
-                        <h4 className="text-sm font-medium text-gray-700 mb-3">Edit Customer</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {/* Name */}
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">
-                              Name *
-                            </label>
-                            <input
-                              type="text"
-                              name="name"
-                              value={editFormData.name}
-                              onChange={handleInputChange}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              required
-                            />
-                          </div>
-                          
-                          {/* Email */}
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">
-                              Email *
-                            </label>
-                            <input
-                              type="email"
-                              name="username"
-                              value={editFormData.username}
-                              onChange={handleInputChange}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              required
-                            />
-                          </div>
-                          
-                          {/* Phone */}
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">
-                              Phone *
-                            </label>
-                            <input
-                              type="tel"
-                              name="phone"
-                              value={editFormData.phone}
-                              onChange={handleInputChange}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              required
-                            />
-                          </div>
-                          
-                          {/* Address Line 1 */}
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">
-                              Address Line 1 *
-                            </label>
-                            <input
-                              type="text"
-                              name="addressLine1"
-                              value={editFormData.addressLine1}
-                              onChange={handleInputChange}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              required
-                            />
-                          </div>
-                          
-                          {/* Address Line 2 */}
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">
-                              Address Line 2
-                            </label>
-                            <input
-                              type="text"
-                              name="addressLine2"
-                              value={editFormData.addressLine2}
-                              onChange={handleInputChange}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                          </div>
-                          
-                          {/* City */}
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">
-                              City *
-                            </label>
-                            <input
-                              type="text"
-                              name="city"
-                              value={editFormData.city}
-                              onChange={handleInputChange}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              required
-                            />
-                          </div>
-                          
-                          {/* State */}
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">
-                              State *
-                            </label>
-                            <input
-                              type="text"
-                              name="state"
-                              value={editFormData.state}
-                              onChange={handleInputChange}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              required
-                            />
-                          </div>
-                          
-                          {/* ZIP */}
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">
-                              ZIP *
-                            </label>
-                            <input
-                              type="text"
-                              name="zip"
-                              value={editFormData.zip}
-                              onChange={handleInputChange}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              required
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </React.Fragment>
-            ))}
-          </tbody>
-        </table>
-      </div>
+    <div>
+      <Table
+        columns={columns}
+        dataSource={customers}
+        rowKey="id"
+        pagination={false}
+        scroll={{ x: 1000 }}
+        size="small"
+        defaultSortOrder="descend"
+        sortDirections={['descend', 'ascend']}
+      />
+      {/* Edit Form Modal */}
+      {editingCustomer && (
+        <div className="fixed inset-0 bg-black/80 flex justify-center items-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[95vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold">Edit Customer</h3>
+              <button
+                onClick={handleCancelEdit}
+                className="text-2xl text-gray-500 hover:text-gray-700"
+              >
+                ×
+              </button>
+            </div>
+            <CustomerForm
+              initialData={editingCustomer}
+              onSubmit={handleSaveEdit}
+              onCancel={handleCancelEdit}
+              isLoading={isUpdating}
+              error={updateError}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

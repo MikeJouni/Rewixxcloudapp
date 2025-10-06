@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import ConfirmModal from "../../../components/ConfirmModal";
 import { useNavigate } from "react-router-dom";
 import CustomerTable from "./tables/CustomerTable";
 import useCustomers from "../hooks/useCustomers";
@@ -6,6 +7,7 @@ import useCustomers from "../hooks/useCustomers";
 const CustomerListView = () => {
   const navigate = useNavigate();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [customerToDelete, setCustomerToDelete] = useState(null);
   const {
     customers,
     searchTerm,
@@ -23,22 +25,9 @@ const CustomerListView = () => {
     hasPrevious,
   } = useCustomers();
 
-  const handleDelete = (id) => {
-    if (isDeleting) {
-      return;
-    }
-    
-    if (window.confirm("Are you sure you want to delete this customer?")) {
-      setIsDeleting(true);
-      deleteCustomer.mutate(id, {
-        onSuccess: () => {
-          setIsDeleting(false);
-        },
-        onError: () => {
-          setIsDeleting(false);
-        }
-      });
-    }
+  const handleDelete = (customer) => {
+    if (isDeleting) return;
+    setCustomerToDelete(customer);
   };
 
   // Reset page to 0 when search term or pageSize changes
@@ -65,7 +54,7 @@ const CustomerListView = () => {
       <div className="mb-6">
         <input
           type="text"
-          placeholder="Search customers..."
+          placeholder="Search customers by name..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -90,6 +79,30 @@ const CustomerListView = () => {
         onUpdate={updateCustomer.mutateAsync}
         isDeleting={deleteCustomer.isLoading || isDeleting}
         deleteError={deleteCustomer.error}
+      />
+
+      <ConfirmModal
+        isOpen={!!customerToDelete}
+        title="Delete Customer"
+        message={customerToDelete ? `This will permanently delete customer "${customerToDelete.name}" and cannot be undone.` : ""}
+        confirmLabel="Delete Customer"
+        confirmButtonClass="bg-red-600 hover:bg-red-700"
+        onCancel={() => setCustomerToDelete(null)}
+        onConfirm={() => {
+          if (!customerToDelete) return;
+          setIsDeleting(true);
+          deleteCustomer.mutate(customerToDelete.id, {
+            onSettled: () => {
+              setIsDeleting(false);
+              setCustomerToDelete(null);
+            }
+          });
+        }}
+        requireTextMatch={customerToDelete ? {
+          expected: customerToDelete.name,
+          placeholder: customerToDelete.name,
+          help: `Type the customer's name to confirm: ${customerToDelete.name}`,
+        } : null}
       />
 
       {/* Pagination Controls */}
