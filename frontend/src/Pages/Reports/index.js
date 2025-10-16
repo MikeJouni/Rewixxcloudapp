@@ -1,7 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Button, Card, DatePicker, Space, Typography, Alert, Spin } from "antd";
+import { DownloadOutlined, FileTextOutlined, UserOutlined } from "@ant-design/icons";
 import * as customerService from "../Customers/services/customerService";
 import * as jobService from "../Jobs/services/jobService";
+
+const { Title, Text } = Typography;
 
 const Reports = () => {
   const [showJobsModal, setShowJobsModal] = useState(false);
@@ -23,7 +27,7 @@ const Reports = () => {
   });
 
   const customers = customersData?.customers || [];
-  const jobs = jobsData?.jobs || [];
+  const jobs = useMemo(() => jobsData?.jobs || [], [jobsData?.jobs]);
 
   const filteredJobs = useMemo(() => {
     if (!reportParams?.startDate && !reportParams?.endDate) return jobs;
@@ -189,11 +193,11 @@ const Reports = () => {
 
   if (customersLoading || jobsLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading reports data...</p>
+          <div className="text-center py-12">
+            <Spin size="large" />
+            <p className="mt-4 text-gray-600 text-lg">Loading reports data...</p>
           </div>
         </div>
       </div>
@@ -201,29 +205,266 @@ const Reports = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-5xl mx-auto">
-        <div className="bg-white rounded-lg shadow p-8 mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Reports</h1>
-          <p className="mt-2 text-gray-600">Generate a jobs PDF with details and totals, or export all customers as CSV.</p>
-
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <button
-              onClick={() => { setJobsModalError(""); setShowJobsModal(true); }}
-              className="w-full px-5 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-left"
-            >
-              <span className="block text-lg font-semibold">Download Jobs PDF</span>
-              <span className="block text-sm text-blue-100">Pick date range and download</span>
-            </button>
-            <button
-              onClick={exportAllCustomersCsv}
-              className="w-full px-5 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 text-left"
-            >
-              <span className="block text-lg font-semibold">Export Customers CSV</span>
-              <span className="block text-sm text-green-100">Shows details about customers such as contacts and totals</span>
-            </button>
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
+      <div className="max-w-6xl mx-auto">
+        <Card className="mb-6 shadow-lg">
+          <div className="text-center mb-8">
+            <Title level={1} className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
+              📊 Reports Dashboard
+            </Title>
+            <Text className="text-base sm:text-lg text-gray-600">
+              Generate comprehensive reports and export data for analysis
+            </Text>
           </div>
+
+          {/* Business Insights Dashboard */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <Card className="text-center border-l-4 border-l-blue-500">
+              <div className="text-2xl font-bold text-blue-600">{jobs.length}</div>
+              <div className="text-sm text-gray-600">Active Jobs</div>
+              <div className="text-xs text-gray-500 mt-1">
+                {jobs.filter(j => j.status === 'IN_PROGRESS').length} in progress
+              </div>
+            </Card>
+            <Card className="text-center border-l-4 border-l-green-500">
+              <div className="text-2xl font-bold text-green-600">
+                {jobs.filter(j => j.status === 'COMPLETED').length}
+              </div>
+              <div className="text-sm text-gray-600">Completed Jobs</div>
+              <div className="text-xs text-gray-500 mt-1">
+                {jobs.length > 0 ? Math.round((jobs.filter(j => j.status === 'COMPLETED').length / jobs.length) * 100) : 0}% completion rate
+              </div>
+            </Card>
+            <Card className="text-center border-l-4 border-l-orange-500">
+              <div className="text-2xl font-bold text-orange-600">
+                {jobs.filter(j => j.priority === 'URGENT' || j.priority === 'HIGH').length}
+              </div>
+              <div className="text-sm text-gray-600">High Priority Jobs</div>
+              <div className="text-xs text-gray-500 mt-1">
+                {jobs.filter(j => j.priority === 'URGENT').length} urgent
+              </div>
+            </Card>
+            <Card className="text-center border-l-4 border-l-purple-500">
+              <div className="text-2xl font-bold text-purple-600">
+                {customers.length}
+              </div>
+              <div className="text-sm text-gray-600">Total Customers</div>
+              <div className="text-xs text-gray-500 mt-1">
+                {customers.filter(c => c.jobs && c.jobs.length > 0).length} with active jobs
+              </div>
+            </Card>
+          </div>
+
+          {/* Recent Activity & Insights */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <Card title="📋 Recent Job Activity" className="h-full">
+              <div className="space-y-3">
+                {jobs.slice(0, 5).map((job) => (
+                  <div key={job.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <div className="font-medium text-gray-900">{job.title}</div>
+                      <div className="text-sm text-gray-600">{job.customer?.name || 'Unknown Customer'}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className={`text-xs px-2 py-1 rounded-full ${
+                        job.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
+                        job.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {job.status}
+                      </div>
+                      <div className={`text-xs mt-1 px-2 py-1 rounded-full ${
+                        job.priority === 'URGENT' ? 'bg-red-100 text-red-800' :
+                        job.priority === 'HIGH' ? 'bg-orange-100 text-orange-800' :
+                        job.priority === 'MEDIUM' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
+                        {job.priority}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {jobs.length === 0 && (
+                  <div className="text-center text-gray-500 py-8">
+                    No jobs found. Create your first job to get started!
+                  </div>
+                )}
+              </div>
+            </Card>
+
+            <Card title="⚡ Priority Alerts" className="h-full">
+              <div className="space-y-3">
+                {jobs.filter(j => j.priority === 'URGENT').length > 0 && (
+                  <div className="p-3 bg-red-50 border-l-4 border-red-500 rounded-lg">
+                    <div className="font-medium text-red-800">🚨 Urgent Jobs</div>
+                    <div className="text-sm text-red-600">
+                      {jobs.filter(j => j.priority === 'URGENT').length} jobs need immediate attention
+                    </div>
+                  </div>
+                )}
+                {jobs.filter(j => j.status === 'IN_PROGRESS' && j.priority === 'HIGH').length > 0 && (
+                  <div className="p-3 bg-orange-50 border-l-4 border-orange-500 rounded-lg">
+                    <div className="font-medium text-orange-800">⚠️ High Priority</div>
+                    <div className="text-sm text-orange-600">
+                      {jobs.filter(j => j.status === 'IN_PROGRESS' && j.priority === 'HIGH').length} jobs in progress
+                    </div>
+                  </div>
+                )}
+                {jobs.filter(j => j.status === 'COMPLETED').length > 0 && (
+                  <div className="p-3 bg-green-50 border-l-4 border-green-500 rounded-lg">
+                    <div className="font-medium text-green-800">✅ Completed</div>
+                    <div className="text-sm text-green-600">
+                      {jobs.filter(j => j.status === 'COMPLETED').length} jobs finished this period
+                    </div>
+                  </div>
+                )}
+                {jobs.filter(j => j.priority === 'URGENT').length === 0 && 
+                 jobs.filter(j => j.status === 'IN_PROGRESS' && j.priority === 'HIGH').length === 0 && (
+                  <div className="text-center text-gray-500 py-8">
+                    No priority alerts. Great job staying on top of things! 🎉
+                  </div>
+                )}
+              </div>
+            </Card>
+          </div>
+
+          {/* Materials & Inventory Insights */}
+          <Card title="🔧 Materials & Inventory Overview" className="mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="text-center p-4 bg-blue-50 rounded-lg">
+                <div className="text-2xl font-bold text-blue-600">
+                  {jobs.reduce((total, job) => {
+                    if (job?.sales && Array.isArray(job.sales)) {
+                      return total + job.sales.reduce((saleTotal, sale) => {
+                        if (sale?.saleItems && Array.isArray(sale.saleItems)) {
+                          return saleTotal + sale.saleItems.reduce((itemTotal, item) => itemTotal + (Number(item?.quantity) || 0), 0);
+                        }
+                        return saleTotal;
+                      }, 0);
+                    }
+                    return total;
+                  }, 0)}
+                </div>
+                <div className="text-sm text-gray-600">Total Materials Used</div>
+                <div className="text-xs text-gray-500 mt-1">Across all jobs</div>
+              </div>
+              <div className="text-center p-4 bg-green-50 rounded-lg">
+                <div className="text-2xl font-bold text-green-600">
+                  {new Set(jobs.flatMap(job => 
+                    job?.sales?.flatMap(sale => 
+                      sale?.saleItems?.map(item => item?.product?.name).filter(Boolean)
+                    ) || []
+                  )).size}
+                </div>
+                <div className="text-sm text-gray-600">Unique Products</div>
+                <div className="text-xs text-gray-500 mt-1">Different materials tracked</div>
+              </div>
+              <div className="text-center p-4 bg-orange-50 rounded-lg">
+                <div className="text-2xl font-bold text-orange-600">
+                  {jobs.filter(job => 
+                    job?.sales?.some(sale => 
+                      sale?.saleItems?.some(item => item?.product?.name)
+                    )
+                  ).length}
+                </div>
+                <div className="text-sm text-gray-600">Jobs with Materials</div>
+                <div className="text-xs text-gray-500 mt-1">Projects with tracked inventory</div>
+              </div>
+            </div>
+          </Card>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card 
+              hoverable 
+              className="border-2 border-blue-100 hover:border-blue-300 transition-all duration-300"
+            >
+              <div className="text-center">
+                <FileTextOutlined className="text-4xl text-blue-600 mb-4" />
+                <Title level={3} className="text-xl font-semibold text-gray-900 mb-2">
+                  Jobs PDF Report
+                </Title>
+                <Text className="text-gray-600 mb-6 block">
+                  Create professional PDF reports with job details, materials used, customer information, and project timelines for client presentations and record keeping
+                </Text>
+                <Button
+                  type="primary"
+                  size="large"
+                  icon={<DownloadOutlined />}
+                  onClick={() => { setJobsModalError(""); setShowJobsModal(true); }}
+                  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 border-blue-600 hover:border-blue-700"
+                >
+                  Generate PDF Report
+                </Button>
+              </div>
+            </Card>
+
+            <Card 
+              hoverable 
+              className="border-2 border-green-100 hover:border-green-300 transition-all duration-300"
+            >
+              <div className="text-center">
+                <UserOutlined className="text-4xl text-green-600 mb-4" />
+                <Title level={3} className="text-xl font-semibold text-gray-900 mb-2">
+                  Customer Data Export
+                </Title>
+                <Text className="text-gray-600 mb-6 block">
+                  Export customer database with contact information, job history, and service records for CRM integration and customer relationship management
+                </Text>
+                <Button
+                  type="primary"
+                  size="large"
+                  icon={<DownloadOutlined />}
+                  onClick={exportAllCustomersCsv}
+                  className="w-full sm:w-auto bg-green-600 hover:bg-green-700 border-green-600 hover:border-green-700"
+                >
+                  Export CSV
+                </Button>
+              </div>
+            </Card>
+          </div>
+
+          {/* Quick Actions for Electrical Contractors */}
+          <Card title="⚡ Quick Actions" className="mt-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Button 
+                type="default" 
+                size="large" 
+                className="h-20 flex flex-col items-center justify-center"
+                onClick={() => window.location.href = '/jobs/create'}
+              >
+                <div className="text-2xl mb-2">➕</div>
+                <div className="text-sm">New Job</div>
+              </Button>
+              <Button 
+                type="default" 
+                size="large" 
+                className="h-20 flex flex-col items-center justify-center"
+                onClick={() => window.location.href = '/customers/create'}
+              >
+                <div className="text-2xl mb-2">👤</div>
+                <div className="text-sm">Add Customer</div>
+              </Button>
+              <Button 
+                type="default" 
+                size="large" 
+                className="h-20 flex flex-col items-center justify-center"
+                onClick={() => window.location.href = '/jobs'}
+              >
+                <div className="text-2xl mb-2">📋</div>
+                <div className="text-sm">View Jobs</div>
+              </Button>
+              <Button 
+                type="default" 
+                size="large" 
+                className="h-20 flex flex-col items-center justify-center"
+                onClick={() => window.location.href = '/customers'}
+              >
+                <div className="text-2xl mb-2">👥</div>
+                <div className="text-sm">View Customers</div>
+              </Button>
         </div>
+          </Card>
+        </Card>
 
         {/* Off-screen printable content used for PDF generation */}
         {showPrintArea && (
@@ -353,40 +594,78 @@ const Reports = () => {
         {/* Jobs PDF modal */}
         {showJobsModal && (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg w-full max-w-lg p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-semibold">Download Jobs PDF</h3>
-                <button className="text-2xl leading-none text-gray-500" onClick={() => setShowJobsModal(false)}>×</button>
+            <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-6">
+                <Title level={3} className="text-xl font-semibold mb-0">Generate PDF Report</Title>
+                <Button 
+                  type="text" 
+                  onClick={() => setShowJobsModal(false)}
+                  className="text-2xl p-0 h-auto text-gray-500 hover:text-gray-700"
+                >
+                  ×
+                </Button>
               </div>
 
-              <div className="grid grid-cols-1 gap-4">
+              <Space direction="vertical" size="large" className="w-full">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Start date</label>
-                  <input type="date" value={jobsStartDate} onChange={(e) => { setJobsStartDate(e.target.value); setJobsModalError(""); }} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <Text strong className="block mb-2">Start Date</Text>
+                  <DatePicker
+                    value={jobsStartDate ? new Date(jobsStartDate) : null}
+                    onChange={(date) => { 
+                      setJobsStartDate(date ? date.format('YYYY-MM-DD') : ''); 
+                      setJobsModalError(""); 
+                    }}
+                    className="w-full"
+                    size="large"
+                    placeholder="Select start date"
+                  />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">End date</label>
-                  <input type="date" value={jobsEndDate} onChange={(e) => { setJobsEndDate(e.target.value); setJobsModalError(""); }} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <Text strong className="block mb-2">End Date</Text>
+                  <DatePicker
+                    value={jobsEndDate ? new Date(jobsEndDate) : null}
+                    onChange={(date) => { 
+                      setJobsEndDate(date ? date.format('YYYY-MM-DD') : ''); 
+                      setJobsModalError(""); 
+                    }}
+                    className="w-full"
+                    size="large"
+                    placeholder="Select end date"
+                  />
                 </div>
                 {jobsModalError && (
-                  <p className="text-sm text-red-600">{jobsModalError}</p>
+                  <Alert
+                    message={jobsModalError}
+                    type="error"
+                    showIcon
+                    className="w-full"
+                  />
                 )}
-              </div>
+              </Space>
 
-              <div className="mt-6 flex justify-end gap-3">
-                <button className="px-4 py-2 bg-gray-200 rounded-md" onClick={() => setShowJobsModal(false)}>Cancel</button>
-                <button
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-end">
+                <Button 
+                  size="large"
+                  onClick={() => setShowJobsModal(false)}
+                  className="w-full sm:w-auto"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="primary"
+                  size="large"
+                  icon={<DownloadOutlined />}
                   onClick={() => {
                     if (!validateJobsModal()) return;
                     setReportParams({ startDate: jobsStartDate, endDate: jobsEndDate });
                     setShowJobsModal(false);
                   }}
+                  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 border-blue-600 hover:border-blue-700"
                 >
-                  Download PDF
-                </button>
+                  Generate PDF
+                </Button>
               </div>
-            </div>
+            </Card>
           </div>
         )}
       </div>

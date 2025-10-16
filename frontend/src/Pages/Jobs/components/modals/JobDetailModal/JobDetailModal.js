@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import ConfirmModal from "../../../../../components/ConfirmModal";
 import BarcodeScannerModal from "../BarcodeScannerModal";

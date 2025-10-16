@@ -1,5 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { Button } from "antd";
+import { PlusOutlined } from "@ant-design/icons";
 import JobTable from "./tables/JobTable";
 import JobDetailModal from "./modals/JobDetailModal";
 import ReceiptTableModal from "./modals/ReceiptTableModal";
@@ -21,8 +23,6 @@ const JobsListView = () => {
     updateJob,
     handleReceiptUpload,
     viewJobDetails,
-    closeMaterialForm,
-    handleAddMaterial,
     page,
     setPage,
     pageSize,
@@ -48,18 +48,21 @@ const JobsListView = () => {
 
 
   return (
-    <div className="p-4 sm:p-6 w-full h-full">
+    <div className="p-4 sm:p-6 w-full h-full max-w-full overflow-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 sm:gap-0">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
           Job Management
         </h1>
-        <button
-          className="w-full sm:w-auto px-3 sm:px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors text-sm sm:text-base"
+        <Button
+          type="primary"
+          size="large"
+          icon={<PlusOutlined />}
           onClick={() => navigate("/jobs/create")}
+          className="w-full sm:w-auto"
         >
           Add New Job
-        </button>
+        </Button>
       </div>
 
       {/* Search */}
@@ -69,15 +72,15 @@ const JobsListView = () => {
           placeholder="Search jobs by title or customer name..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-4 py-3 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm"
         />
       </div>
 
       {/* Jobs Table */}
       {isLoading ? (
-        <div className="text-center py-8">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-          <p className="mt-2 text-gray-600">Loading jobs...</p>
+        <div className="text-center py-12">
+          <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+          <p className="mt-3 text-gray-600 text-lg">Loading jobs...</p>
         </div>
       ) : (
         <JobTable
@@ -91,23 +94,23 @@ const JobsListView = () => {
       {/* Pagination Controls */}
       <div className="flex flex-col sm:flex-row items-center justify-between mt-4 gap-2">
         <div className="flex items-center gap-2">
-          <button
+          <Button
             onClick={() => setPage(page - 1)}
             disabled={!hasPrevious}
-            className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+            size="small"
           >
             Previous
-          </button>
-          <span>
+          </Button>
+          <span className="text-sm text-gray-600">
             Page {page + 1} of {totalPages}
           </span>
-          <button
+          <Button
             onClick={() => setPage(page + 1)}
             disabled={!hasNext}
-            className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+            size="small"
           >
             Next
-          </button>
+          </Button>
         </div>
         <div className="flex items-center gap-2">
           <label htmlFor="pageSize" className="text-sm">

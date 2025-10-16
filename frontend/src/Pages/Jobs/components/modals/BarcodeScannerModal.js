@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { Button } from "antd";
 import { Html5Qrcode } from "html5-qrcode";
 import config from "../../../../config";
 
@@ -230,7 +231,6 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile, jobId 
         // First, create or find the product in the database via shared service
         const productPayload = {
           name: product.name,
-          name: product.name,
           description: product.description || `Product from barcode scan: ${product.name}`,
           unitPrice: parseFloat(product.price.replace(/[^0-9.]/g, "")) || 0,
         };
@@ -290,13 +290,14 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile, jobId 
           {/* Modal Header */}
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-semibold text-gray-800">Scan Barcode</h3>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
-              aria-label="Close"
-            >
-              ×
-            </button>
+          <Button
+            type="text"
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 text-2xl font-bold p-0 h-auto"
+            aria-label="Close"
+          >
+            ×
+          </Button>
           </div>
 
           {/* Message */}
@@ -306,12 +307,14 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile, jobId 
 
           {/* Close Button */}
           <div className="mt-6 flex justify-center">
-            <button
+            <Button
+              type="primary"
               onClick={onClose}
-              className="px-5 py-2 rounded-full bg-gray-800 text-white font-medium hover:bg-gray-900 transition"
+              size="large"
+              className="bg-gray-800 hover:bg-gray-900 border-gray-800 hover:border-gray-900"
             >
               Close
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -326,12 +329,13 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile, jobId 
           <h3 className="m-0">
             {showQuantitySelector ? "Select Quantity" : "Scan Barcode"}
           </h3>
-          <button
+          <Button
+            type="text"
             onClick={handleClose}
-            className="bg-none border-none text-2xl cursor-pointer text-gray-500 hover:text-gray-700"
+            className="text-2xl p-0 h-auto text-gray-500 hover:text-gray-700"
           >
             ×
-          </button>
+          </Button>
         </div>
 
         {/* Scanner View */}
@@ -411,12 +415,13 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile, jobId 
             <div className="mb-6">
               <label className="block mb-2 font-bold">Quantity:</label>
               <div className="flex items-center gap-4">
-                <button
+                <Button
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="px-4 py-2 bg-gray-600 text-white border-none rounded cursor-pointer text-xl hover:bg-gray-700"
+                  size="large"
+                  className="bg-gray-600 hover:bg-gray-700 border-gray-600 hover:border-gray-700"
                 >
                   -
-                </button>
+                </Button>
                 <input
                   type="number"
                   value={quantity}
@@ -426,12 +431,13 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile, jobId 
                   min="1"
                   className="px-2 py-2 border border-gray-300 rounded w-20 text-center text-lg"
                 />
-                <button
+                <Button
                   onClick={() => setQuantity(quantity + 1)}
-                  className="px-4 py-2 bg-gray-600 text-white border-none rounded cursor-pointer text-xl hover:bg-gray-700"
+                  size="large"
+                  className="bg-gray-600 hover:bg-gray-700 border-gray-600 hover:border-gray-700"
                 >
                   +
-                </button>
+                </Button>
               </div>
 
               <div className="mt-2 p-3 bg-green-50 rounded text-center font-bold">
@@ -445,12 +451,14 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile, jobId 
 
             {/* Action Buttons */}
             <div className="flex justify-center">
-              <button
+              <Button
+                type="primary"
                 onClick={handleQuantityConfirm}
-                className="px-8 py-3 bg-green-600 text-white border-none rounded cursor-pointer text-base font-bold hover:bg-green-700"
+                size="large"
+                className="bg-green-600 hover:bg-green-700 border-green-600 hover:border-green-700"
               >
                 Add to Materials
-              </button>
+              </Button>
             </div>
           </div>
         )}
