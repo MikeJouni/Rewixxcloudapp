@@ -3,7 +3,6 @@ package com.rewixxcloudapp.service;
 import com.rewixxcloudapp.entity.Job;
 import com.rewixxcloudapp.entity.Customer;
 import com.rewixxcloudapp.entity.JobStatus;
-import com.rewixxcloudapp.entity.JobPriority;
 import com.rewixxcloudapp.entity.Sale;
 import com.rewixxcloudapp.entity.SaleItem;
 import com.rewixxcloudapp.entity.Product;
@@ -46,8 +45,8 @@ public class JobService {
             throw new IllegalArgumentException("Title cannot be empty");
         }
 
-        logger.info("Creating job with data: title={}, customerId={}, status={}, priority={}", 
-                   dto.getTitle(), dto.getCustomerId(), dto.getStatus(), dto.getPriority());
+        logger.info("Creating job with data: title={}, customerId={}, status={}", 
+                   dto.getTitle(), dto.getCustomerId(), dto.getStatus());
 
         Job job = new Job();
         job.setTitle(dto.getTitle());
@@ -65,17 +64,6 @@ public class JobService {
             job.setStatus(JobStatus.PENDING);
         }
 
-        if (dto.getPriority() != null && !dto.getPriority().trim().isEmpty()) {
-            try {
-                job.setPriority(JobPriority.valueOf(dto.getPriority().toUpperCase()));
-            } catch (IllegalArgumentException e) {
-                logger.warn("Invalid priority provided: {}, using default MEDIUM", dto.getPriority());
-                job.setPriority(JobPriority.MEDIUM);
-            }
-        } else {
-            job.setPriority(JobPriority.MEDIUM);
-        }
-
         // Handle dates - convert from string to LocalDate if needed
         if (dto.getStartDate() != null) {
             job.setStartDate(dto.getStartDate());
@@ -87,6 +75,11 @@ public class JobService {
         // Set receipt image URLs if provided
         if (dto.getReceiptImageUrls() != null) {
             job.setReceiptImageUrls(dto.getReceiptImageUrls());
+        }
+
+        // Set job price if provided
+        if (dto.getJobPrice() != null) {
+            job.setJobPrice(dto.getJobPrice());
         }
 
         // Set customer if provided
@@ -111,34 +104,40 @@ public class JobService {
     }
 
     public Job updateJobFromDto(Job job, JobDto dto) {
+        logger.info("Updating job {} with DTO: title={}, description={}, jobPrice={}, status={}", 
+                   job.getId(), dto.getTitle(), dto.getDescription(), dto.getJobPrice(), dto.getStatus());
+        
         if (dto.getTitle() != null && !dto.getTitle().trim().isEmpty()) {
+            logger.info("Setting title to: {}", dto.getTitle());
             job.setTitle(dto.getTitle());
         }
         if (dto.getDescription() != null) {
+            logger.info("Setting description to: {}", dto.getDescription());
             job.setDescription(dto.getDescription());
         }
         if (dto.getStatus() != null && !dto.getStatus().trim().isEmpty()) {
             try {
+                logger.info("Setting status to: {}", dto.getStatus());
                 job.setStatus(JobStatus.valueOf(dto.getStatus().toUpperCase()));
             } catch (IllegalArgumentException e) {
                 logger.warn("Invalid status provided: {}", dto.getStatus());
             }
         }
-        if (dto.getPriority() != null && !dto.getPriority().trim().isEmpty()) {
-            try {
-                job.setPriority(JobPriority.valueOf(dto.getPriority().toUpperCase()));
-            } catch (IllegalArgumentException e) {
-                logger.warn("Invalid priority provided: {}", dto.getPriority());
-            }
-        }
         if (dto.getStartDate() != null) {
+            logger.info("Setting start date to: {}", dto.getStartDate());
             job.setStartDate(dto.getStartDate());
         }
         if (dto.getEndDate() != null) {
+            logger.info("Setting end date to: {}", dto.getEndDate());
             job.setEndDate(dto.getEndDate());
         }
         if (dto.getReceiptImageUrls() != null) {
+            logger.info("Setting receipt image URLs");
             job.setReceiptImageUrls(dto.getReceiptImageUrls());
+        }
+        if (dto.getJobPrice() != null) {
+            logger.info("Setting job price to: {}", dto.getJobPrice());
+            job.setJobPrice(dto.getJobPrice());
         }
         // Remove estimated hours since it's no longer needed
         // if (dto.getEstimatedHours() != null) {
@@ -147,10 +146,15 @@ public class JobService {
         if (dto.getCustomerId() != null) {
             Optional<Customer> customer = customerRepository.findById(dto.getCustomerId());
             if (customer.isPresent()) {
+                logger.info("Setting customer to: {}", customer.get().getUsername());
                 job.setCustomer(customer.get());
             }
         }
-        return jobRepository.save(job);
+        
+        logger.info("Saving job to database...");
+        Job savedJob = jobRepository.save(job);
+        logger.info("Job saved successfully with ID: {}", savedJob.getId());
+        return savedJob;
     }
 
     public void deleteJobById(Long id) {

@@ -1,7 +1,6 @@
 package com.rewixxcloudapp.controller;
 
 import com.rewixxcloudapp.entity.Job;
-import com.rewixxcloudapp.entity.JobStatus;
 import com.rewixxcloudapp.service.JobService;
 import com.rewixxcloudapp.dto.JobDto;
 import com.rewixxcloudapp.dto.MaterialDto;
@@ -67,18 +66,23 @@ public class JobController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updateJob(@PathVariable Long id, @RequestBody JobDto dto) {
         try {
+            logger.info("Received update request for job ID: {} with data: title={}, description={}, jobPrice={}, status={}", 
+                       id, dto.getTitle(), dto.getDescription(), dto.getJobPrice(), dto.getStatus());
+            
             Optional<Job> jobOpt = jobService.getJobById(id);
             if (jobOpt.isPresent()) {
                 Job existing = jobOpt.get();
-                if (existing.getStatus() == JobStatus.COMPLETED) {
-                    return ResponseEntity.status(409).body("Completed jobs cannot be edited");
-                }
+                logger.info("Found existing job: {}", existing.getId());
+                // Allow editing jobs regardless of status
                 Job updatedJob = jobService.updateJobFromDto(existing, dto);
+                logger.info("Job updated successfully: {}", updatedJob.getId());
                 return ResponseEntity.ok(updatedJob);
             } else {
+                logger.warn("Job not found with ID: {}", id);
                 return ResponseEntity.notFound().build();
             }
         } catch (IllegalArgumentException e) {
+            logger.error("Invalid argument when updating job {}: {}", id, e.getMessage());
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
             logger.error("Error updating job: {}", id, e);

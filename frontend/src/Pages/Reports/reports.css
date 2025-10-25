@@ -1,0 +1,187 @@
+/* Rewixx Reports Dashboard Styling */
+
+.reports-tabs .ant-tabs-tab {
+  padding: 12px 24px;
+  font-weight: 500;
+  border-radius: 8px 8px 0 0;
+  transition: all 0.3s ease;
+}
+
+.reports-tabs .ant-tabs-tab:hover {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  transform: translateY(-2px);
+}
+
+.reports-tabs .ant-tabs-tab-active {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.reports-tabs .ant-tabs-content-holder {
+  background: white;
+  border-radius: 0 8px 8px 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Custom gradient backgrounds for different report sections */
+.revenue-card {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border-left: 4px solid #22c55e;
+}
+
+.labor-card {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border-left: 4px solid #3b82f6;
+}
+
+.expenses-card {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-left: 4px solid #f59e0b;
+}
+
+.insights-card {
+  background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+  border-left: 4px solid #8b5cf6;
+}
+
+/* Enhanced card hover effects */
+.ant-card {
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.ant-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Custom statistic styling */
+.ant-statistic-title {
+  font-weight: 600;
+  color: #374151;
+  font-size: 14px;
+}
+
+.ant-statistic-content {
+  font-weight: 700;
+  font-size: 24px;
+}
+
+/* Enhanced button styling */
+.export-button {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  border: none;
+  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+  transition: all 0.3s ease;
+}
+
+.export-button:hover {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.4);
+}
+
+/* Table enhancements */
+.ant-table-thead > tr > th {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.ant-table-tbody > tr:hover > td {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+}
+
+/* Progress bar enhancements */
+.ant-progress-bg {
+  background: linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%);
+}
+
+/* Tag enhancements */
+.ant-tag {
+  border-radius: 6px;
+  font-weight: 500;
+  padding: 4px 12px;
+}
+
+/* Responsive design improvements */
+@media (max-width: 768px) {
+  .reports-tabs .ant-tabs-tab {
+    padding: 8px 16px;
+    font-size: 14px;
+  }
+  
+  .ant-statistic-content {
+    font-size: 20px;
+  }
+  
+  .ant-card {
+    margin-bottom: 16px;
+  }
+}
+
+/* Loading states */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 12px;
+}
+
+/* Custom scrollbar for better UX */
+.ant-table-body::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.ant-table-body::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.ant-table-body::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  border-radius: 4px;
+}
+
+.ant-table-body::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+}
+
+/* Animation for data loading */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+/* Enhanced focus states for accessibility */
+.ant-btn:focus,
+.ant-input:focus,
+.ant-picker:focus {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #3b82f6;
+}
+
+/* Custom gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+

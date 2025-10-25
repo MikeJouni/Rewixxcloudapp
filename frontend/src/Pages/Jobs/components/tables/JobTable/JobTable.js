@@ -39,7 +39,6 @@ const JobTable = ({
       customerId: job.customer?.id || "",
       title: job.title || "",
       description: job.description || "",
-      priority: job.priority || "MEDIUM",
     });
     // Pre-fill the customer search with the current customer's name
     setCustomerSearchTerm(job.customer?.name || "");
@@ -92,13 +91,6 @@ const JobTable = ({
     setShowCustomerDropdown(prev => ({ ...prev, [jobId]: false }));
   };
 
-  const priorityOptions = [
-    { value: "LOW", label: "Low", color: "text-green-600" },
-    { value: "MEDIUM", label: "Medium", color: "text-yellow-600" },
-    { value: "HIGH", label: "High", color: "text-orange-600" },
-    { value: "URGENT", label: "Urgent", color: "text-red-600" }
-  ];
-
   const columns = JobTableColumns({
     editingId,
     onViewDetails,
@@ -109,16 +101,17 @@ const JobTable = ({
   });
 
   return (
-    <div>
+    <>
       <Table
         columns={columns}
         dataSource={jobs}
         rowKey="id"
         pagination={false}
-        scroll={{ x: 1200 }}
+        scroll={{ x: 'max-content' }}
         size="small"
         defaultSortOrder="descend"
         sortDirections={['descend', 'ascend']}
+        className="responsive-table"
       />
       
       <JobDeleteConfirm
@@ -138,7 +131,6 @@ const JobTable = ({
         filteredCustomers={filteredCustomers}
         customerSearchTerm={customerSearchTerm}
         showCustomerDropdown={showCustomerDropdown[editingId]}
-        priorityOptions={priorityOptions}
         onClose={handleCancelEdit}
         onInputChange={handleInputChange}
         onCustomerSearch={handleCustomerSearch}
@@ -146,7 +138,7 @@ const JobTable = ({
         onSaveEdit={handleSaveEdit}
         onDropdownToggle={(show) => setShowCustomerDropdown(prev => ({ ...prev, [editingId]: show }))}
       />
-    </div>
+    </>
   );
 };
 

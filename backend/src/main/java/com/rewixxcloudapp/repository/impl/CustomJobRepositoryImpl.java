@@ -29,7 +29,6 @@ public class CustomJobRepositoryImpl implements CustomJobRepository {
                 "(:searchTerm = '' OR LOWER(j.title) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
                 "OR LOWER(j.description) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
                 "OR LOWER(j.status) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
-                "OR LOWER(j.priority) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
                 "OR (c IS NOT NULL AND LOWER(c.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')))) " +
                 "AND (:statusEnum IS NULL OR j.status = :statusEnum) " +
                 "ORDER BY j.id DESC";
@@ -55,7 +54,6 @@ public class CustomJobRepositoryImpl implements CustomJobRepository {
                 "(:searchTerm = '' OR LOWER(j.title) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
                 "OR LOWER(j.description) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
                 "OR LOWER(j.status) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
-                "OR LOWER(j.priority) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
                 "OR (c IS NOT NULL AND LOWER(c.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')))) " +
                 "AND (:statusEnum IS NULL OR j.status = :statusEnum)";
         TypedQuery<Long> query = entityManager.createQuery(countQuery, Long.class);

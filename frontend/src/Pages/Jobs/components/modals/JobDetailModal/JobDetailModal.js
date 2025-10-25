@@ -85,27 +85,22 @@ const JobDetailModal = ({
     }
   };
 
-  const updateMaterialQuantity = (materialId, newQuantity) => {
-    // For now, we'll just refresh the job data
-    onUpdateJob(job);
-  };
-
   const handleCompleteJob = () => {
     setShowCompleteConfirm(false);
     if (onCompleteJob) onCompleteJob(job.id);
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex justify-center items-center z-50 p-4">
-      <div className="bg-white rounded-lg p-6 max-w-[95vw] max-h-[95vh] overflow-auto w-full max-w-6xl">
+    <div className="fixed inset-0 bg-black/80 flex justify-center items-center z-50 p-2 sm:p-4 pt-24 sm:pt-4">
+      <div className="bg-white rounded-lg p-3 sm:p-4 md:p-6 max-w-[98vw] sm:max-w-[95vw] max-h-[85vh] sm:max-h-[95vh] overflow-auto w-full max-w-6xl">
         {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold m-0">
+        <div className="flex justify-between items-start sm:items-center mb-4 sm:mb-6 gap-2">
+          <h2 className="text-lg sm:text-xl md:text-2xl font-bold m-0 leading-tight">
             Job #{job.id} - {job.title}
           </h2>
           <button
             onClick={onClose}
-            className="text-3xl text-gray-500 hover:text-gray-700 transition-colors"
+            className="text-2xl sm:text-3xl text-gray-500 hover:text-gray-700 transition-colors flex-shrink-0 leading-none"
           >
             ×
           </button>
@@ -115,7 +110,8 @@ const JobDetailModal = ({
         <JobInfoSection 
           job={job} 
           totalCost={totalCost} 
-          onCompleteJob={() => setShowCompleteConfirm(true)} 
+          onCompleteJob={() => setShowCompleteConfirm(true)}
+          onUpdateJob={onUpdateJob}
         />
 
         {/* Materials Section */}
@@ -126,7 +122,6 @@ const JobDetailModal = ({
           onScanBarcode={() => setShowBarcodeScanner(true)}
           onProcessReceipt={() => setShowReceiptModal(true)}
           onRemoveMaterial={removeMaterial}
-          onUpdateMaterialQuantity={updateMaterialQuantity}
         />
 
         {/* Material Form Modal */}
@@ -186,7 +181,7 @@ const JobDetailModal = ({
           isOpen={showCompleteConfirm}
           title="Complete Job"
           message={
-            "Mark this job as Complete?\n\nAfter completion:\n- You cannot add, edit, or remove anything related to this job\n\nProceed?"
+            "Mark this job as Complete?\n\nNote: You can still edit job details, notes, and materials even after completion."
           }
           confirmLabel="Complete Job"
           cancelLabel="Cancel"

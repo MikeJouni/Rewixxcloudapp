@@ -8,13 +8,11 @@ const JobForm = ({ onSubmit, onCancel, initialData = null }) => {
       title: initialData.title || "",
       description: initialData.description || "",
       status: initialData.status || "IN_PROGRESS",
-      priority: initialData.priority || "MEDIUM",
     } : {
       customerId: "",
       title: "",
       description: "",
       status: "IN_PROGRESS",
-      priority: "MEDIUM",
     }
   );
 
@@ -25,12 +23,6 @@ const JobForm = ({ onSubmit, onCancel, initialData = null }) => {
 
 
   const statusOptions = ["IN_PROGRESS"];
-  const priorityOptions = [
-    { value: "LOW", label: "Low", color: "text-green-600" },
-    { value: "MEDIUM", label: "Medium", color: "text-yellow-600" },
-    { value: "HIGH", label: "High", color: "text-orange-600" },
-    { value: "URGENT", label: "Urgent", color: "text-red-600" }
-  ];
 
   // Fetch customers on component mount
   useEffect(() => {
@@ -74,9 +66,6 @@ const JobForm = ({ onSubmit, onCancel, initialData = null }) => {
       return;
     }
     if (!formData.status) {
-      return;
-    }
-    if (!formData.priority) {
       return;
     }
     
@@ -193,24 +182,6 @@ const JobForm = ({ onSubmit, onCancel, initialData = null }) => {
               required
               placeholder="Enter job title"
             />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Priority *
-            </label>
-            <select
-              name="priority"
-              value={formData.priority}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            >
-              {priorityOptions.map((option) => (
-                <option key={option.value} value={option.value} className={option.color}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
           </div>
         </div>
         <div>

@@ -164,16 +164,17 @@ const CustomerTable = ({ customers, onDelete, onUpdate }) => {
   ];
 
   return (
-    <div>
+    <>
       <Table
         columns={columns}
         dataSource={customers}
         rowKey="id"
         pagination={false}
-        scroll={{ x: 1000 }}
+        scroll={{ x: 'max-content' }}
         size="small"
         defaultSortOrder="descend"
         sortDirections={['descend', 'ascend']}
+        className="responsive-table"
       />
       {/* Edit Form Modal */}
       {editingCustomer && (
@@ -198,7 +199,7 @@ const CustomerTable = ({ customers, onDelete, onUpdate }) => {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 

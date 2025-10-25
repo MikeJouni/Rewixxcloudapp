@@ -1,20 +1,60 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Button, Card, DatePicker, Space, Typography, Alert, Spin } from "antd";
-import { DownloadOutlined, FileTextOutlined, UserOutlined } from "@ant-design/icons";
+import dayjs from 'dayjs';
+import { 
+  Button, 
+  Card, 
+  DatePicker, 
+  Space, 
+  Typography, 
+  Alert, 
+  Spin, 
+  Tabs, 
+  Row, 
+  Col, 
+  Statistic,
+  Table,
+  Progress,
+  Tag,
+  Divider,
+  Tooltip
+} from "antd";
+import { 
+  DownloadOutlined, 
+  FileTextOutlined, 
+  UserOutlined, 
+  DollarOutlined,
+  ClockCircleOutlined,
+  ShoppingCartOutlined,
+  BarChartOutlined,
+  RiseOutlined,
+  TeamOutlined,
+  CheckCircleOutlined,
+  ExclamationCircleOutlined,
+  WarningOutlined
+} from "@ant-design/icons";
 import * as customerService from "../Customers/services/customerService";
 import * as jobService from "../Jobs/services/jobService";
+import * as reportService from "./services/reportService";
+import * as exportService from "./services/exportService";
+import "./reports.css";
+// Logo will be loaded from public directory
 
 const { Title, Text } = Typography;
+const { RangePicker } = DatePicker;
+const { TabPane } = Tabs;
 
 const Reports = () => {
-  const [showJobsModal, setShowJobsModal] = useState(false);
-  const [jobsStartDate, setJobsStartDate] = useState("");
-  const [jobsEndDate, setJobsEndDate] = useState("");
-  const [jobsModalError, setJobsModalError] = useState("");
-  const [reportParams, setReportParams] = useState(null); // { startDate, endDate }
-  const [showPrintArea, setShowPrintArea] = useState(false);
-  const printRef = useRef(null);
+  const [dateRange, setDateRange] = useState([]);
+  const [selectedReportType, setSelectedReportType] = useState("overview");
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+
+  // Set default date range to last 30 days
+  useEffect(() => {
+    const endDate = dayjs();
+    const startDate = dayjs().subtract(30, 'day');
+    setDateRange([startDate, endDate]);
+  }, []);
 
   const { data: customersData, isLoading: customersLoading } = useQuery({
     queryKey: ["customers"],
@@ -26,649 +66,604 @@ const Reports = () => {
     queryFn: () => jobService.getJobsList({ searchTerm: "", page: 0, pageSize: 10000, statusFilter: "All" }),
   });
 
+  // Fetch comprehensive report data
+  const { data: reportData, isLoading: reportLoading, refetch: refetchReport } = useQuery({
+    queryKey: ["comprehensive-report", dateRange],
+    queryFn: () => {
+      if (dateRange.length === 2) {
+        const startDate = dateRange[0].format('YYYY-MM-DD');
+        const endDate = dateRange[1].format('YYYY-MM-DD');
+        return reportService.reportService.getComprehensiveReport(startDate, endDate);
+      }
+      return null;
+    },
+    enabled: dateRange.length === 2,
+  });
+
   const customers = customersData?.customers || [];
   const jobs = useMemo(() => jobsData?.jobs || [], [jobsData?.jobs]);
 
-  const filteredJobs = useMemo(() => {
-    if (!reportParams?.startDate && !reportParams?.endDate) return jobs;
-    const start = reportParams?.startDate ? new Date(reportParams.startDate) : null;
-    const end = reportParams?.endDate ? new Date(reportParams.endDate) : null;
-    return jobs.filter((job) => {
-      const dateStr = job.endDate || job.startDate;
-      if (!dateStr) return false;
-      const d = new Date(dateStr);
-      if (Number.isNaN(d.getTime())) return false;
-      if (start && d < start) return false;
-      if (end) {
-        const endOfDay = new Date(end);
-        endOfDay.setHours(23, 59, 59, 999);
-        if (d > endOfDay) return false;
-      }
-      return true;
-    });
-  }, [jobs, reportParams]);
-
-  const calculateJobCost = (job) => {
-    let jobCost = 0;
-    if (job?.sales && Array.isArray(job.sales)) {
-      job.sales.forEach((sale) => {
-        if (sale?.saleItems && Array.isArray(sale.saleItems)) {
-          sale.saleItems.forEach((item) => {
-            const unit = Number(item?.unitPrice) || 0;
-            const qty = Number(item?.quantity) || 0;
-            jobCost += unit * qty;
-          });
-        }
-      });
-    }
-    return jobCost;
-  };
-
-  const totalJobsCost = useMemo(() => {
-    return filteredJobs.reduce((sum, j) => sum + calculateJobCost(j), 0);
-  }, [filteredJobs]);
-
-  const ensureHtml2PdfLoaded = () => {
-    return new Promise((resolve) => {
-      if (window.html2pdf) {
-        resolve();
-        return;
-      }
-      const existing = document.querySelector('script[data-html2pdf]');
-      if (existing) {
-        existing.addEventListener('load', () => resolve());
-        return;
-      }
-      const script = document.createElement('script');
-      script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
-      script.defer = true;
-      script.setAttribute('data-html2pdf', 'true');
-      script.onload = () => resolve();
-      document.body.appendChild(script);
-    });
-  };
-
-  const makeFileName = () => {
-    const start = reportParams?.startDate || "all";
-    const end = reportParams?.endDate || "dates";
-    return `jobs_${start}-${end}.pdf`;
-  };
-
-  const generatePdfDownload = async () => {
-    if (!printRef.current) return;
-    await ensureHtml2PdfLoaded();
-    const opt = {
-      margin: 10,
-      filename: makeFileName(),
-      image: { type: 'jpeg', quality: 0.95 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak: { mode: ['css', 'legacy'] },
+  // Calculate basic metrics from existing data
+  const basicMetrics = useMemo(() => {
+    const totalJobs = jobs.length;
+    const completedJobs = jobs.filter(j => j.status === 'COMPLETED').length;
+    const inProgressJobs = jobs.filter(j => j.status === 'IN_PROGRESS').length;
+    const pendingJobs = jobs.filter(j => j.status === 'PENDING').length;
+    const urgentJobs = jobs.filter(j => j.priority === 'URGENT').length;
+    const highPriorityJobs = jobs.filter(j => j.priority === 'HIGH').length;
+    
+    return {
+      totalJobs,
+      completedJobs,
+      inProgressJobs,
+      pendingJobs,
+      urgentJobs,
+      highPriorityJobs,
+      completionRate: totalJobs > 0 ? Math.round((completedJobs / totalJobs) * 100) : 0
     };
-    window.html2pdf().set(opt).from(printRef.current).save();
+  }, [jobs]);
+
+  // Export functions
+  const exportToPDF = async () => {
+    setIsGeneratingReport(true);
+    try {
+      if (reportData) {
+        const filename = `rewixx-report-${dateRange[0]?.format('YYYY-MM-DD') || 'start'}-${dateRange[1]?.format('YYYY-MM-DD') || 'end'}.pdf`;
+        await exportService.exportToPDF(reportData, filename);
+      } else {
+        console.warn("No report data available for export");
+      }
+    } catch (error) {
+      console.error("Error exporting to PDF:", error);
+    } finally {
+      setIsGeneratingReport(false);
+    }
   };
 
-  const exportAllCustomersCsv = () => {
-    if (!customers || customers.length === 0) return;
-
-    // Precompute total spend per customer from all jobs
-    const customerIdToSpend = new Map();
-    jobs.forEach((job) => {
-      const customerId = job?.customer?.id;
-      if (!customerId) return;
-      const cost = calculateJobCost(job);
-      customerIdToSpend.set(customerId, (customerIdToSpend.get(customerId) || 0) + cost);
-    });
-
-    let csv = "ID,Name,Username,Phone,Address 1,Address 2,City,State,ZIP,Total Spend\n";
-    customers.forEach((c) => {
-      const totalSpend = customerIdToSpend.get(c.id) || 0;
-      const row = [
-        c.id ?? "",
-        (c.name ?? "").toString().replace(/"/g, '""'),
-        (c.username ?? "").toString().replace(/"/g, '""'),
-        (c.phone ?? "").toString().replace(/"/g, '""'),
-        (c.addressLine1 ?? "").toString().replace(/"/g, '""'),
-        (c.addressLine2 ?? "").toString().replace(/"/g, '""'),
-        (c.city ?? "").toString().replace(/"/g, '""'),
-        (c.state ?? "").toString().replace(/"/g, '""'),
-        (c.zip ?? "").toString().replace(/"/g, '""'),
-        `$${totalSpend.toFixed(2)}`,
-      ];
-      csv += row.map((cell) => `"${cell}"`).join(",") + "\n";
-    });
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.href = url;
-    const today = new Date().toISOString().slice(0, 10);
-    link.download = `customers_${today}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const exportToExcel = async () => {
+    setIsGeneratingReport(true);
+    try {
+      if (reportData) {
+        const filename = `rewixx-report-${dateRange[0]?.format('YYYY-MM-DD') || 'start'}-${dateRange[1]?.format('YYYY-MM-DD') || 'end'}.xlsx`;
+        await exportService.exportToExcel(reportData, filename);
+      } else {
+        console.warn("No report data available for export");
+      }
+    } catch (error) {
+      console.error("Error exporting to Excel:", error);
+    } finally {
+      setIsGeneratingReport(false);
+    }
   };
 
-  // After setting report params from modal, temporarily show print area and trigger PDF download
-  useEffect(() => {
-    if (reportParams) {
-      setShowPrintArea(true);
-      const t = setTimeout(async () => {
-        await generatePdfDownload();
-        // Hide after a short delay to ensure capture completed
-        setTimeout(() => setShowPrintArea(false), 300);
-      }, 50);
-      return () => clearTimeout(t);
+  const exportToCSV = async () => {
+    setIsGeneratingReport(true);
+    try {
+      if (reportData) {
+        const filename = `rewixx-report-${dateRange[0]?.format('YYYY-MM-DD') || 'start'}-${dateRange[1]?.format('YYYY-MM-DD') || 'end'}.csv`;
+        await exportService.exportToCSV(reportData, filename);
+      } else {
+        console.warn("No report data available for export");
+      }
+    } catch (error) {
+      console.error("Error exporting to CSV:", error);
+    } finally {
+      setIsGeneratingReport(false);
     }
-  }, [reportParams]);
-
-  // Validate jobs date range inside modal
-  const validateJobsModal = () => {
-    setJobsModalError("");
-    if (!jobsStartDate || !jobsEndDate) {
-      setJobsModalError("Please select both start and end dates.");
-      return false;
-    }
-    const start = new Date(jobsStartDate);
-    const end = new Date(jobsEndDate);
-    if (start > end) {
-      setJobsModalError("Start date cannot be after end date.");
-      return false;
-    }
-    // Check if there are jobs in the given range
-    const hasJobs = jobs.some((job) => {
-      const dateStr = job.endDate || job.startDate;
-      if (!dateStr) return false;
-      const d = new Date(dateStr);
-      if (Number.isNaN(d.getTime())) return false;
-      const endOfDay = new Date(end);
-      endOfDay.setHours(23, 59, 59, 999);
-      return d >= start && d <= endOfDay;
-    });
-    if (!hasJobs) {
-      setJobsModalError("No jobs found in this date range.");
-      return false;
-    }
-    return true;
   };
 
   if (customersLoading || jobsLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center py-12">
-            <Spin size="large" />
-            <p className="mt-4 text-gray-600 text-lg">Loading reports data...</p>
-          </div>
+      <div className="w-full">
+        <div className="text-center py-12">
+          <Spin size="large" />
+          <p className="mt-4 text-gray-600 text-lg">Loading reports data...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
-      <div className="max-w-6xl mx-auto">
-        <Card className="mb-6 shadow-lg">
-          <div className="text-center mb-8">
-            <Title level={1} className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
-              📊 Reports Dashboard
+    <div className="w-full">
+      {/* Header with Logo and Company Branding */}
+        <Card className="mb-6 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+          <div className="flex flex-col sm:flex-row items-center justify-between mb-6">
+            <div className="flex items-center space-x-4 mb-4 sm:mb-0">
+              <img 
+                src="/logo.png" 
+                alt="Rewixx Logo" 
+                className="h-12 w-12 object-contain"
+              />
+              <div>
+                <Title level={1} className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-0">
+                  Rewixx Reports Dashboard
             </Title>
-            <Text className="text-base sm:text-lg text-gray-600">
-              Generate comprehensive reports and export data for analysis
+                <Text className="text-gray-600 text-sm">
+                  Comprehensive Business Intelligence & Analytics
             </Text>
+              </div>
+              </div>
+            
+            <div className="flex flex-col sm:flex-row gap-3">
+              <RangePicker
+                value={dateRange}
+                onChange={setDateRange}
+                size="large"
+                className="w-full sm:w-auto"
+              />
+              <Button 
+                type="primary" 
+                size="large"
+                icon={<DownloadOutlined />}
+                loading={isGeneratingReport}
+                onClick={exportToPDF}
+                style={{ 
+                  background: 'linear-gradient(135deg, #1f2937 0%, #111827 100%)', 
+                  border: 'none',
+                }}
+              >
+                Export Report
+              </Button>
+              </div>
           </div>
 
-          {/* Business Insights Dashboard */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <Card className="text-center border-l-4 border-l-blue-500">
-              <div className="text-2xl font-bold text-blue-600">{jobs.length}</div>
-              <div className="text-sm text-gray-600">Active Jobs</div>
-              <div className="text-xs text-gray-500 mt-1">
-                {jobs.filter(j => j.status === 'IN_PROGRESS').length} in progress
-              </div>
-            </Card>
-            <Card className="text-center border-l-4 border-l-green-500">
-              <div className="text-2xl font-bold text-green-600">
-                {jobs.filter(j => j.status === 'COMPLETED').length}
-              </div>
-              <div className="text-sm text-gray-600">Completed Jobs</div>
-              <div className="text-xs text-gray-500 mt-1">
-                {jobs.length > 0 ? Math.round((jobs.filter(j => j.status === 'COMPLETED').length / jobs.length) * 100) : 0}% completion rate
-              </div>
-            </Card>
-            <Card className="text-center border-l-4 border-l-orange-500">
-              <div className="text-2xl font-bold text-orange-600">
-                {jobs.filter(j => j.priority === 'URGENT' || j.priority === 'HIGH').length}
-              </div>
-              <div className="text-sm text-gray-600">High Priority Jobs</div>
-              <div className="text-xs text-gray-500 mt-1">
-                {jobs.filter(j => j.priority === 'URGENT').length} urgent
-              </div>
-            </Card>
-            <Card className="text-center border-l-4 border-l-purple-500">
-              <div className="text-2xl font-bold text-purple-600">
-                {customers.length}
-              </div>
-              <div className="text-sm text-gray-600">Total Customers</div>
-              <div className="text-xs text-gray-500 mt-1">
-                {customers.filter(c => c.jobs && c.jobs.length > 0).length} with active jobs
-              </div>
-            </Card>
-          </div>
-
-          {/* Recent Activity & Insights */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            <Card title="📋 Recent Job Activity" className="h-full">
-              <div className="space-y-3">
-                {jobs.slice(0, 5).map((job) => (
-                  <div key={job.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <div className="font-medium text-gray-900">{job.title}</div>
-                      <div className="text-sm text-gray-600">{job.customer?.name || 'Unknown Customer'}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className={`text-xs px-2 py-1 rounded-full ${
-                        job.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
-                        job.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {job.status}
-                      </div>
-                      <div className={`text-xs mt-1 px-2 py-1 rounded-full ${
-                        job.priority === 'URGENT' ? 'bg-red-100 text-red-800' :
-                        job.priority === 'HIGH' ? 'bg-orange-100 text-orange-800' :
-                        job.priority === 'MEDIUM' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-green-100 text-green-800'
-                      }`}>
-                        {job.priority}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                {jobs.length === 0 && (
-                  <div className="text-center text-gray-500 py-8">
-                    No jobs found. Create your first job to get started!
-                  </div>
-                )}
-              </div>
-            </Card>
-
-            <Card title="⚡ Priority Alerts" className="h-full">
-              <div className="space-y-3">
-                {jobs.filter(j => j.priority === 'URGENT').length > 0 && (
-                  <div className="p-3 bg-red-50 border-l-4 border-red-500 rounded-lg">
-                    <div className="font-medium text-red-800">🚨 Urgent Jobs</div>
-                    <div className="text-sm text-red-600">
-                      {jobs.filter(j => j.priority === 'URGENT').length} jobs need immediate attention
-                    </div>
-                  </div>
-                )}
-                {jobs.filter(j => j.status === 'IN_PROGRESS' && j.priority === 'HIGH').length > 0 && (
-                  <div className="p-3 bg-orange-50 border-l-4 border-orange-500 rounded-lg">
-                    <div className="font-medium text-orange-800">⚠️ High Priority</div>
-                    <div className="text-sm text-orange-600">
-                      {jobs.filter(j => j.status === 'IN_PROGRESS' && j.priority === 'HIGH').length} jobs in progress
-                    </div>
-                  </div>
-                )}
-                {jobs.filter(j => j.status === 'COMPLETED').length > 0 && (
-                  <div className="p-3 bg-green-50 border-l-4 border-green-500 rounded-lg">
-                    <div className="font-medium text-green-800">✅ Completed</div>
-                    <div className="text-sm text-green-600">
-                      {jobs.filter(j => j.status === 'COMPLETED').length} jobs finished this period
-                    </div>
-                  </div>
-                )}
-                {jobs.filter(j => j.priority === 'URGENT').length === 0 && 
-                 jobs.filter(j => j.status === 'IN_PROGRESS' && j.priority === 'HIGH').length === 0 && (
-                  <div className="text-center text-gray-500 py-8">
-                    No priority alerts. Great job staying on top of things! 🎉
-                  </div>
-                )}
-              </div>
-            </Card>
-          </div>
-
-          {/* Materials & Inventory Insights */}
-          <Card title="🔧 Materials & Inventory Overview" className="mb-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="text-center p-4 bg-blue-50 rounded-lg">
-                <div className="text-2xl font-bold text-blue-600">
-                  {jobs.reduce((total, job) => {
-                    if (job?.sales && Array.isArray(job.sales)) {
-                      return total + job.sales.reduce((saleTotal, sale) => {
-                        if (sale?.saleItems && Array.isArray(sale.saleItems)) {
-                          return saleTotal + sale.saleItems.reduce((itemTotal, item) => itemTotal + (Number(item?.quantity) || 0), 0);
-                        }
-                        return saleTotal;
-                      }, 0);
-                    }
-                    return total;
-                  }, 0)}
-                </div>
-                <div className="text-sm text-gray-600">Total Materials Used</div>
-                <div className="text-xs text-gray-500 mt-1">Across all jobs</div>
-              </div>
-              <div className="text-center p-4 bg-green-50 rounded-lg">
-                <div className="text-2xl font-bold text-green-600">
-                  {new Set(jobs.flatMap(job => 
-                    job?.sales?.flatMap(sale => 
-                      sale?.saleItems?.map(item => item?.product?.name).filter(Boolean)
-                    ) || []
-                  )).size}
-                </div>
-                <div className="text-sm text-gray-600">Unique Products</div>
-                <div className="text-xs text-gray-500 mt-1">Different materials tracked</div>
-              </div>
-              <div className="text-center p-4 bg-orange-50 rounded-lg">
-                <div className="text-2xl font-bold text-orange-600">
-                  {jobs.filter(job => 
-                    job?.sales?.some(sale => 
-                      sale?.saleItems?.some(item => item?.product?.name)
-                    )
-                  ).length}
-                </div>
-                <div className="text-sm text-gray-600">Jobs with Materials</div>
-                <div className="text-xs text-gray-500 mt-1">Projects with tracked inventory</div>
-              </div>
-            </div>
-          </Card>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card 
-              hoverable 
-              className="border-2 border-blue-100 hover:border-blue-300 transition-all duration-300"
-            >
-              <div className="text-center">
-                <FileTextOutlined className="text-4xl text-blue-600 mb-4" />
-                <Title level={3} className="text-xl font-semibold text-gray-900 mb-2">
-                  Jobs PDF Report
-                </Title>
-                <Text className="text-gray-600 mb-6 block">
-                  Create professional PDF reports with job details, materials used, customer information, and project timelines for client presentations and record keeping
+          {/* Quick Stats Overview */}
+          <Row gutter={[16, 16]} className="mb-6">
+            <Col xs={24} sm={12} md={6}>
+              <Card className="text-center border-l-4 border-l-blue-500 bg-gradient-to-r from-blue-50 to-blue-100">
+                <Statistic
+                  title="Total Jobs"
+                  value={basicMetrics.totalJobs}
+                  prefix={<FileTextOutlined className="text-blue-600" />}
+                  valueStyle={{ color: '#1890ff' }}
+                />
+                <Text className="text-xs text-gray-500">
+                  {basicMetrics.inProgressJobs} in progress
                 </Text>
-                <Button
-                  type="primary"
-                  size="large"
-                  icon={<DownloadOutlined />}
-                  onClick={() => { setJobsModalError(""); setShowJobsModal(true); }}
-                  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 border-blue-600 hover:border-blue-700"
-                >
-                  Generate PDF Report
-                </Button>
-              </div>
-            </Card>
-
-            <Card 
-              hoverable 
-              className="border-2 border-green-100 hover:border-green-300 transition-all duration-300"
-            >
-              <div className="text-center">
-                <UserOutlined className="text-4xl text-green-600 mb-4" />
-                <Title level={3} className="text-xl font-semibold text-gray-900 mb-2">
-                  Customer Data Export
-                </Title>
-                <Text className="text-gray-600 mb-6 block">
-                  Export customer database with contact information, job history, and service records for CRM integration and customer relationship management
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} md={6}>
+              <Card className="text-center border-l-4 border-l-green-500 bg-gradient-to-r from-green-50 to-green-100">
+                <Statistic
+                  title="Completed"
+                  value={basicMetrics.completedJobs}
+                  prefix={<CheckCircleOutlined className="text-green-600" />}
+                  valueStyle={{ color: '#52c41a' }}
+                />
+                <Text className="text-xs text-gray-500">
+                  {basicMetrics.completionRate}% completion rate
                 </Text>
-                <Button
-                  type="primary"
-                  size="large"
-                  icon={<DownloadOutlined />}
-                  onClick={exportAllCustomersCsv}
-                  className="w-full sm:w-auto bg-green-600 hover:bg-green-700 border-green-600 hover:border-green-700"
-                >
-                  Export CSV
-                </Button>
-              </div>
-            </Card>
-          </div>
-
-          {/* Quick Actions for Electrical Contractors */}
-          <Card title="⚡ Quick Actions" className="mt-8">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Button 
-                type="default" 
-                size="large" 
-                className="h-20 flex flex-col items-center justify-center"
-                onClick={() => window.location.href = '/jobs/create'}
-              >
-                <div className="text-2xl mb-2">➕</div>
-                <div className="text-sm">New Job</div>
-              </Button>
-              <Button 
-                type="default" 
-                size="large" 
-                className="h-20 flex flex-col items-center justify-center"
-                onClick={() => window.location.href = '/customers/create'}
-              >
-                <div className="text-2xl mb-2">👤</div>
-                <div className="text-sm">Add Customer</div>
-              </Button>
-              <Button 
-                type="default" 
-                size="large" 
-                className="h-20 flex flex-col items-center justify-center"
-                onClick={() => window.location.href = '/jobs'}
-              >
-                <div className="text-2xl mb-2">📋</div>
-                <div className="text-sm">View Jobs</div>
-              </Button>
-              <Button 
-                type="default" 
-                size="large" 
-                className="h-20 flex flex-col items-center justify-center"
-                onClick={() => window.location.href = '/customers'}
-              >
-                <div className="text-2xl mb-2">👥</div>
-                <div className="text-sm">View Customers</div>
-              </Button>
-        </div>
-          </Card>
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} md={6}>
+              <Card className="text-center border-l-4 border-l-orange-500 bg-gradient-to-r from-orange-50 to-orange-100">
+                <Statistic
+                  title="High Priority"
+                  value={basicMetrics.highPriorityJobs}
+                  prefix={<ExclamationCircleOutlined className="text-orange-600" />}
+                  valueStyle={{ color: '#fa8c16' }}
+                />
+                <Text className="text-xs text-gray-500">
+                  {basicMetrics.urgentJobs} urgent
+                </Text>
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} md={6}>
+              <Card className="text-center border-l-4 border-l-purple-500 bg-gradient-to-r from-purple-50 to-purple-100">
+                <Statistic
+                  title="Customers"
+                  value={customers.length}
+                  prefix={<TeamOutlined className="text-purple-600" />}
+                  valueStyle={{ color: '#722ed1' }}
+                />
+                <Text className="text-xs text-gray-500">
+                  Active clients
+                </Text>
+              </Card>
+            </Col>
+          </Row>
         </Card>
 
-        {/* Off-screen printable content used for PDF generation */}
-        {showPrintArea && (
-          <div style={{ position: 'fixed', left: '-10000px', top: 0, width: '210mm', background: '#fff', padding: '24px' }}>
-            <style>
-              {`
-                h1 { margin: 0 0 12px; }
-                h2 { margin: 18px 0 8px; }
-                .muted { color: #6b7280; }
-                .section { margin-top: 16px; }
-                table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-                th, td { border: 1px solid #e5e7eb; padding: 8px 10px; font-size: 12px; }
-                th { background: #f9fafb; text-align: left; }
-              `}
-            </style>
-            <div ref={printRef}>
-              <h1>Jobs Report</h1>
-              <p className="muted">
-                {reportParams?.startDate || reportParams?.endDate ? `${reportParams?.startDate || '...'} to ${reportParams?.endDate || '...'}` : 'All dates'}
-              </p>
-
-              {/* Summary */}
-              <div className="section">
-                <h2>Summary</h2>
-                <table>
-                  <tbody>
-                    <tr>
-                      <td>Total Jobs</td>
-                      <td>{filteredJobs.length}</td>
-                    </tr>
-                    <tr>
-                      <td>Total Cost</td>
-                      <td>${totalJobsCost.toFixed(2)}</td>
-                    </tr>
-                    <tr>
-                      <td>Completed Jobs</td>
-                      <td>{filteredJobs.filter(j => j.status === 'COMPLETED').length}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Job details */}
-              <div className="section">
-                <h2>Jobs</h2>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Title</th>
-                      <th>Customer</th>
-                      <th>Status</th>
-                      <th>Priority</th>
-                      <th>Start</th>
-                      <th>End</th>
-                      <th>Cost</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredJobs.map((job) => (
-                      <tr key={job.id}>
-                        <td>{job.id}</td>
-                        <td>{job.title}</td>
-                        <td>{job.customer?.name || job.customerName || ''}</td>
-                        <td>{job.status}</td>
-                        <td>{job.priority}</td>
-                        <td>{job.startDate || ''}</td>
-                        <td>{job.endDate || ''}</td>
-                        <td>${calculateJobCost(job).toFixed(2)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Materials section - always included */}
-              <div className="section">
-                <h2>Materials</h2>
-                {filteredJobs.map((job) => {
-                  const materials = [];
-                  if (job?.sales && Array.isArray(job.sales)) {
-                    job.sales.forEach((sale) => {
-                      if (sale?.saleItems && Array.isArray(sale.saleItems)) {
-                        sale.saleItems.forEach((item) => {
-                          materials.push({
-                            name: item?.product?.name || 'Unknown',
-                            quantity: item?.quantity || 0,
-                            unitPrice: Number(item?.unitPrice) || 0,
-                            total: ((Number(item?.unitPrice) || 0) * (Number(item?.quantity) || 0)).toFixed(2),
-                          });
-                        });
-                      }
-                    });
-                  }
-                  if (materials.length === 0) return null;
-                  return (
-                    <div key={`materials-${job.id}`} className="section">
-                      <h3>Job #{job.id} - {job.title}</h3>
-                      <table>
-                        <thead>
-                          <tr>
-                            <th>Material</th>
-                            <th>Qty</th>
-                            <th>Unit Price</th>
-                            <th>Total</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {materials.map((m, idx) => (
-                            <tr key={idx}>
-                              <td>{m.name}</td>
-                              <td>{m.quantity}</td>
-                              <td>${m.unitPrice.toFixed(2)}</td>
-                              <td>${m.total}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+        {/* Main Reports Content */}
+        <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+          <Tabs 
+            activeKey={selectedReportType} 
+            onChange={setSelectedReportType}
+            className="reports-tabs"
+            items={[
+              {
+                key: "overview",
+                label: (
+                  <span>
+                    <BarChartOutlined />
+                    Overview
+                  </span>
+                ),
+                children: (
+                  <div className="space-y-6">
+                    {/* Revenue Overview */}
+                    <Card title="💰 Revenue Analysis" className="bg-gradient-to-r from-green-50 to-emerald-50">
+                      {reportData?.revenue ? (
+                        <Row gutter={[16, 16]}>
+                          <Col xs={24} sm={12} md={6}>
+                            <Statistic
+                              title="Total Revenue"
+                              value={reportData.revenue.summary?.totalRevenue || 0}
+                              prefix="$"
+                              precision={2}
+                              valueStyle={{ color: '#52c41a' }}
+                            />
+                          </Col>
+                          <Col xs={24} sm={12} md={6}>
+                            <Statistic
+                              title="Materials Cost"
+                              value={reportData.revenue.summary?.totalMaterials || 0}
+                              prefix="$"
+                              precision={2}
+                              valueStyle={{ color: '#1890ff' }}
+                            />
+                          </Col>
+                          <Col xs={24} sm={12} md={6}>
+                            <Statistic
+                              title="Labor Cost"
+                              value={reportData.revenue.summary?.totalLabor || 0}
+                              prefix="$"
+                              precision={2}
+                              valueStyle={{ color: '#fa8c16' }}
+                            />
+                          </Col>
+                          <Col xs={24} sm={12} md={6}>
+                            <Statistic
+                              title="Net Profit"
+                              value={(reportData.revenue.summary?.totalRevenue || 0) - 
+                                    (reportData.revenue.summary?.totalMaterials || 0) - 
+                                    (reportData.revenue.summary?.totalLabor || 0)}
+                              prefix="$"
+                              precision={2}
+                              valueStyle={{ color: '#722ed1' }}
+                            />
+                          </Col>
+                        </Row>
+                      ) : (
+                        <div className="text-center py-8">
+                          <Spin />
+                          <p className="mt-4 text-gray-500">Loading revenue data...</p>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        )}
+                      )}
+                    </Card>
 
-        {/* Jobs PDF modal */}
-        {showJobsModal && (
-          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-            <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between mb-6">
-                <Title level={3} className="text-xl font-semibold mb-0">Generate PDF Report</Title>
-                <Button 
-                  type="text" 
-                  onClick={() => setShowJobsModal(false)}
-                  className="text-2xl p-0 h-auto text-gray-500 hover:text-gray-700"
-                >
-                  ×
-                </Button>
-              </div>
+                    {/* Labor Analysis */}
+                    <Card title="⏰ Labor Analysis" className="bg-gradient-to-r from-blue-50 to-cyan-50">
+                      {reportData?.labor ? (
+                        <Row gutter={[16, 16]}>
+                          <Col xs={24} sm={12} md={6}>
+                            <Statistic
+                              title="Estimated Hours"
+                              value={reportData.labor.summary?.totalEstimatedHours || 0}
+                              suffix="hrs"
+                              valueStyle={{ color: '#1890ff' }}
+                            />
+                          </Col>
+                          <Col xs={24} sm={12} md={6}>
+                            <Statistic
+                              title="Actual Hours"
+                              value={reportData.labor.summary?.totalActualHours || 0}
+                              suffix="hrs"
+                              valueStyle={{ color: '#52c41a' }}
+                            />
+                          </Col>
+                          <Col xs={24} sm={12} md={6}>
+                            <Statistic
+                              title="Efficiency"
+                              value={reportData.labor.summary?.efficiency || 0}
+                              suffix="%"
+                              precision={1}
+                              valueStyle={{ color: '#fa8c16' }}
+                            />
+                          </Col>
+                          <Col xs={24} sm={12} md={6}>
+                            <Statistic
+                              title="Labor Cost"
+                              value={reportData.labor.summary?.totalLaborCost || 0}
+                              prefix="$"
+                              precision={2}
+                              valueStyle={{ color: '#722ed1' }}
+                            />
+                          </Col>
+                        </Row>
+                      ) : (
+                        <div className="text-center py-8">
+                          <Spin />
+                          <p className="mt-4 text-gray-500">Loading labor data...</p>
+                      </div>
+                      )}
+                    </Card>
 
-              <Space direction="vertical" size="large" className="w-full">
-                <div>
-                  <Text strong className="block mb-2">Start Date</Text>
-                  <DatePicker
-                    value={jobsStartDate ? new Date(jobsStartDate) : null}
-                    onChange={(date) => { 
-                      setJobsStartDate(date ? date.format('YYYY-MM-DD') : ''); 
-                      setJobsModalError(""); 
-                    }}
-                    className="w-full"
-                    size="large"
-                    placeholder="Select start date"
-                  />
-                </div>
-                <div>
-                  <Text strong className="block mb-2">End Date</Text>
-                  <DatePicker
-                    value={jobsEndDate ? new Date(jobsEndDate) : null}
-                    onChange={(date) => { 
-                      setJobsEndDate(date ? date.format('YYYY-MM-DD') : ''); 
-                      setJobsModalError(""); 
-                    }}
-                    className="w-full"
-                    size="large"
-                    placeholder="Select end date"
-                  />
-                </div>
-                {jobsModalError && (
-                  <Alert
-                    message={jobsModalError}
-                    type="error"
-                    showIcon
-                    className="w-full"
-                  />
+                    {/* Expenses Analysis */}
+                    <Card title="💳 Expenses Analysis" className="bg-gradient-to-r from-orange-50 to-red-50">
+                      {reportData?.expenses ? (
+                        <Row gutter={[16, 16]}>
+                          <Col xs={24} sm={12} md={6}>
+                            <Statistic
+                              title="Billable Expenses"
+                              value={reportData.expenses.summary?.totalBillableExpenses || 0}
+                              prefix="$"
+                              precision={2}
+                              valueStyle={{ color: '#52c41a' }}
+                            />
+                          </Col>
+                          <Col xs={24} sm={12} md={6}>
+                            <Statistic
+                              title="Non-Billable"
+                              value={reportData.expenses.summary?.totalNonBillableExpenses || 0}
+                              prefix="$"
+                              precision={2}
+                              valueStyle={{ color: '#fa8c16' }}
+                            />
+                          </Col>
+                          <Col xs={24} sm={12} md={6}>
+                            <Statistic
+                              title="Total Expenses"
+                              value={reportData.expenses.summary?.totalExpenses || 0}
+                              prefix="$"
+                              precision={2}
+                              valueStyle={{ color: '#1890ff' }}
+                            />
+                          </Col>
+                          <Col xs={24} sm={12} md={6}>
+                            <Statistic
+                              title="Billable Ratio"
+                              value={reportData.expenses.summary?.billableRatio || 0}
+                              suffix="%"
+                              precision={1}
+                              valueStyle={{ color: '#722ed1' }}
+                            />
+                          </Col>
+                        </Row>
+                      ) : (
+                        <div className="text-center py-8">
+                          <Spin />
+                          <p className="mt-4 text-gray-500">Loading expenses data...</p>
+                      </div>
+                      )}
+                    </Card>
+                  </div>
+                )
+              },
+              {
+                key: "detailed",
+                label: (
+                  <span>
+                    <FileTextOutlined />
+                    Detailed Reports
+                  </span>
+                ),
+                children: (
+                  <div className="space-y-6">
+                    <Row gutter={[16, 16]}>
+                      <Col xs={24} lg={12}>
+                        <Card 
+                          title="📊 Revenue by Customer" 
+                          className="h-full"
+                          extra={
+                            <Button type="link" size="small">
+                              <DownloadOutlined /> Export
+                            </Button>
+                          }
+                        >
+                          {reportData?.revenue?.revenueByCustomer ? (
+                            <Table
+                              dataSource={Object.entries(reportData.revenue.revenueByCustomer).map(([customer, revenue]) => ({
+                                key: customer,
+                                customer,
+                                revenue: `$${revenue.toFixed(2)}`
+                              }))}
+                              columns={[
+                                { title: 'Customer', dataIndex: 'customer', key: 'customer' },
+                                { title: 'Revenue', dataIndex: 'revenue', key: 'revenue' }
+                              ]}
+                              pagination={false}
+                              size="small"
+                            />
+                          ) : (
+                            <div className="text-center py-4">
+                              <Spin />
+                              <p className="mt-2 text-gray-500">Loading customer revenue data...</p>
+                  </div>
                 )}
-              </Space>
+            </Card>
+                      </Col>
+                      <Col xs={24} lg={12}>
+                        <Card 
+                          title="📈 Job Status Distribution" 
+                          className="h-full"
+                          extra={
+                            <Button type="link" size="small">
+                              <DownloadOutlined /> Export
+                            </Button>
+                          }
+                        >
+                          {reportData?.revenue?.jobsByStatus ? (
+              <div className="space-y-3">
+                              {Object.entries(reportData.revenue.jobsByStatus).map(([status, count]) => (
+                                <div key={status} className="flex justify-between items-center">
+                                  <Tag color={
+                                    status === 'COMPLETED' ? 'green' :
+                                    status === 'IN_PROGRESS' ? 'blue' :
+                                    status === 'PENDING' ? 'orange' : 'default'
+                                  }>
+                                    {status}
+                                  </Tag>
+                                  <span className="font-medium">{count} jobs</span>
+                                </div>
+                              ))}
+                    </div>
+                          ) : (
+                            <div className="text-center py-4">
+                              <Spin />
+                              <p className="mt-2 text-gray-500">Loading job status data...</p>
+                  </div>
+                )}
+                        </Card>
+                      </Col>
+                    </Row>
+                  </div>
+                )
+              },
+              {
+                key: "insights",
+                label: (
+                  <span>
+                    <RiseOutlined />
+                    Business Insights
+                  </span>
+                ),
+                children: (
+                  <div className="space-y-6">
+                    {reportData?.insights ? (
+                      <>
+                        <Card title="🎯 Key Performance Indicators">
+                          <Row gutter={[16, 16]}>
+                            <Col xs={24} sm={12} md={6}>
+                              <Statistic
+                                title="Active Customers"
+                                value={reportData.insights.overview?.activeCustomers || 0}
+                                prefix={<TeamOutlined />}
+                                valueStyle={{ color: '#1890ff' }}
+                              />
+                            </Col>
+                            <Col xs={24} sm={12} md={6}>
+                              <Statistic
+                                title="Total Revenue"
+                                value={reportData.insights.overview?.totalRevenue || 0}
+                                prefix="$"
+                                precision={2}
+                                valueStyle={{ color: '#52c41a' }}
+                              />
+                            </Col>
+                            <Col xs={24} sm={12} md={6}>
+                              <Statistic
+                                title="Efficiency"
+                                value={reportData.insights.efficiency?.efficiency || 0}
+                                suffix="%"
+                                precision={1}
+                                valueStyle={{ color: '#fa8c16' }}
+                              />
+                            </Col>
+                            <Col xs={24} sm={12} md={6}>
+                              <Statistic
+                                title="Completion Rate"
+                                value={reportData.insights.overview?.totalJobs > 0 ? 
+                                  Math.round((reportData.insights.overview.completedJobs / reportData.insights.overview.totalJobs) * 100) : 0}
+                                suffix="%"
+                                valueStyle={{ color: '#722ed1' }}
+                              />
+                            </Col>
+                          </Row>
+                        </Card>
 
-              <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-end">
-                <Button 
-                  size="large"
-                  onClick={() => setShowJobsModal(false)}
-                  className="w-full sm:w-auto"
-                >
-                  Cancel
+                        <Card title="🏆 Top Customers by Revenue">
+                          {reportData.insights.topCustomers ? (
+                            <Table
+                              dataSource={Object.entries(reportData.insights.topCustomers).map(([customer, revenue], index) => ({
+                                key: customer,
+                                rank: index + 1,
+                                customer,
+                                revenue: `$${revenue.toFixed(2)}`
+                              }))}
+                              columns={[
+                                { title: 'Rank', dataIndex: 'rank', key: 'rank', width: 60 },
+                                { title: 'Customer', dataIndex: 'customer', key: 'customer' },
+                                { title: 'Revenue', dataIndex: 'revenue', key: 'revenue' }
+                              ]}
+                              pagination={false}
+                              size="small"
+                            />
+                          ) : (
+                            <div className="text-center py-4">
+                              <p className="text-gray-500">No customer data available</p>
+                  </div>
+                )}
+                        </Card>
+                      </>
+                    ) : (
+                      <div className="text-center py-8">
+                        <Spin />
+                        <p className="mt-4 text-gray-500">Loading business insights...</p>
+                  </div>
+                )}
+              </div>
+                )
+              }
+            ]}
+          />
+          </Card>
+
+        {/* Export Options */}
+        <Card className="mt-6 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+          <Title level={3} className="text-center mb-6">
+            📤 Export Options
+                </Title>
+          <Row gutter={[16, 16]} justify="center">
+            <Col xs={24} sm={8} md={6}>
+                <Button
+                type="primary"
+                size="large"
+                icon={<FileTextOutlined />}
+                onClick={exportToPDF}
+                loading={isGeneratingReport}
+                className="w-full h-16"
+                style={{ 
+                  background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)', 
+                  border: 'none',
+                }}
+              >
+                <div className="flex flex-col items-center">
+                  <span className="text-lg">PDF Report</span>
+                  <span className="text-xs opacity-80">Professional Format</span>
+                </div>
+              </Button>
+            </Col>
+            <Col xs={24} sm={8} md={6}>
+              <Button 
+                type="primary"
+                size="large" 
+                icon={<BarChartOutlined />}
+                onClick={exportToExcel}
+                loading={isGeneratingReport}
+                className="w-full h-16"
+                style={{ 
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', 
+                  border: 'none',
+                }}
+              >
+                <div className="flex flex-col items-center">
+                  <span className="text-lg">Excel Report</span>
+                  <span className="text-xs opacity-80">Spreadsheet Format</span>
+                </div>
                 </Button>
+            </Col>
+            <Col xs={24} sm={8} md={6}>
                 <Button
                   type="primary"
                   size="large"
                   icon={<DownloadOutlined />}
-                  onClick={() => {
-                    if (!validateJobsModal()) return;
-                    setReportParams({ startDate: jobsStartDate, endDate: jobsEndDate });
-                    setShowJobsModal(false);
-                  }}
-                  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 border-blue-600 hover:border-blue-700"
-                >
-                  Generate PDF
+                onClick={exportToCSV}
+                loading={isGeneratingReport}
+                className="w-full h-16"
+                style={{ 
+                  background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', 
+                  border: 'none',
+                }}
+              >
+                <div className="flex flex-col items-center">
+                  <span className="text-lg">CSV Data</span>
+                  <span className="text-xs opacity-80">Raw Data Export</span>
+                </div>
                 </Button>
-              </div>
+            </Col>
+          </Row>
             </Card>
-          </div>
-        )}
-      </div>
     </div>
   );
 };

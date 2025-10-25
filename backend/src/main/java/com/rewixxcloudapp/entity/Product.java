@@ -18,6 +18,8 @@ public class Product {
     private String description;
 
     private BigDecimal unitPrice;
+    
+    private String category;
 
     public Product() {
     }
@@ -73,5 +75,13 @@ public class Product {
 
     public void setUnitPrice(BigDecimal unitPrice) {
         this.unitPrice = unitPrice;
+    }
+    
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
     }
 }
