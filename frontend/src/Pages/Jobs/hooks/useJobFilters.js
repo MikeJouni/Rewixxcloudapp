@@ -7,7 +7,6 @@ export const useJobFilters = (jobs) => {
   const [pageSize, setPageSize] = useState(10);
 
   const statusOptions = ["All", "Pending", "In Progress", "Completed", "Cancelled"];
-  const priorityOptions = ["Low", "Medium", "High", "Urgent"];
 
   // Filter jobs based on search term and status
   const filteredJobs = useMemo(() => {
@@ -36,7 +35,6 @@ export const useJobFilters = (jobs) => {
     statusFilter,
     setStatusFilter,
     statusOptions,
-    priorityOptions,
     page,
     setPage,
     pageSize,

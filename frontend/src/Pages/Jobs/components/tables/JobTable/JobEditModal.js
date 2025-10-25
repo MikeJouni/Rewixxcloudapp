@@ -10,7 +10,6 @@ const JobEditModal = ({
   filteredCustomers,
   customerSearchTerm,
   showCustomerDropdown,
-  priorityOptions,
   onClose,
   onInputChange,
   onCustomerSearch,
@@ -33,7 +32,7 @@ const JobEditModal = ({
           </button>
         </div>
         <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Customer Selection */}
             <CustomerSelector
               customers={customers}
@@ -57,25 +56,6 @@ const JobEditModal = ({
                 onChange={onInputChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-            </div>
-            
-            {/* Priority */}
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">
-                Priority *
-              </label>
-              <select
-                name="priority"
-                value={editFormData.priority}
-                onChange={onInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {priorityOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
             </div>
           </div>
           

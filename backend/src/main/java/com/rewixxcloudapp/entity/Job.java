@@ -24,14 +24,15 @@ public class Job {
     @Enumerated(EnumType.STRING)
     private JobStatus status;
 
-    @Enumerated(EnumType.STRING)
-    private JobPriority priority;
-
     private LocalDate startDate;
 
     private LocalDate endDate;
 
     private Integer estimatedHours;
+    
+    private Integer actualHours;
+
+    private Double jobPrice;
 
     @ManyToOne
     private Customer customer;
@@ -48,18 +49,17 @@ public class Job {
     public Job() {
     }
 
-    public Job(String title, String description, JobStatus status, JobPriority priority) {
+    public Job(String title, String description, JobStatus status) {
         this.title = title;
         this.description = description;
         this.status = status;
-        this.priority = priority;
     }
 
     // JSON Serialization methods
     private static JsonSerializer serializer() {
         return JsonSerializer.create()
-                .include("id", "title", "description", "status", "priority", "startDate", "endDate",
-                        "receiptImageUrls", "customer.id", "customer.username",
+                .include("id", "title", "description", "status", "startDate", "endDate",
+                        "jobPrice", "receiptImageUrls", "customer.id", "customer.username",
                         "customer.phone", "customer.addressLine1", "customer.city", "customer.state",
                         "sales.id", "sales.date", "sales.description", "sales.saleItems.id", 
                         "sales.saleItems.quantity", "sales.saleItems.unitPrice", 
@@ -109,14 +109,6 @@ public class Job {
         this.status = status;
     }
 
-    public JobPriority getPriority() {
-        return priority;
-    }
-
-    public void setPriority(JobPriority priority) {
-        this.priority = priority;
-    }
-
     public LocalDate getStartDate() {
         return startDate;
     }
@@ -163,5 +155,21 @@ public class Job {
 
     public void setReceiptImageUrls(List<String> receiptImageUrls) {
         this.receiptImageUrls = receiptImageUrls;
+    }
+    
+    public Integer getActualHours() {
+        return actualHours;
+    }
+
+    public void setActualHours(Integer actualHours) {
+        this.actualHours = actualHours;
+    }
+
+    public Double getJobPrice() {
+        return jobPrice;
+    }
+
+    public void setJobPrice(Double jobPrice) {
+        this.jobPrice = jobPrice;
     }
 }

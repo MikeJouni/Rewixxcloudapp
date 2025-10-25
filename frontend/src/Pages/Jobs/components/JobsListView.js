@@ -1,7 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "antd";
-import { PlusOutlined } from "@ant-design/icons";
+import { Button, Input, Spin } from "antd";
+import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import JobTable from "./tables/JobTable";
 import JobDetailModal from "./modals/JobDetailModal";
 import ReceiptTableModal from "./modals/ReceiptTableModal";
@@ -48,9 +48,9 @@ const JobsListView = () => {
 
 
   return (
-    <div className="p-4 sm:p-6 w-full h-full max-w-full overflow-hidden">
+    <div className="w-full h-full">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 sm:gap-0">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3 sm:gap-4">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
           Job Management
         </h1>
@@ -60,35 +60,42 @@ const JobsListView = () => {
           icon={<PlusOutlined />}
           onClick={() => navigate("/jobs/create")}
           className="w-full sm:w-auto"
+          style={{ 
+            background: 'linear-gradient(135deg, #1f2937 0%, #111827 100%)', 
+            border: 'none',
+          }}
         >
           Add New Job
         </Button>
       </div>
 
       {/* Search */}
-      <div className="mb-6">
-        <input
-          type="text"
+      <div className="mb-4 sm:mb-6">
+        <Input
+          size="large"
           placeholder="Search jobs by title or customer name..."
+          prefix={<SearchOutlined />}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-3 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm"
+          style={{ borderRadius: '8px' }}
         />
       </div>
 
-      {/* Jobs Table */}
+      {/* Jobs Table - Responsive Container */}
       {isLoading ? (
         <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+          <Spin size="large" />
           <p className="mt-3 text-gray-600 text-lg">Loading jobs...</p>
         </div>
       ) : (
-        <JobTable
-          jobs={filteredJobs}
-          onViewDetails={viewJobDetails}
-          onEdit={updateJob.mutateAsync}
-          onDelete={(id) => deleteJob.mutate(id)}
-        />
+        <div className="w-full overflow-x-auto bg-white rounded-lg shadow">
+          <JobTable
+            jobs={filteredJobs}
+            onViewDetails={viewJobDetails}
+            onEdit={updateJob.mutateAsync}
+            onDelete={(id) => deleteJob.mutate(id)}
+          />
+        </div>
       )}
 
       {/* Pagination Controls */}

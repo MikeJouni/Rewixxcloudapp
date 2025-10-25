@@ -51,23 +51,12 @@ public class DatabaseConfig {
     @Bean
     @Profile("!test")
     public javax.sql.DataSource dataSource() throws SQLException {
-        String host = getEnv("DB_HOST");
-        String port = getEnv("DB_PORT");
-        String dbName = getEnv("DB_NAME");
-        String user = getEnv("DB_USER");
-        String password = getEnv("DB_PASSWORD");
-
-        requireNotBlank(host, "DB_HOST");
-        requireNotBlank(port, "DB_PORT");
-        requireNotBlank(dbName, "DB_NAME");
-        requireNotBlank(user, "DB_USER");
-        requireNotBlank(password, "DB_PASSWORD");
-
+        // Use H2 in-memory database for development
         DataSource dataSource = new DataSource();
-        dataSource.setDriverClassName("org.postgresql.Driver");
-        dataSource.setUrl("jdbc:postgresql://" + host + ":" + port + "/" + dbName);
-        dataSource.setUsername(user);
-        dataSource.setPassword(password);
+        dataSource.setDriverClassName("org.h2.Driver");
+        dataSource.setUrl("jdbc:h2:mem:rewixxdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL");
+        dataSource.setUsername("sa");
+        dataSource.setPassword("");
 
         // Connection pool settings
         dataSource.setInitialSize(5);
@@ -81,9 +70,9 @@ public class DatabaseConfig {
         dataSource.setTestOnBorrow(true);
         dataSource.setTestWhileIdle(true);
 
-        // SSL conditional based on active profile
-        String connectionProperties = isProdProfileActive() ? "ssl=true;sslmode=require" : "ssl=false;sslmode=disable";
-        dataSource.setConnectionProperties(connectionProperties);
+        System.out.println("[DATABASE] Using H2 in-memory database");
+        System.out.println("[DATABASE] H2 Console available at: http://localhost:8080/h2-console");
+        System.out.println("[DATABASE] JDBC URL: jdbc:h2:mem:rewixxdb");
 
         return dataSource;
     }

@@ -7,6 +7,7 @@ import {
 } from "react-router-dom";
 import "./index.css";
 import "./antd-table-overrides.css";
+import "./table-responsive.css";
 import Navigation from "./components/Navigation";
 import NotFound from "./components/NotFound";
 import CustomersPage from "./Pages/Customers";
@@ -29,28 +30,13 @@ function App() {
 
 function AppContent() {
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 w-full h-full">
-      <header className="w-full bg-gradient-to-r from-gray-800 via-gray-900 to-gray-800 text-white px-4 sm:px-8 py-6 sm:py-8 shadow-2xl relative overflow-hidden">
-        {/* Background pattern */}
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute inset-0" style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-            backgroundRepeat: 'repeat'
-          }}></div>
-        </div>
-        
-        <div className="relative z-10">
-          <div className="text-center mb-6">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
-              ⚡ Imad's Electrical Services
-            </h1>
-          </div>
-          <Navigation />
-        </div>
-      </header>
+    <div className="min-h-screen flex flex-col w-full h-full" style={{ background: '#f0f2f5' }}>
+      {/* Modern Navigation Bar */}
+      <Navigation />
 
-      <main className="flex-grow w-full px-4 sm:px-6 py-4 sm:py-6">
-        <div className="max-w-7xl mx-auto w-full">
+      {/* Main Content Area - Full Width on Large Screens */}
+      <main className="flex-grow w-full px-2 sm:px-4 lg:px-6 xl:px-8 py-4 sm:py-6">
+        <div className="w-full max-w-full">
           <Routes>
             <Route path="/" element={<Navigate to="/customers" replace />} />
             <Route path="/customers/*" element={<CustomersPage />} />
@@ -61,6 +47,7 @@ function AppContent() {
         </div>
       </main>
 
+      {/* Footer */}
       <footer>
         <Footer />
       </footer>

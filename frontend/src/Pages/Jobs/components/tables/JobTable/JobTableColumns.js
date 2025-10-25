@@ -1,5 +1,4 @@
 import React from "react";
-import { Tag } from "antd";
 
 const JobTableColumns = ({ 
   editingId, 
@@ -9,18 +8,19 @@ const JobTableColumns = ({
   onSaveEdit, 
   onCancelEdit 
 }) => {
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case "LOW": return "green";
-      case "MEDIUM": return "orange";
-      case "HIGH": return "red";
-      case "URGENT": return "magenta";
-      default: return "default";
+  const getStatusStyle = (status) => {
+    if (status === "IN_PROGRESS") {
+      return {
+        backgroundColor: '#EFF6FF',
+        color: '#1E40AF',
+        border: '1px solid #BFDBFE'
+      };
     }
-  };
-
-  const getStatusColor = (status) => {
-    return status === "IN_PROGRESS" ? "processing" : "success";
+    return {
+      backgroundColor: '#ECFDF5',
+      color: '#047857',
+      border: '1px solid #A7F3D0'
+    };
   };
 
   const computeTotalCost = (job) => {
@@ -70,23 +70,6 @@ const JobTableColumns = ({
       key: 'title',
     },
     {
-      title: 'Priority',
-      dataIndex: 'priority',
-      key: 'priority',
-      filters: [
-        { text: 'Low', value: 'LOW' },
-        { text: 'Medium', value: 'MEDIUM' },
-        { text: 'High', value: 'HIGH' },
-        { text: 'Urgent', value: 'URGENT' },
-      ],
-      onFilter: (value, record) => record.priority === value,
-      render: (priority) => (
-        <Tag color={getPriorityColor(priority)}>
-          {priority.charAt(0) + priority.slice(1).toLowerCase()}
-        </Tag>
-      ),
-    },
-    {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
@@ -96,9 +79,28 @@ const JobTableColumns = ({
       ],
       onFilter: (value, record) => record.status === value,
       render: (status) => (
-        <Tag color={getStatusColor(status)}>
+        <span 
+          style={{
+            ...getStatusStyle(status),
+            padding: '4px 12px',
+            borderRadius: '6px',
+            fontSize: '13px',
+            fontWeight: '500',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            whiteSpace: 'nowrap'
+          }}
+        >
+          <span style={{
+            width: '6px',
+            height: '6px',
+            borderRadius: '50%',
+            backgroundColor: status === "IN_PROGRESS" ? '#3B82F6' : '#10B981',
+            display: 'inline-block'
+          }} />
           {status === "IN_PROGRESS" ? "In Progress" : "Completed"}
-        </Tag>
+        </span>
       ),
     },
     {
@@ -133,10 +135,9 @@ const JobTableColumns = ({
             View
           </button>
           <button
-            className={`px-3 py-1 rounded text-sm ${record.status === "COMPLETED" ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-yellow-500 text-white hover:bg-yellow-600"}`}
-            onClick={() => record.status !== "COMPLETED" && onEdit(record)}
-            disabled={record.status === "COMPLETED"}
-            title={record.status === "COMPLETED" ? "Completed jobs cannot be edited" : "Edit job"}
+            className="px-3 py-1 rounded text-sm bg-yellow-500 text-white hover:bg-yellow-600"
+            onClick={() => onEdit(record)}
+            title="Edit job"
           >
             Edit
           </button>

@@ -7,20 +7,19 @@ public class JobDto {
     private String title;
     private String description;
     private String status;
-    private String priority;
     private LocalDate startDate;
     private LocalDate endDate;
     private Long customerId;
     private List<String> receiptImageUrls;
+    private Double jobPrice;
 
     public JobDto() {
     }
 
-    public JobDto(String title, String description, String status, String priority) {
+    public JobDto(String title, String description, String status) {
         this.title = title;
         this.description = description;
         this.status = status;
-        this.priority = priority;
     }
 
     public String getTitle() {
@@ -45,14 +44,6 @@ public class JobDto {
 
     public void setStatus(String status) {
         this.status = status;
-    }
-
-    public String getPriority() {
-        return priority;
-    }
-
-    public void setPriority(String priority) {
-        this.priority = priority;
     }
 
     public LocalDate getStartDate() {
@@ -85,5 +76,13 @@ public class JobDto {
 
     public void setReceiptImageUrls(List<String> receiptImageUrls) {
         this.receiptImageUrls = receiptImageUrls;
+    }
+
+    public Double getJobPrice() {
+        return jobPrice;
+    }
+
+    public void setJobPrice(Double jobPrice) {
+        this.jobPrice = jobPrice;
     }
 }
