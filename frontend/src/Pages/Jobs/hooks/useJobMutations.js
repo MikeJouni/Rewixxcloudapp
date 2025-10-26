@@ -106,33 +106,25 @@ export const useJobMutations = (selectedJobForDetails, setSelectedJobForDetails,
   // Remove material from job
   const removeMaterialFromJob = useMutation({
     mutationFn: async ({ jobId, materialId }) => {
+      // materialId is actually the saleId now
       const result = await jobService.removeMaterialFromJob(jobId, materialId);
       return result;
     },
     onSuccess: async (_, variables) => {
       try {
-
-        
         // Update the local state immediately for optimistic UI update
         if (selectedJobForDetails && selectedJobForDetails.id === variables.jobId) {
-          // Remove the sale that contains the material from the local state
+          // Remove the sale by saleId (passed as materialId)
           const currentSales = Array.isArray(selectedJobForDetails.sales) ? selectedJobForDetails.sales : [];
-          const updatedSales = currentSales.filter(sale => {
-            if (sale.saleItems) {
-              return !sale.saleItems.some(item => item.product.id === variables.materialId);
-            }
-            return true;
-          });
+          const updatedSales = currentSales.filter(sale => sale.id !== variables.materialId);
           
           const updatedJob = { ...selectedJobForDetails, sales: updatedSales };
           setSelectedJobForDetails(updatedJob);
-          
-
+          console.log("Material removed, updated sales count:", updatedSales.length);
         }
         
         // Do not invalidate the whole jobs list to avoid losing context
         // Selected job is already refreshed above when applicable
-        
 
       } catch (error) {
         console.error("Failed to handle material removal success:", error);

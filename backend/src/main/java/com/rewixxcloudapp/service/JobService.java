@@ -82,6 +82,16 @@ public class JobService {
             job.setJobPrice(dto.getJobPrice());
         }
 
+        // Set custom material cost if provided
+        if (dto.getCustomMaterialCost() != null) {
+            job.setCustomMaterialCost(dto.getCustomMaterialCost());
+        }
+
+        // Set include tax if provided
+        if (dto.getIncludeTax() != null) {
+            job.setIncludeTax(dto.getIncludeTax());
+        }
+
         // Set customer if provided
         if (dto.getCustomerId() != null) {
             Optional<Customer> customer = customerRepository.findById(dto.getCustomerId());
@@ -104,8 +114,8 @@ public class JobService {
     }
 
     public Job updateJobFromDto(Job job, JobDto dto) {
-        logger.info("Updating job {} with DTO: title={}, description={}, jobPrice={}, status={}", 
-                   job.getId(), dto.getTitle(), dto.getDescription(), dto.getJobPrice(), dto.getStatus());
+        logger.info("Updating job {} with DTO: title={}, description={}, jobPrice={}, customMaterialCost={}, includeTax={}, status={}", 
+                   job.getId(), dto.getTitle(), dto.getDescription(), dto.getJobPrice(), dto.getCustomMaterialCost(), dto.getIncludeTax(), dto.getStatus());
         
         if (dto.getTitle() != null && !dto.getTitle().trim().isEmpty()) {
             logger.info("Setting title to: {}", dto.getTitle());
@@ -138,6 +148,14 @@ public class JobService {
         if (dto.getJobPrice() != null) {
             logger.info("Setting job price to: {}", dto.getJobPrice());
             job.setJobPrice(dto.getJobPrice());
+        }
+        if (dto.getCustomMaterialCost() != null) {
+            logger.info("Setting custom material cost to: {}", dto.getCustomMaterialCost());
+            job.setCustomMaterialCost(dto.getCustomMaterialCost());
+        }
+        if (dto.getIncludeTax() != null) {
+            logger.info("Setting include tax to: {}", dto.getIncludeTax());
+            job.setIncludeTax(dto.getIncludeTax());
         }
         // Remove estimated hours since it's no longer needed
         // if (dto.getEstimatedHours() != null) {
@@ -221,8 +239,8 @@ public class JobService {
         return sale;
     }
 
-    public void removeMaterialFromJob(Long jobId, Long materialId) {
-        logger.info("Removing material {} from job {}", materialId, jobId);
+    public void removeMaterialFromJob(Long jobId, Long saleId) {
+        logger.info("Removing sale {} from job {}", saleId, jobId);
         
         Optional<Job> jobOpt = jobRepository.findById(jobId);
         if (!jobOpt.isPresent()) {
@@ -233,36 +251,32 @@ public class JobService {
         Job job = jobOpt.get();
         logger.info("Found job: {} with {} sales", job.getTitle(), job.getSales() != null ? job.getSales().size() : 0);
         
-        // Find and remove the sale that contains the material
+        // Find and remove the specific sale by ID
         if (job.getSales() != null) {
-            // Find sales to remove
-            List<Sale> salesToRemove = new ArrayList<>();
+            Sale saleToRemove = null;
             
             for (Sale sale : job.getSales()) {
-                if (sale.getSaleItems() != null) {
-                    for (SaleItem item : sale.getSaleItems()) {
-                        if (item.getProduct() != null && item.getProduct().getId().equals(materialId)) {
-                            salesToRemove.add(sale);
-                            logger.info("Found sale to remove with product ID: {}", materialId);
-                            break;
-                        }
-                    }
+                if (sale.getId().equals(saleId)) {
+                    saleToRemove = sale;
+                    logger.info("Found sale to remove with ID: {}", saleId);
+                    break;
                 }
             }
             
-            logger.info("Found {} sales to remove", salesToRemove.size());
-            
-            // Remove each sale individually to trigger proper JPA cascade
-            for (Sale saleToRemove : salesToRemove) {
+            if (saleToRemove != null) {
                 job.getSales().remove(saleToRemove);
                 logger.info("Removed sale with ID: {}", saleToRemove.getId());
+                
+                // Save the updated job
+                jobRepository.save(job);
+                logger.info("Job updated successfully, new sales count: {}", job.getSales().size());
+            } else {
+                logger.warn("Sale with ID {} not found in job {}", saleId, jobId);
+                throw new IllegalArgumentException("Sale not found in this job");
             }
-            
-            // Save the updated job
-            jobRepository.save(job);
-            logger.info("Job updated successfully, new sales count: {}", job.getSales().size());
         } else {
             logger.warn("Job has no sales to remove from");
+            throw new IllegalArgumentException("Job has no sales");
         }
     }
 }
