@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import ConfirmModal from "../../../../../components/ConfirmModal";
 import BarcodeScannerModal from "../BarcodeScannerModal";
@@ -8,13 +8,13 @@ import MaterialsSection from "./MaterialsSection";
 import MaterialFormModal from "./MaterialFormModal";
 import ReceiptLoadingModal from "./ReceiptLoadingModal";
 
-const JobDetailModal = ({ 
-  job, 
-  isOpen, 
-  onClose, 
-  onUpdateJob, 
-  onRemoveReceipt, 
-  onClearAllReceipts, 
+const JobDetailModal = ({
+  job,
+  isOpen,
+  onClose,
+  onUpdateJob,
+  onRemoveReceipt,
+  onClearAllReceipts,
   onRemoveMaterial,
   onAddMaterial,
   onAddReceipt,
@@ -26,7 +26,8 @@ const JobDetailModal = ({
   setShowReceiptLoading
 }) => {
   const queryClient = useQueryClient();
-  
+  const jobInfoRef = useRef(null);
+
   const [showMaterialForm, setShowMaterialForm] = useState(false);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
@@ -85,8 +86,17 @@ const JobDetailModal = ({
     if (onCompleteJob) onCompleteJob(job.id);
   };
 
+  // Handle modal close with auto-save of pending changes
+  const handleClose = async () => {
+    // Save any unsaved material cost or job price changes before closing
+    if (jobInfoRef.current) {
+      await jobInfoRef.current.saveAllPendingChanges();
+    }
+    onClose();
+  };
+
   return (
-    <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-2 sm:p-3 pt-16 md:pt-20 lg:pt-3" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-2 sm:p-3 pt-16 md:pt-20 lg:pt-3" onClick={handleClose}>
       <div className="bg-white rounded-lg w-full max-w-4xl max-h-[85vh] md:max-h-[88vh] lg:max-h-[92vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
         {/* Header - Sticky */}
         <div className="sticky top-0 bg-white border-b border-gray-200 px-3 sm:px-4 py-2.5 sm:py-3 flex justify-between items-center z-10">
@@ -94,7 +104,7 @@ const JobDetailModal = ({
             Job #{job.id} - {job.title}
           </h2>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="text-2xl sm:text-3xl text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0 leading-none"
           >
             ×
@@ -105,9 +115,10 @@ const JobDetailModal = ({
         <div className="p-3 sm:p-4">
 
         {/* Job Details */}
-        <JobInfoSection 
-          job={job} 
-          totalCost={totalCost} 
+        <JobInfoSection
+          ref={jobInfoRef}
+          job={job}
+          totalCost={totalCost}
           onCompleteJob={() => setShowCompleteConfirm(true)}
           onUpdateJob={onUpdateJob}
         />

@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from "react";
 
-const JobInfoSection = ({ job, totalCost, onCompleteJob, onUpdateJob }) => {
+const JobInfoSection = forwardRef(({ job, totalCost, onCompleteJob, onUpdateJob }, ref) => {
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [notes, setNotes] = useState(job.description || "");
   const [isSavingNotes, setIsSavingNotes] = useState(false);
@@ -132,7 +132,7 @@ const JobInfoSection = ({ job, totalCost, onCompleteJob, onUpdateJob }) => {
       console.log("Updating tax setting for job:", job.id, "Include tax:", checked);
       const result = await onUpdateJob({ id: job.id, includeTax: checked });
       console.log("Tax setting saved successfully:", result);
-      
+
       job.includeTax = checked;
       setIncludeTax(checked);
       setRefreshKey(prev => prev + 1);
@@ -143,6 +143,56 @@ const JobInfoSection = ({ job, totalCost, onCompleteJob, onUpdateJob }) => {
       setIsSavingTax(false);
     }
   };
+
+  // Expose save function to parent components via ref
+  useImperativeHandle(ref, () => ({
+    saveAllPendingChanges: async () => {
+      const promises = [];
+
+      // Save material cost if there are unsaved changes
+      if (hasUnsavedMaterialCost.current) {
+        const costValue = parseFloat(customMaterialCost) || 0;
+        if (costValue !== (job.customMaterialCost || 0)) {
+          promises.push(
+            onUpdateJob({ id: job.id, customMaterialCost: costValue })
+              .then(() => {
+                job.customMaterialCost = costValue;
+                hasUnsavedMaterialCost.current = false;
+              })
+              .catch(error => {
+                console.error("Failed to save material cost:", error);
+              })
+          );
+        } else {
+          hasUnsavedMaterialCost.current = false;
+        }
+      }
+
+      // Save job price if there are unsaved changes
+      if (hasUnsavedJobPrice.current) {
+        const priceValue = parseFloat(jobPrice) || 0;
+        if (priceValue !== (job.jobPrice || 0)) {
+          promises.push(
+            onUpdateJob({ id: job.id, jobPrice: priceValue })
+              .then(() => {
+                job.jobPrice = priceValue;
+                hasUnsavedJobPrice.current = false;
+              })
+              .catch(error => {
+                console.error("Failed to save job price:", error);
+              })
+          );
+        } else {
+          hasUnsavedJobPrice.current = false;
+        }
+      }
+
+      // Wait for all saves to complete
+      if (promises.length > 0) {
+        await Promise.all(promises);
+      }
+    }
+  }));
 
   // Financial data
   const internalMaterialCost = totalCost; // Calculated from actual materials (for display only)
@@ -352,6 +402,8 @@ const JobInfoSection = ({ job, totalCost, onCompleteJob, onUpdateJob }) => {
       </div>
     </div>
   );
-};
+});
+
+JobInfoSection.displayName = 'JobInfoSection';
 
 export default JobInfoSection;
