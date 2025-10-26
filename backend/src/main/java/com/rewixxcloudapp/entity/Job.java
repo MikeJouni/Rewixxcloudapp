@@ -34,6 +34,10 @@ public class Job {
 
     private Double jobPrice;
 
+    private Double customMaterialCost;
+
+    private Boolean includeTax;
+
     @ManyToOne
     private Customer customer;
 
@@ -59,7 +63,7 @@ public class Job {
     private static JsonSerializer serializer() {
         return JsonSerializer.create()
                 .include("id", "title", "description", "status", "startDate", "endDate",
-                        "jobPrice", "receiptImageUrls", "customer.id", "customer.username",
+                        "jobPrice", "customMaterialCost", "includeTax", "receiptImageUrls", "customer.id", "customer.username",
                         "customer.phone", "customer.addressLine1", "customer.city", "customer.state",
                         "sales.id", "sales.date", "sales.description", "sales.saleItems.id", 
                         "sales.saleItems.quantity", "sales.saleItems.unitPrice", 
@@ -171,5 +175,21 @@ public class Job {
 
     public void setJobPrice(Double jobPrice) {
         this.jobPrice = jobPrice;
+    }
+
+    public Double getCustomMaterialCost() {
+        return customMaterialCost;
+    }
+
+    public void setCustomMaterialCost(Double customMaterialCost) {
+        this.customMaterialCost = customMaterialCost;
+    }
+
+    public Boolean getIncludeTax() {
+        return includeTax;
+    }
+
+    public void setIncludeTax(Boolean includeTax) {
+        this.includeTax = includeTax;
     }
 }

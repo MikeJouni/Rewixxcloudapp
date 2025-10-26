@@ -12,6 +12,8 @@ public class JobDto {
     private Long customerId;
     private List<String> receiptImageUrls;
     private Double jobPrice;
+    private Double customMaterialCost;
+    private Boolean includeTax;
 
     public JobDto() {
     }
@@ -84,5 +86,21 @@ public class JobDto {
 
     public void setJobPrice(Double jobPrice) {
         this.jobPrice = jobPrice;
+    }
+
+    public Double getCustomMaterialCost() {
+        return customMaterialCost;
+    }
+
+    public void setCustomMaterialCost(Double customMaterialCost) {
+        this.customMaterialCost = customMaterialCost;
+    }
+
+    public Boolean getIncludeTax() {
+        return includeTax;
+    }
+
+    public void setIncludeTax(Boolean includeTax) {
+        this.includeTax = includeTax;
     }
 }

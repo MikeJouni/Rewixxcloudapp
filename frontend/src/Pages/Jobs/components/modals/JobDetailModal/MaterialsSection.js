@@ -9,25 +9,25 @@ const MaterialsSection = ({
   onRemoveMaterial
 }) => {
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4 md:p-6">
-      <div className="mb-3 sm:mb-4">
-        <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3">Materials ({materials.length})</h3>
+    <div className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4 mt-3">
+      <div className="mb-3">
+        <h3 className="text-sm sm:text-base font-semibold mb-2">Materials ({materials.length})</h3>
         <div className="flex flex-wrap gap-2">
           <button
             onClick={onAddMaterial}
-            className="px-2 sm:px-3 py-1 bg-blue-500 text-white rounded text-xs sm:text-sm hover:bg-blue-600 transition-colors"
+            className="px-3 py-1.5 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors"
           >
             Add Material
           </button>
           <button
             onClick={onScanBarcode}
-            className="px-2 sm:px-3 py-1 bg-purple-500 text-white rounded text-xs sm:text-sm hover:bg-purple-600 transition-colors"
+            className="px-3 py-1.5 bg-gray-600 text-white rounded text-sm hover:bg-gray-700 transition-colors"
           >
             Scan Barcode
           </button>
           <button
             onClick={onProcessReceipt}
-            className="px-2 sm:px-3 py-1 bg-green-500 text-white rounded text-xs sm:text-sm hover:bg-green-600 transition-colors"
+            className="px-3 py-1.5 bg-gray-600 text-white rounded text-sm hover:bg-gray-700 transition-colors"
           >
             Process Receipt
           </button>
@@ -38,35 +38,35 @@ const MaterialsSection = ({
         <>
           {/* Desktop Table View */}
           <div className="hidden md:block border border-gray-200 rounded-lg overflow-hidden">
-            <div className="max-h-[300px] overflow-y-auto">
+            <div className="max-h-[250px] overflow-y-auto">
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Name</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Price</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Qty</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Total</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
+                    <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700">Name</th>
+                    <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700">Price</th>
+                    <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700">Qty</th>
+                    <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700">Total</th>
+                    <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {materials.map((material, idx) => (
                     <tr key={material.id ?? `${material.name}-${material.price}-${idx}`} className="hover:bg-gray-50">
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-2">
                         <div>
-                          <div className="font-medium text-gray-900">{material.name}</div>
+                          <div className="font-medium text-gray-900 text-sm">{material.name}</div>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-gray-900">
+                      <td className="px-3 py-2 text-gray-900 text-sm">
                         ${material.price?.toFixed(2) || "0.00"}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-2 text-sm">
                         <span className="text-gray-900">{material.quantity}</span>
                       </td>
-                      <td className="px-4 py-3 font-medium text-gray-900">
+                      <td className="px-3 py-2 font-medium text-gray-900 text-sm">
                         ${(material.price * material.quantity).toFixed(2)}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-2">
                         <button
                           onClick={() => onRemoveMaterial(material.id)}
                           className="px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600 transition-colors"
@@ -82,7 +82,7 @@ const MaterialsSection = ({
           </div>
 
           {/* Mobile Card View */}
-          <div className="md:hidden space-y-2 max-h-[400px] overflow-y-auto">
+          <div className="md:hidden space-y-2 max-h-[250px] overflow-y-auto">
             {materials.map((material, idx) => (
               <div 
                 key={material.id ?? `${material.name}-${material.price}-${idx}`}
@@ -119,9 +119,9 @@ const MaterialsSection = ({
           </div>
         </>
       ) : (
-        <div className="text-center py-6 sm:py-8 bg-gray-50 rounded-lg">
-          <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">No materials added yet</h3>
-          <p className="text-sm sm:text-base text-gray-500">Use the buttons above to add materials to this job</p>
+        <div className="text-center py-4 sm:py-6 bg-gray-50 rounded-lg">
+          <h3 className="text-sm sm:text-base font-medium text-gray-900 mb-1">No materials added yet</h3>
+          <p className="text-xs sm:text-sm text-gray-500">Use the buttons above to add materials to this job</p>
         </div>
       )}
     </div>

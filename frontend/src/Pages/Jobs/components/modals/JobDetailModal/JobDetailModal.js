@@ -32,7 +32,7 @@ const JobDetailModal = ({
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [showCompleteConfirm, setShowCompleteConfirm] = useState(false);
 
-  // Extract materials from sales data
+  // Extract materials from sales data (do NOT aggregate - show each addition separately)
   const materials = useMemo(() => {
     if (!job || !job.sales) return [];
     
@@ -57,14 +57,8 @@ const JobDetailModal = ({
         });
       }
     });
-    // Aggregate by name+price
-    const map = new Map();
-    for (const m of allMaterials) {
-      const key = `${m.name.toLowerCase()}|${m.price.toFixed(2)}`;
-      if (!map.has(key)) map.set(key, { ...m });
-      else map.get(key).quantity += m.quantity;
-    }
-    return Array.from(map.values());
+    // Return all materials without aggregation so each can be removed individually
+    return allMaterials;
   }, [job]);
 
   // Calculate total cost from materials
@@ -79,8 +73,9 @@ const JobDetailModal = ({
   const removeMaterial = (materialId) => {
     if (onRemoveMaterial) {
       const material = materials.find(m => m.id === materialId);
-      if (material && material.productId) {
-        onRemoveMaterial({ jobId: job.id, materialId: material.productId });
+      if (material && material.saleId) {
+        // Pass the saleId to remove only this specific sale/material
+        onRemoveMaterial({ jobId: job.id, materialId: material.saleId });
       }
     }
   };
@@ -91,20 +86,23 @@ const JobDetailModal = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex justify-center items-center z-50 p-2 sm:p-4 pt-24 sm:pt-4">
-      <div className="bg-white rounded-lg p-3 sm:p-4 md:p-6 max-w-[98vw] sm:max-w-[95vw] max-h-[85vh] sm:max-h-[95vh] overflow-auto w-full max-w-6xl">
-        {/* Header */}
-        <div className="flex justify-between items-start sm:items-center mb-4 sm:mb-6 gap-2">
-          <h2 className="text-lg sm:text-xl md:text-2xl font-bold m-0 leading-tight">
+    <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-2 sm:p-3 pt-16 md:pt-20 lg:pt-3" onClick={onClose}>
+      <div className="bg-white rounded-lg w-full max-w-4xl max-h-[85vh] md:max-h-[88vh] lg:max-h-[92vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        {/* Header - Sticky */}
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-3 sm:px-4 py-2.5 sm:py-3 flex justify-between items-center z-10">
+          <h2 className="text-base sm:text-lg md:text-xl font-semibold m-0">
             Job #{job.id} - {job.title}
           </h2>
           <button
             onClick={onClose}
-            className="text-2xl sm:text-3xl text-gray-500 hover:text-gray-700 transition-colors flex-shrink-0 leading-none"
+            className="text-2xl sm:text-3xl text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0 leading-none"
           >
             ×
           </button>
         </div>
+        
+        {/* Content */}
+        <div className="p-3 sm:p-4">
 
         {/* Job Details */}
         <JobInfoSection 
@@ -192,6 +190,7 @@ const JobDetailModal = ({
 
         {/* Receipt Loading Modal */}
         <ReceiptLoadingModal isOpen={showReceiptLoading} />
+        </div>
       </div>
     </div>
   );

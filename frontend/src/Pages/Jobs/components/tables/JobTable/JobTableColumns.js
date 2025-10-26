@@ -26,21 +26,18 @@ const JobTableColumns = ({
   const computeTotalCost = (job) => {
     try {
       if (!job) return 0;
-      if (typeof job.totalCost === 'number') return job.totalCost;
-      if (job.total_cost) return Number(job.total_cost) || 0;
-      // Fallback: compute from sales if present
-      if (Array.isArray(job.sales)) {
-        return job.sales.reduce((sum, sale) => {
-          if (!sale || !Array.isArray(sale.saleItems)) return sum;
-          const saleTotal = sale.saleItems.reduce((st, item) => {
-            const unit = Number(item?.unitPrice ?? item?.product?.unitPrice ?? 0) || 0;
-            const qty = Number(item?.quantity ?? 0) || 0;
-            return st + unit * qty;
-          }, 0);
-          return sum + saleTotal;
-        }, 0);
-      }
-      return 0;
+      
+      // Match the calculation in JobInfoSection:
+      // Total = billingMaterialCost + jobPrice + tax
+      const billingMaterialCost = job.customMaterialCost !== undefined && job.customMaterialCost !== null 
+        ? Number(job.customMaterialCost) 
+        : 0;
+      const jobPrice = Number(job.jobPrice) || 0;
+      const subtotal = billingMaterialCost + jobPrice;
+      const taxAmount = job.includeTax ? subtotal * 0.06 : 0;
+      const totalCost = subtotal + taxAmount;
+      
+      return totalCost;
     } catch (e) {
       return 0;
     }
