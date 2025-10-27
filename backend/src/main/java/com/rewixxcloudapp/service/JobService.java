@@ -279,4 +279,59 @@ public class JobService {
             throw new IllegalArgumentException("Job has no sales");
         }
     }
+
+    public Sale updateMaterialInJob(Long jobId, Long saleId, MaterialDto materialDto) {
+        logger.info("Updating sale {} in job {} with new quantity: {}", saleId, jobId, materialDto.getQuantity());
+
+        Optional<Job> jobOpt = jobRepository.findById(jobId);
+        if (!jobOpt.isPresent()) {
+            logger.error("Job not found with ID: {}", jobId);
+            throw new IllegalArgumentException("Job not found");
+        }
+
+        Job job = jobOpt.get();
+        logger.info("Found job: {} with {} sales", job.getTitle(), job.getSales() != null ? job.getSales().size() : 0);
+
+        // Find the specific sale by ID
+        if (job.getSales() != null) {
+            Sale saleToUpdate = null;
+
+            for (Sale sale : job.getSales()) {
+                if (sale.getId().equals(saleId)) {
+                    saleToUpdate = sale;
+                    logger.info("Found sale to update with ID: {}", saleId);
+                    break;
+                }
+            }
+
+            if (saleToUpdate != null) {
+                // Update the quantity in the first sale item (materials are stored as sale items)
+                if (saleToUpdate.getSaleItems() != null && !saleToUpdate.getSaleItems().isEmpty()) {
+                    SaleItem saleItem = saleToUpdate.getSaleItems().iterator().next();
+                    logger.info("Updating sale item quantity from {} to {}", saleItem.getQuantity(), materialDto.getQuantity());
+                    saleItem.setQuantity(materialDto.getQuantity());
+
+                    // Update unit price if provided
+                    if (materialDto.getUnitPrice() != null) {
+                        logger.info("Updating unit price from {} to {}", saleItem.getUnitPrice(), materialDto.getUnitPrice());
+                        saleItem.setUnitPrice(materialDto.getUnitPrice());
+                    }
+
+                    // Save the updated job (cascades to sale and sale items)
+                    jobRepository.save(job);
+                    logger.info("Sale updated successfully in job: {}", jobId);
+                    return saleToUpdate;
+                } else {
+                    logger.error("Sale has no sale items to update");
+                    throw new IllegalArgumentException("Sale has no items");
+                }
+            } else {
+                logger.warn("Sale with ID {} not found in job {}", saleId, jobId);
+                throw new IllegalArgumentException("Sale not found in this job");
+            }
+        } else {
+            logger.warn("Job has no sales to update");
+            throw new IllegalArgumentException("Job has no sales");
+        }
+    }
 }

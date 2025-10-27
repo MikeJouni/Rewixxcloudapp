@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Menu, Layout, Drawer, Button, Grid } from "antd";
-import { 
-  UserOutlined, 
-  ToolOutlined, 
+import {
+  UserOutlined,
+  ToolOutlined,
+  TeamOutlined,
+  DollarOutlined,
   BarChartOutlined,
   MenuOutlined,
   CloseOutlined
@@ -22,6 +24,8 @@ const Navigation = () => {
     const path = location.pathname;
     if (path.startsWith("/customers") || path === "/") return "customers";
     if (path.startsWith("/jobs")) return "jobs";
+    if (path.startsWith("/employees")) return "employees";
+    if (path.startsWith("/expenses")) return "expenses";
     if (path.startsWith("/reports")) return "reports";
     return "customers";
   };
@@ -41,6 +45,16 @@ const Navigation = () => {
       key: "jobs",
       icon: <ToolOutlined style={{ fontSize: '18px' }} />,
       label: "Jobs",
+    },
+    {
+      key: "employees",
+      icon: <TeamOutlined style={{ fontSize: '18px' }} />,
+      label: "Employees",
+    },
+    {
+      key: "expenses",
+      icon: <DollarOutlined style={{ fontSize: '18px' }} />,
+      label: "Expenses",
     },
     {
       key: "reports",

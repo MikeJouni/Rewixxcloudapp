@@ -5,7 +5,6 @@ import BarcodeScannerModal from "../BarcodeScannerModal";
 import ReceiptUploadModal from "../ReceiptUploadModal";
 import JobInfoSection from "./JobInfoSection";
 import MaterialsSection from "./MaterialsSection";
-import MaterialFormModal from "./MaterialFormModal";
 import ReceiptLoadingModal from "./ReceiptLoadingModal";
 
 const JobDetailModal = ({
@@ -16,6 +15,7 @@ const JobDetailModal = ({
   onRemoveReceipt,
   onClearAllReceipts,
   onRemoveMaterial,
+  onUpdateMaterial,
   onAddMaterial,
   onAddReceipt,
   onCompleteJob,
@@ -28,7 +28,6 @@ const JobDetailModal = ({
   const queryClient = useQueryClient();
   const jobInfoRef = useRef(null);
 
-  const [showMaterialForm, setShowMaterialForm] = useState(false);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [showCompleteConfirm, setShowCompleteConfirm] = useState(false);
@@ -96,8 +95,8 @@ const JobDetailModal = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-2 sm:p-3 pt-16 md:pt-20 lg:pt-3" onClick={handleClose}>
-      <div className="bg-white rounded-lg w-full max-w-4xl max-h-[85vh] md:max-h-[88vh] lg:max-h-[92vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-2 sm:p-3 pt-16 md:pt-20 lg:pt-24" onClick={handleClose}>
+      <div className="bg-white rounded-lg w-full max-w-4xl max-h-[85vh] md:max-h-[88vh] lg:max-h-[88vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
         {/* Header - Sticky */}
         <div className="sticky top-0 bg-white border-b border-gray-200 px-3 sm:px-4 py-2.5 sm:py-3 flex justify-between items-center z-10">
           <h2 className="text-base sm:text-lg md:text-xl font-semibold m-0">
@@ -127,22 +126,14 @@ const JobDetailModal = ({
         <MaterialsSection
           materials={materials}
           job={job}
-          onAddMaterial={() => setShowMaterialForm(true)}
+          onAddMaterial={onAddMaterial}
           onScanBarcode={() => setShowBarcodeScanner(true)}
           onProcessReceipt={() => setShowReceiptModal(true)}
           onRemoveMaterial={removeMaterial}
-        />
-
-        {/* Material Form Modal */}
-        <MaterialFormModal
-          isOpen={showMaterialForm}
-          onClose={() => setShowMaterialForm(false)}
-          jobId={job.id}
-          onAddMaterial={onAddMaterial}
+          onUpdateMaterial={onUpdateMaterial}
           products={products}
           productsLoading={productsLoading}
           productsError={productsError}
-          queryClient={queryClient}
         />
 
         {/* Barcode Scanner Modal */}

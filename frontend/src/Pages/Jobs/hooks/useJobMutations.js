@@ -117,12 +117,12 @@ export const useJobMutations = (selectedJobForDetails, setSelectedJobForDetails,
           // Remove the sale by saleId (passed as materialId)
           const currentSales = Array.isArray(selectedJobForDetails.sales) ? selectedJobForDetails.sales : [];
           const updatedSales = currentSales.filter(sale => sale.id !== variables.materialId);
-          
+
           const updatedJob = { ...selectedJobForDetails, sales: updatedSales };
           setSelectedJobForDetails(updatedJob);
           console.log("Material removed, updated sales count:", updatedSales.length);
         }
-        
+
         // Do not invalidate the whole jobs list to avoid losing context
         // Selected job is already refreshed above when applicable
 
@@ -136,11 +136,44 @@ export const useJobMutations = (selectedJobForDetails, setSelectedJobForDetails,
     }
   });
 
+  // Update material in job (quantity/price)
+  const updateMaterialInJob = useMutation({
+    mutationFn: async ({ jobId, saleId, quantity }) => {
+      const result = await jobService.updateMaterialInJob(jobId, saleId, { quantity });
+      return result;
+    },
+    onSuccess: async (updatedSale, variables) => {
+      try {
+        // Update the local state immediately for optimistic UI update
+        if (selectedJobForDetails && selectedJobForDetails.id === variables.jobId && updatedSale) {
+          const currentSales = Array.isArray(selectedJobForDetails.sales) ? selectedJobForDetails.sales : [];
+          const updatedSales = currentSales.map(sale =>
+            sale.id === variables.saleId ? updatedSale : sale
+          );
+
+          const updatedJob = { ...selectedJobForDetails, sales: updatedSales };
+          setSelectedJobForDetails(updatedJob);
+          console.log("Material updated successfully");
+        }
+
+        // Do not invalidate the whole jobs list to avoid losing context
+
+      } catch (error) {
+        console.error("Failed to handle material update success:", error);
+      }
+    },
+    onError: (error, variables) => {
+      console.error("Material update mutation failed:", error);
+      console.error("Failed variables:", variables);
+    }
+  });
+
   return {
     addJob,
     updateJob,
     deleteJob,
     addMaterialToJob,
     removeMaterialFromJob,
+    updateMaterialInJob,
   };
 };
