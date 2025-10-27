@@ -34,6 +34,7 @@ const JobsListView = () => {
     productsLoading,
     productsError,
     addMaterialToJob,
+    updateMaterialInJob,
     // Receipt-related functions
     setProcessingReceiptJobId,
     showVerificationModal,
@@ -161,6 +162,7 @@ const JobsListView = () => {
           onRemoveReceipt={removeReceipt}
           onClearAllReceipts={clearAllReceipts}
           onRemoveMaterial={removeMaterialFromJob.mutateAsync}
+          onUpdateMaterial={updateMaterialInJob.mutateAsync}
           onAddMaterial={addMaterialToJob.mutateAsync}
           onAddReceipt={handleReceiptUpload}
           products={products}

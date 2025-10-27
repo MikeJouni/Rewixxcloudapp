@@ -1,6 +1,7 @@
 package com.rewixxcloudapp.controller;
 
 import com.rewixxcloudapp.entity.Job;
+import com.rewixxcloudapp.entity.Sale;
 import com.rewixxcloudapp.service.JobService;
 import com.rewixxcloudapp.dto.JobDto;
 import com.rewixxcloudapp.dto.MaterialDto;
@@ -153,6 +154,28 @@ public class JobController {
         } catch (Exception e) {
             logger.error("Error removing material from job: {}", id, e);
             return ResponseEntity.internalServerError().body("Error removing material from job: " + e.getMessage());
+        }
+    }
+
+    @PutMapping("/{id}/materials/{saleId}")
+    public ResponseEntity<?> updateMaterialInJob(@PathVariable Long id, @PathVariable Long saleId, @RequestBody MaterialDto materialDto) {
+        try {
+            logger.info("Received update request for material in job ID: {} with saleId: {}, quantity: {}",
+                       id, saleId, materialDto.getQuantity());
+
+            if (materialDto.getQuantity() == null || materialDto.getQuantity() <= 0) {
+                return ResponseEntity.badRequest().body("Quantity must be greater than 0");
+            }
+
+            Sale updatedSale = jobService.updateMaterialInJob(id, saleId, materialDto);
+            logger.info("Material updated successfully in job: {}", id);
+            return ResponseEntity.ok(updatedSale);
+        } catch (IllegalArgumentException e) {
+            logger.error("Invalid argument when updating material in job {}: {}", id, e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            logger.error("Error updating material in job: {}", id, e);
+            return ResponseEntity.internalServerError().body("Error updating material: " + e.getMessage());
         }
     }
 }
