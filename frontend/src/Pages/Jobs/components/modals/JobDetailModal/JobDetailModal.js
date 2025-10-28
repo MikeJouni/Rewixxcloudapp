@@ -98,8 +98,8 @@ const JobDetailModal = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-2 sm:p-3 pt-16 md:pt-20 lg:pt-24" onClick={handleClose}>
-      <div className="bg-white rounded-lg w-full max-w-4xl max-h-[85vh] md:max-h-[88vh] lg:max-h-[88vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/90 flex items-start sm:items-center justify-center z-50 p-2 sm:p-3 pt-16 sm:pt-20 md:pt-24" onClick={handleClose}>
+      <div className="bg-white rounded-lg w-full max-w-4xl max-h-[calc(100vh-4rem)] sm:max-h-[90vh] md:max-h-[88vh] lg:max-h-[88vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
         {/* Header - Sticky */}
         <div className="sticky top-0 bg-white border-b border-gray-200 px-3 sm:px-4 py-2.5 sm:py-3 flex justify-between items-center z-10">
           <h2 className="text-base sm:text-lg md:text-xl font-semibold m-0">
@@ -125,6 +125,9 @@ const JobDetailModal = ({
           onUpdateJob={onUpdateJob}
         />
 
+        {/* Payments Section */}
+        <PaymentsSection job={job} totalCost={totalCost} />
+
         {/* Materials Section */}
         <MaterialsSection
           materials={materials}
@@ -138,9 +141,6 @@ const JobDetailModal = ({
           productsLoading={productsLoading}
           productsError={productsError}
         />
-
-        {/* Payments Section */}
-        <PaymentsSection job={job} totalCost={totalCost} />
 
         {/* Barcode Scanner Modal */}
         {showBarcodeScanner && (

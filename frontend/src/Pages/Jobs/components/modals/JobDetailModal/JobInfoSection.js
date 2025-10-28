@@ -5,6 +5,10 @@ const JobInfoSection = forwardRef(({ job, totalCost, onCompleteJob, onUpdateJob 
   const [notes, setNotes] = useState(job.description || "");
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   
+  const [isEditingAddress, setIsEditingAddress] = useState(false);
+  const [workSiteAddress, setWorkSiteAddress] = useState(job.workSiteAddress || "");
+  const [isSavingAddress, setIsSavingAddress] = useState(false);
+  
   const [jobPrice, setJobPrice] = useState(job.jobPrice || "");
   const [isSavingJobPrice, setIsSavingJobPrice] = useState(false);
   
@@ -62,6 +66,29 @@ const JobInfoSection = forwardRef(({ job, totalCost, onCompleteJob, onUpdateJob 
   const handleCancelNotes = () => {
     setNotes(job.description || "");
     setIsEditingNotes(false);
+  };
+
+  const handleSaveAddress = async () => {
+    setIsSavingAddress(true);
+    try {
+      console.log("Saving work site address for job:", job.id, "Address:", workSiteAddress);
+      const result = await onUpdateJob({ id: job.id, workSiteAddress: workSiteAddress });
+      console.log("Work site address saved successfully:", result);
+      
+      job.workSiteAddress = workSiteAddress;
+      
+      setIsEditingAddress(false);
+    } catch (error) {
+      console.error("Failed to update work site address:", error);
+      alert("Failed to save work site address: " + (error.response?.data || error.message));
+    } finally {
+      setIsSavingAddress(false);
+    }
+  };
+
+  const handleCancelAddress = () => {
+    setWorkSiteAddress(job.workSiteAddress || "");
+    setIsEditingAddress(false);
   };
 
   const handleJobPriceBlur = async () => {
@@ -350,10 +377,10 @@ const JobInfoSection = forwardRef(({ job, totalCost, onCompleteJob, onUpdateJob 
         </div>
       </div>
       
-      {/* Notes Section - Always visible and editable */}
+      {/* Job Description Section - Always visible and editable */}
       <div className="bg-gray-50 p-2 rounded border border-gray-200">
         <div className="flex justify-between items-center mb-2">
-          <h4 className="font-medium text-gray-600 text-xs">Notes</h4>
+          <h4 className="font-medium text-gray-600 text-xs">Job Description</h4>
           {!isEditingNotes && (
             <button
               onClick={() => setIsEditingNotes(true)}
@@ -369,7 +396,7 @@ const JobInfoSection = forwardRef(({ job, totalCost, onCompleteJob, onUpdateJob 
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add notes about this job..."
+              placeholder="Add job description..."
               className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm min-h-[80px]"
               rows="3"
             />
@@ -396,7 +423,58 @@ const JobInfoSection = forwardRef(({ job, totalCost, onCompleteJob, onUpdateJob 
           </div>
         ) : (
           <p className="text-sm text-gray-800 break-words whitespace-pre-wrap">
-            {job.description || "No notes added yet"}
+            {job.description || "No job description added yet"}
+          </p>
+        )}
+      </div>
+
+      {/* Work Site Address Section - Always visible and editable */}
+      <div className="bg-gray-50 p-2 rounded border border-gray-200">
+        <div className="flex justify-between items-center mb-2">
+          <h4 className="font-medium text-gray-600 text-xs">Work Site Address</h4>
+          {!isEditingAddress && (
+            <button
+              onClick={() => setIsEditingAddress(true)}
+              className="px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600 transition-colors"
+            >
+              {job.workSiteAddress ? "Edit" : "Add"}
+            </button>
+          )}
+        </div>
+        
+        {isEditingAddress ? (
+          <div className="space-y-2">
+            <input
+              type="text"
+              value={workSiteAddress}
+              onChange={(e) => setWorkSiteAddress(e.target.value)}
+              placeholder="Enter work site address..."
+              className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={handleSaveAddress}
+                disabled={isSavingAddress}
+                className={`px-2 py-1 rounded text-xs ${
+                  isSavingAddress
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-green-500 hover:bg-green-600'
+                } text-white transition-colors`}
+              >
+                {isSavingAddress ? "Saving..." : "Save"}
+              </button>
+              <button
+                onClick={handleCancelAddress}
+                disabled={isSavingAddress}
+                className="px-2 py-1 bg-gray-400 text-white rounded text-xs hover:bg-gray-500 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-gray-800 break-words">
+            {job.workSiteAddress || "No work site address added yet"}
           </p>
         )}
       </div>

@@ -39,6 +39,7 @@ const JobTable = ({
       customerId: job.customer?.id || "",
       title: job.title || "",
       description: job.description || "",
+      workSiteAddress: job.workSiteAddress || "",
     });
     // Pre-fill the customer search with the current customer's name
     setCustomerSearchTerm(job.customer?.name || "");

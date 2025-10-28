@@ -52,6 +52,11 @@ public class JobService {
         job.setTitle(dto.getTitle());
         job.setDescription(dto.getDescription() != null ? dto.getDescription() : "");
         
+        // Set work site address if provided
+        if (dto.getWorkSiteAddress() != null) {
+            job.setWorkSiteAddress(dto.getWorkSiteAddress());
+        }
+        
         // Set status and priority with defaults if not provided
         if (dto.getStatus() != null && !dto.getStatus().trim().isEmpty()) {
             try {
@@ -124,6 +129,10 @@ public class JobService {
         if (dto.getDescription() != null) {
             logger.info("Setting description to: {}", dto.getDescription());
             job.setDescription(dto.getDescription());
+        }
+        if (dto.getWorkSiteAddress() != null) {
+            logger.info("Setting work site address to: {}", dto.getWorkSiteAddress());
+            job.setWorkSiteAddress(dto.getWorkSiteAddress());
         }
         if (dto.getStatus() != null && !dto.getStatus().trim().isEmpty()) {
             try {

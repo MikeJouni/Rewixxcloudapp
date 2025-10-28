@@ -6,6 +6,7 @@ import java.util.List;
 public class JobDto {
     private String title;
     private String description;
+    private String workSiteAddress;
     private String status;
     private LocalDate startDate;
     private LocalDate endDate;
@@ -38,6 +39,14 @@ public class JobDto {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getWorkSiteAddress() {
+        return workSiteAddress;
+    }
+
+    public void setWorkSiteAddress(String workSiteAddress) {
+        this.workSiteAddress = workSiteAddress;
     }
 
     public String getStatus() {
