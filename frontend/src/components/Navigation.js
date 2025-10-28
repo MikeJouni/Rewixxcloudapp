@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Menu, Layout, Drawer, Button, Grid } from "antd";
+import { Layout, Drawer, Button, Grid, Tooltip } from "antd";
 import {
   UserOutlined,
   ToolOutlined,
@@ -8,8 +8,12 @@ import {
   DollarOutlined,
   BarChartOutlined,
   MenuOutlined,
-  CloseOutlined
+  CloseOutlined,
+  SettingOutlined,
 } from "@ant-design/icons";
+import { useQuery } from "@tanstack/react-query";
+import * as accountSettingsService from "../services/accountSettingsService";
+import AccountSettingsModal from "./AccountSettingsModal";
 
 const { Header } = Layout;
 const { useBreakpoint } = Grid;
@@ -18,7 +22,17 @@ const Navigation = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [drawerVisible, setDrawerVisible] = useState(false);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const screens = useBreakpoint();
+
+  // Fetch account settings
+  const { data: accountSettings } = useQuery({
+    queryKey: ["accountSettings"],
+    queryFn: () => accountSettingsService.getAccountSettings(),
+    select: (response) => response.data,
+  });
+
+  const companyName = accountSettings?.companyName || "Imad's Electrical LLC";
 
   const getActiveTab = () => {
     const path = location.pathname;
@@ -30,35 +44,37 @@ const Navigation = () => {
     return "customers";
   };
 
-  const handleMenuClick = (e) => {
-    navigate(`/${e.key}`);
+  const activeTab = getActiveTab();
+
+  const handleMenuClick = (key) => {
+    navigate(`/${key}`);
     setDrawerVisible(false);
   };
 
   const menuItems = [
     {
       key: "customers",
-      icon: <UserOutlined style={{ fontSize: '18px' }} />,
+      icon: <UserOutlined />,
       label: "Customers",
     },
     {
       key: "jobs",
-      icon: <ToolOutlined style={{ fontSize: '18px' }} />,
+      icon: <ToolOutlined />,
       label: "Jobs",
     },
     {
       key: "employees",
-      icon: <TeamOutlined style={{ fontSize: '18px' }} />,
+      icon: <TeamOutlined />,
       label: "Employees",
     },
     {
       key: "expenses",
-      icon: <DollarOutlined style={{ fontSize: '18px' }} />,
+      icon: <DollarOutlined />,
       label: "Expenses",
     },
     {
       key: "reports",
-      icon: <BarChartOutlined style={{ fontSize: '18px' }} />,
+      icon: <BarChartOutlined />,
       label: "Reports",
     },
   ];
@@ -67,197 +83,239 @@ const Navigation = () => {
 
   return (
     <>
-      <Header 
+      <Header
         style={{
-          position: 'sticky',
+          position: "sticky",
           top: 0,
           zIndex: 1000,
-          width: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: isDesktop ? '0 24px' : '0 16px',
-          background: 'linear-gradient(135deg, #374151 0%, #1f2937 100%)',
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
-          height: '90px',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: isDesktop ? "0 32px" : "0 16px",
+          background: "linear-gradient(135deg, #1f2937 0%, #111827 100%)",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+          height: "64px",
+          borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
         }}
       >
-        {/* Left: SaaS Business Logo (Rewixx) */}
-        <div 
-          style={{ 
-            display: 'flex', 
-            alignItems: 'center',
-            flex: isDesktop ? '0 0 auto' : '1',
-            minWidth: '120px',
-            cursor: 'pointer',
-            transition: 'transform 0.2s ease',
+        {/* Left: Logo */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            cursor: "pointer",
+            transition: "transform 0.2s ease",
           }}
-          onClick={() => navigate('/customers')}
-          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+          onClick={() => navigate("/customers")}
+          onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
+          onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
         >
-          <img 
-            src="/rewixx_logo.png" 
-            alt="Rewixx SaaS Platform" 
-            style={{ 
-              height: isDesktop ? '50px' : '40px',
-              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))',
-            }} 
+          <img
+            src="/rewixx_logo.png"
+            alt="Rewixx"
+            style={{
+              height: isDesktop ? "40px" : "32px",
+              filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.3))",
+            }}
           />
         </div>
 
-        {/* Center: Navigation Menu - Desktop Only */}
+        {/* Center: Navigation Tabs - Desktop Only */}
         {isDesktop && (
-          <div style={{ display: 'flex', justifyContent: 'center', flex: '1' }}>
-            <Menu
-              mode="horizontal"
-              selectedKeys={[getActiveTab()]}
-              onClick={handleMenuClick}
-              items={menuItems}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                fontSize: '16px',
-                fontWeight: 500,
-              }}
-              theme="dark"
-              className="modern-nav-menu"
-            />
-          </div>
-        )}
-
-        {/* Right: Company Name - Desktop Only */}
-        {isDesktop && (
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'flex-end', 
-            flex: '0 0 auto',
-            minWidth: '200px',
-            maxWidth: '240px',
-            textAlign: 'right',
-            padding: '8px 16px',
-            whiteSpace: 'nowrap',
-          }}>
-            <div style={{ 
-              fontSize: '14px',
-              fontWeight: '600',
-              color: '#fff',
-              letterSpacing: '0.5px',
-              lineHeight: '1.4',
-              fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
-            }}>
-              Imad's Electrical LLC
-            </div>
-          </div>
-        )}
-
-        {/* Mobile Hamburger Menu */}
-        {!isDesktop && (
-          <Button
-            type="text"
-            icon={<MenuOutlined style={{ fontSize: '24px', color: '#fff' }} />}
-            onClick={() => setDrawerVisible(true)}
+          <div
             style={{
-              border: 'none',
-              background: 'transparent',
+              display: "flex",
+              gap: "8px",
+              flex: 1,
+              justifyContent: "center",
+              maxWidth: "600px",
             }}
-          />
+          >
+            {menuItems.map((item) => {
+              const isActive = activeTab === item.key;
+              return (
+                <div
+                  key={item.key}
+                  onClick={() => handleMenuClick(item.key)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    padding: "8px 20px",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                    background: isActive
+                      ? "rgba(255, 255, 255, 0.12)"
+                      : "transparent",
+                    color: "#fff",
+                    fontSize: "14px",
+                    fontWeight: isActive ? "600" : "500",
+                    position: "relative",
+                    overflow: "hidden",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.background =
+                        "rgba(255, 255, 255, 0.06)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = "transparent";
+                    }
+                  }}
+                >
+                  <span style={{ fontSize: "18px", display: "flex" }}>
+                    {item.icon}
+                  </span>
+                  <span>{item.label}</span>
+                  {isActive && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        bottom: 0,
+                        left: "50%",
+                        transform: "translateX(-50%)",
+                        width: "40%",
+                        height: "2px",
+                        background:
+                          "linear-gradient(90deg, transparent, #60a5fa, transparent)",
+                        borderRadius: "2px",
+                      }}
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
         )}
+
+        {/* Right: Company Name & Settings */}
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          {isDesktop && (
+            <div
+              style={{
+                fontSize: "14px",
+                fontWeight: "600",
+                color: "#fff",
+                letterSpacing: "0.3px",
+                whiteSpace: "nowrap",
+                maxWidth: "200px",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {companyName}
+            </div>
+          )}
+
+          <Tooltip title="Account Settings">
+            <Button
+              type="text"
+              icon={
+                <SettingOutlined
+                  style={{
+                    fontSize: "20px",
+                    color: "#fff",
+                  }}
+                />
+              }
+              onClick={() => setSettingsModalOpen(true)}
+              style={{
+                border: "none",
+                background: "rgba(255, 255, 255, 0.08)",
+                borderRadius: "8px",
+                width: "40px",
+                height: "40px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "all 0.3s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(255, 255, 255, 0.15)";
+                e.currentTarget.style.transform = "rotate(90deg)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)";
+                e.currentTarget.style.transform = "rotate(0deg)";
+              }}
+            />
+          </Tooltip>
+
+          {/* Mobile Hamburger Menu */}
+          {!isDesktop && (
+            <Button
+              type="text"
+              icon={<MenuOutlined style={{ fontSize: "24px", color: "#fff" }} />}
+              onClick={() => setDrawerVisible(true)}
+              style={{
+                border: "none",
+                background: "transparent",
+              }}
+            />
+          )}
+        </div>
       </Header>
 
       {/* Mobile Drawer Menu */}
       <Drawer
         title={
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            padding: '4px 0'
-          }}>
-            <div style={{ 
-              fontSize: '16px', 
-              color: '#1f2937', 
-              textAlign: 'center', 
-              fontWeight: '600',
-              letterSpacing: '0.3px',
-              lineHeight: '1.4',
-              fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
-            }}>
-              Imad's Electrical LLC
-            </div>
+          <div
+            style={{
+              fontSize: "16px",
+              color: "#1f2937",
+              textAlign: "center",
+              fontWeight: "600",
+            }}
+          >
+            {companyName}
           </div>
         }
         placement="right"
         onClose={() => setDrawerVisible(false)}
         open={drawerVisible}
         width={280}
-        closeIcon={<CloseOutlined style={{ fontSize: '20px' }} />}
+        closeIcon={<CloseOutlined style={{ fontSize: "20px" }} />}
       >
-        <Menu
-          mode="vertical"
-          selectedKeys={[getActiveTab()]}
-          onClick={handleMenuClick}
-          items={menuItems}
-          style={{
-            border: 'none',
-            fontSize: '16px',
-          }}
-        />
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          {menuItems.map((item) => {
+            const isActive = activeTab === item.key;
+            return (
+              <div
+                key={item.key}
+                onClick={() => handleMenuClick(item.key)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  padding: "12px 16px",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                  background: isActive ? "#f3f4f6" : "transparent",
+                  color: isActive ? "#1f2937" : "#6b7280",
+                  fontWeight: isActive ? "600" : "500",
+                }}
+              >
+                <span style={{ fontSize: "20px", display: "flex" }}>
+                  {item.icon}
+                </span>
+                <span style={{ fontSize: "15px" }}>{item.label}</span>
+              </div>
+            );
+          })}
+        </div>
       </Drawer>
 
-      <style jsx="true">{`
-        /* Desktop Menu Styles */
-        .modern-nav-menu {
-          display: flex;
-          justify-content: center;
-        }
-
-        .modern-nav-menu .ant-menu-item {
-          height: 90px;
-          line-height: 90px;
-          padding: 0 20px !important;
-          margin: 0 4px !important;
-          border-radius: 0 !important;
-          transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1) !important;
-          position: relative;
-        }
-
-        .modern-nav-menu .ant-menu-item:hover {
-          background: rgba(255, 255, 255, 0.15) !important;
-        }
-
-        .modern-nav-menu .ant-menu-item-selected {
-          background: rgba(255, 255, 255, 0.25) !important;
-          color: #fff !important;
-        }
-
-        .modern-nav-menu .ant-menu-item-selected::after {
-          content: '';
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          margin: 0 auto;
-          width: 70%;
-          height: 3px;
-          background: #fff;
-          border-radius: 3px 3px 0 0;
-          box-shadow: 0 -2px 8px rgba(255, 255, 255, 0.6);
-        }
-
-        .modern-nav-menu .ant-menu-item .anticon {
-          margin-right: 8px;
-          font-size: 18px;
-        }
-
-        .modern-nav-menu .ant-menu-title-content {
-          font-size: 16px;
-          font-weight: 500;
-          letter-spacing: 0.3px;
-        }
-      `}</style>
+      {/* Account Settings Modal */}
+      <AccountSettingsModal
+        open={settingsModalOpen}
+        onClose={() => setSettingsModalOpen(false)}
+        currentSettings={accountSettings}
+      />
     </>
   );
 };

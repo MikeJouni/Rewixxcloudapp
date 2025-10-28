@@ -23,6 +23,57 @@ const JobTableColumns = ({
     };
   };
 
+  const getPaymentStatusStyle = (status) => {
+    if (status === "PAID") {
+      return {
+        backgroundColor: '#ECFDF5',
+        color: '#047857',
+        border: '1px solid #A7F3D0'
+      };
+    } else if (status === "PARTIALLY_PAID") {
+      return {
+        backgroundColor: '#FEF3C7',
+        color: '#92400E',
+        border: '1px solid #FDE68A'
+      };
+    }
+    return {
+      backgroundColor: '#FEE2E2',
+      color: '#991B1B',
+      border: '1px solid #FECACA'
+    };
+  };
+
+  const calculatePaymentStatus = (job) => {
+    try {
+      if (!job) return "UNPAID";
+
+      // Calculate total cost same as computeTotalCost
+      const billingMaterialCost = job.customMaterialCost !== undefined && job.customMaterialCost !== null
+        ? Number(job.customMaterialCost)
+        : 0;
+      const jobPrice = Number(job.jobPrice) || 0;
+      const subtotal = billingMaterialCost + jobPrice;
+      const taxAmount = job.includeTax ? subtotal * 0.06 : 0;
+      const totalCost = subtotal + taxAmount;
+
+      // Calculate total paid from payments
+      const totalPaid = job.payments && job.payments.length > 0
+        ? job.payments.reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0)
+        : 0;
+
+      if (totalPaid === 0) {
+        return "UNPAID";
+      } else if (totalPaid >= totalCost) {
+        return "PAID";
+      } else {
+        return "PARTIALLY_PAID";
+      }
+    } catch (e) {
+      return "UNPAID";
+    }
+  };
+
   const computeTotalCost = (job) => {
     try {
       if (!job) return 0;
@@ -75,29 +126,58 @@ const JobTableColumns = ({
         { text: 'Completed', value: 'COMPLETED' },
       ],
       onFilter: (value, record) => record.status === value,
-      render: (status) => (
-        <span 
-          style={{
-            ...getStatusStyle(status),
-            padding: '4px 12px',
-            borderRadius: '6px',
-            fontSize: '13px',
-            fontWeight: '500',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            whiteSpace: 'nowrap'
-          }}
-        >
-          <span style={{
-            width: '6px',
-            height: '6px',
-            borderRadius: '50%',
-            backgroundColor: status === "IN_PROGRESS" ? '#3B82F6' : '#10B981',
-            display: 'inline-block'
-          }} />
-          {status === "IN_PROGRESS" ? "In Progress" : "Completed"}
-        </span>
+      render: (status, record) => (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <span
+            style={{
+              ...getStatusStyle(status),
+              padding: '4px 12px',
+              borderRadius: '6px',
+              fontSize: '13px',
+              fontWeight: '500',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            <span style={{
+              width: '6px',
+              height: '6px',
+              borderRadius: '50%',
+              backgroundColor: status === "IN_PROGRESS" ? '#3B82F6' : '#10B981',
+              display: 'inline-block'
+            }} />
+            {status === "IN_PROGRESS" ? "In Progress" : "Completed"}
+          </span>
+          {(() => {
+            const paymentStatus = calculatePaymentStatus(record);
+            return (
+              <span
+                style={{
+                  ...getPaymentStatusStyle(paymentStatus),
+                  padding: '4px 12px',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  fontWeight: '500',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                <span style={{
+                  width: '6px',
+                  height: '6px',
+                  borderRadius: '50%',
+                  backgroundColor: paymentStatus === "PAID" ? '#10B981' : paymentStatus === "PARTIALLY_PAID" ? '#F59E0B' : '#EF4444',
+                  display: 'inline-block'
+                }} />
+                {paymentStatus === "PAID" ? "Paid" : paymentStatus === "PARTIALLY_PAID" ? "Partially Paid" : "Unpaid"}
+              </span>
+            );
+          })()}
+        </div>
       ),
     },
     {

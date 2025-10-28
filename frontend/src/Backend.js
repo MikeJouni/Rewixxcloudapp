@@ -22,7 +22,7 @@ class Backend {
     };
     if (body) options.data = JSON.stringify(body);
     const response = await axios(options);
-    return response.data;
+    return response;
   }
 
   static async post(path, body = null, params = null) {
@@ -38,7 +38,7 @@ class Backend {
     const response = await axios.post(url, body ? JSON.stringify(body) : null, {
       headers: { "Content-Type": "application/json" },
     });
-    return response.data;
+    return response;
   }
 
   static async put(path, body = null, params = null) {
@@ -54,7 +54,7 @@ class Backend {
     const response = await axios.put(url, body ? JSON.stringify(body) : null, {
       headers: { "Content-Type": "application/json" },
     });
-    return response.data;
+    return response;
   }
 
   static async delete(path, params = null) {
@@ -70,7 +70,7 @@ class Backend {
     const response = await axios.delete(url, {
       headers: { "Content-Type": "application/json" },
     });
-    return response.data;
+    return response;
   }
 }
 

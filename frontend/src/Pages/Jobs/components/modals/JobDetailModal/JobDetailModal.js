@@ -5,6 +5,7 @@ import BarcodeScannerModal from "../BarcodeScannerModal";
 import ReceiptUploadModal from "../ReceiptUploadModal";
 import JobInfoSection from "./JobInfoSection";
 import MaterialsSection from "./MaterialsSection";
+import PaymentsSection from "./PaymentsSection";
 import ReceiptLoadingModal from "./ReceiptLoadingModal";
 
 const JobDetailModal = ({
@@ -61,12 +62,14 @@ const JobDetailModal = ({
     return allMaterials;
   }, [job]);
 
-  // Calculate total cost from materials
+  // Calculate total cost (customMaterialCost + jobPrice + tax)
   const totalCost = useMemo(() => {
-    return materials.reduce((total, material) => {
-      return total + (material.price * material.quantity);
-    }, 0);
-  }, [materials]);
+    const materialCost = job.customMaterialCost || 0;
+    const jobPrice = job.jobPrice || 0;
+    const subtotal = materialCost + jobPrice;
+    const tax = job.includeTax ? subtotal * 0.06 : 0;
+    return subtotal + tax;
+  }, [job]);
 
   if (!isOpen || !job) return null;
 
@@ -135,6 +138,9 @@ const JobDetailModal = ({
           productsLoading={productsLoading}
           productsError={productsError}
         />
+
+        {/* Payments Section */}
+        <PaymentsSection job={job} totalCost={totalCost} />
 
         {/* Barcode Scanner Modal */}
         {showBarcodeScanner && (
