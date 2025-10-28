@@ -45,6 +45,10 @@ public class Job {
     @JsonManagedReference("job-sales")
     private List<Sale> sales;
 
+    @OneToMany(mappedBy = "job", cascade = CascadeType.ALL)
+    @JsonManagedReference("job-payments")
+    private List<Payment> payments;
+
     @ElementCollection
     @CollectionTable(name = "job_receipt_images", joinColumns = @JoinColumn(name = "job_id"))
     @Column(name = "image_url", columnDefinition = "TEXT")
@@ -65,11 +69,12 @@ public class Job {
                 .include("id", "title", "description", "status", "startDate", "endDate",
                         "jobPrice", "customMaterialCost", "includeTax", "receiptImageUrls", "customer.id", "customer.username",
                         "customer.phone", "customer.addressLine1", "customer.city", "customer.state",
-                        "sales.id", "sales.date", "sales.description", "sales.saleItems.id", 
-                        "sales.saleItems.quantity", "sales.saleItems.unitPrice", 
-                        "sales.saleItems.product.id", "sales.saleItems.product.name", 
+                        "sales.id", "sales.date", "sales.description", "sales.saleItems.id",
+                        "sales.saleItems.quantity", "sales.saleItems.unitPrice",
+                        "sales.saleItems.product.id", "sales.saleItems.product.name",
                         "sales.saleItems.product.unitPrice", "sales.saleItems.product.category",
-                        "sales.saleItems.product.description")
+                        "sales.saleItems.product.description",
+                        "payments.id", "payments.amount", "payments.paymentType", "payments.paymentDate")
                 .exclude("*");
     }
 
@@ -191,5 +196,13 @@ public class Job {
 
     public void setIncludeTax(Boolean includeTax) {
         this.includeTax = includeTax;
+    }
+
+    public List<Payment> getPayments() {
+        return payments;
+    }
+
+    public void setPayments(List<Payment> payments) {
+        this.payments = payments;
     }
 }
