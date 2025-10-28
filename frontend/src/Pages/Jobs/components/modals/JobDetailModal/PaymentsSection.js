@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Button, Table, Popconfirm, Tag, message, Select, Input, InputNumber } from "antd";
-import { PlusOutlined, DeleteOutlined, DollarOutlined, CloseOutlined } from "@ant-design/icons";
+import { PlusOutlined, DeleteOutlined, DollarOutlined, CloseOutlined, MinusCircleOutlined } from "@ant-design/icons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as paymentService from "../../../services/paymentService";
 
@@ -19,7 +19,6 @@ const PaymentsSection = ({ job, totalCost }) => {
   const { data: paymentsData, isLoading } = useQuery({
     queryKey: ["payments", job.id],
     queryFn: () => paymentService.getPaymentsByJobId(job.id),
-    select: (response) => response.data,
   });
 
   const payments = paymentsData || [];
@@ -160,7 +159,7 @@ const PaymentsSection = ({ job, totalCost }) => {
           <Button
             type="text"
             danger
-            icon={<DeleteOutlined />}
+            icon={<MinusCircleOutlined />}
             size="small"
             loading={deletePaymentMutation.isLoading}
           />
@@ -170,28 +169,20 @@ const PaymentsSection = ({ job, totalCost }) => {
   ];
 
   return (
-    <div className="mb-4">
-      <div className="flex justify-between items-center mb-3">
-        <div className="flex items-center gap-2 flex-wrap">
+    <div className="mb-4 mt-2">
+      <div className="flex justify-between items-center mb-3 pt-2">
+        <div className="flex items-center gap-2">
           <DollarOutlined className="text-lg" />
           <h3 className="text-base sm:text-lg font-semibold m-0">
             Payments
           </h3>
-          <Tag color={isFullyPaid ? "success" : "processing"} style={{ marginLeft: '8px' }}>
-            ${totalPaid.toFixed(2)} / ${totalCost.toFixed(2)}
-          </Tag>
-          {!isFullyPaid && (
-            <Tag color="warning">
-              Remaining: ${remainingBalance.toFixed(2)}
-            </Tag>
-          )}
-          {isFullyPaid && (
+          {isFullyPaid && totalCost > 0 && (
             <Tag color="success">
               Fully Paid ✓
             </Tag>
           )}
         </div>
-        {!showAddPaymentForm && !isFullyPaid && (
+        {!showAddPaymentForm && !isFullyPaid && totalCost > 0 && (
           <Button
             type="primary"
             icon={<PlusOutlined />}
@@ -213,9 +204,14 @@ const PaymentsSection = ({ job, totalCost }) => {
               style={{ width: `${Math.min((totalPaid / totalCost) * 100, 100)}%` }}
             />
           </div>
-          <p className="text-xs text-gray-600 mt-1">
-            {((totalPaid / totalCost) * 100).toFixed(1)}% Paid
-          </p>
+          <div className="flex justify-between items-center mt-1">
+            <p className="text-xs text-gray-600">
+              {((totalPaid / totalCost) * 100).toFixed(1)}% Paid
+            </p>
+            <p className="text-xs text-gray-600 font-medium">
+              Remaining: ${remainingBalance.toFixed(2)}
+            </p>
+          </div>
         </div>
       )}
 

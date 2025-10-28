@@ -59,10 +59,10 @@ const JobEditModal = ({
             </div>
           </div>
           
-          {/* Notes */}
+          {/* Job Description */}
           <div>
             <label className="block text-sm font-medium text-gray-600 mb-1">
-              Notes
+              Job Description
             </label>
             <textarea
               name="description"
@@ -70,7 +70,22 @@ const JobEditModal = ({
               onChange={onInputChange}
               rows="3"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Add any notes about this job..."
+              placeholder="Add job description..."
+            />
+          </div>
+          
+          {/* Work Site Address */}
+          <div>
+            <label className="block text-sm font-medium text-gray-600 mb-1">
+              Work Site Address
+            </label>
+            <input
+              type="text"
+              name="workSiteAddress"
+              value={editFormData.workSiteAddress || ""}
+              onChange={onInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter work site address..."
             />
           </div>
         </div>

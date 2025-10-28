@@ -1,76 +1,69 @@
 import axios from "axios";
 import config from "./config";
 
-const URL = config.SPRING_API_BASE + "/";
-
+// Create axios instance with default configuration
+const api = axios.create({
+  baseURL: config.SPRING_API_BASE,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
 
 class Backend {
-  static async get(path, body = null, params = null) {
-    let url = URL + path.replace(/^\//, "");
+  /**
+   * Helper method to build URL with query parameters
+   */
+  static buildUrl(path, params = null) {
+    let url = path.replace(/^\//, "");
     if (params) {
-      let data = new URLSearchParams();
-      for (const p in params) {
-        data.append(p, params[p]);
-      }
-      url += '?';
-      url += data.toString();
+      const queryString = new URLSearchParams(params).toString();
+      url += `?${queryString}`;
     }
-    const options = {
-      method: "GET",
-      url,
-      headers: { "Content-Type": "application/json" },
-    };
-    if (body) options.data = JSON.stringify(body);
-    const response = await axios(options);
-    return response;
+    return url;
+  }
+
+  static async get(path, params = null) {
+    try {
+      const url = this.buildUrl(path, params);
+      const response = await api.get(url);
+      return response.data;
+    } catch (error) {
+      console.error("GET Error:", error);
+      throw error;
+    }
   }
 
   static async post(path, body = null, params = null) {
-    let url = URL + path.replace(/^\//, "");
-    if (params) {
-      let data = new URLSearchParams();
-      for (const p in params) {
-        data.append(p, params[p]);
-      }
-      url += '?';
-      url += data.toString();
+    try {
+      const url = this.buildUrl(path, params);
+      const response = await api.post(url, body);
+      return response.data;
+    } catch (error) {
+      console.error("POST Error:", error);
+      throw error;
     }
-    const response = await axios.post(url, body ? JSON.stringify(body) : null, {
-      headers: { "Content-Type": "application/json" },
-    });
-    return response;
   }
 
   static async put(path, body = null, params = null) {
-    let url = URL + path.replace(/^\//, "");
-    if (params) {
-      let data = new URLSearchParams();
-      for (const p in params) {
-        data.append(p, params[p]);
-      }
-      url += '?';
-      url += data.toString();
+    try {
+      const url = this.buildUrl(path, params);
+      const response = await api.put(url, body);
+      return response.data;
+    } catch (error) {
+      console.error("PUT Error:", error);
+      throw error;
     }
-    const response = await axios.put(url, body ? JSON.stringify(body) : null, {
-      headers: { "Content-Type": "application/json" },
-    });
-    return response;
   }
 
   static async delete(path, params = null) {
-    let url = URL + path.replace(/^\//, "");
-    if (params) {
-      let data = new URLSearchParams();
-      for (const p in params) {
-        data.append(p, params[p]);
-      }
-      url += '?';
-      url += data.toString();
+    try {
+      const url = this.buildUrl(path, params);
+      const response = await api.delete(url);
+      return response.data;
+    } catch (error) {
+      console.error("DELETE Error:", error);
+      throw error;
     }
-    const response = await axios.delete(url, {
-      headers: { "Content-Type": "application/json" },
-    });
-    return response;
   }
 }
 

@@ -7,11 +7,13 @@ const JobForm = ({ onSubmit, onCancel, initialData = null }) => {
       customerId: initialData.customer?.id || "",
       title: initialData.title || "",
       description: initialData.description || "",
+      workSiteAddress: initialData.workSiteAddress || "",
       status: initialData.status || "IN_PROGRESS",
     } : {
       customerId: "",
       title: "",
       description: "",
+      workSiteAddress: "",
       status: "IN_PROGRESS",
     }
   );
@@ -186,7 +188,7 @@ const JobForm = ({ onSubmit, onCancel, initialData = null }) => {
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Notes
+            Job Description
           </label>
           <textarea
             name="description"
@@ -194,7 +196,20 @@ const JobForm = ({ onSubmit, onCancel, initialData = null }) => {
             onChange={handleInputChange}
             rows="3"
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Add any notes about this job..."
+            placeholder="Add job description..."
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Work Site Address
+          </label>
+          <input
+            type="text"
+            name="workSiteAddress"
+            value={formData.workSiteAddress}
+            onChange={handleInputChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Enter work site address..."
           />
         </div>
         <div className="flex gap-3">
