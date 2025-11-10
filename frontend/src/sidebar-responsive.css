@@ -1,0 +1,272 @@
+/* Responsive Sidebar Styles */
+
+/* Industry-standard smooth transitions */
+:root {
+  --sidebar-transition-duration: 0.3s;
+  --sidebar-transition-timing: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Smooth transitions for sidebar and content */
+.sidebar-transition {
+  transition: all var(--sidebar-transition-duration) var(--sidebar-transition-timing);
+}
+
+/* Ensure tables and content adjust smoothly */
+.ant-table-wrapper {
+  transition: width var(--sidebar-transition-duration) var(--sidebar-transition-timing);
+}
+
+/* Prevent sidebar from overlapping content */
+.sidebar-layout {
+  position: relative;
+}
+
+/* Global smooth transitions for layout changes */
+* {
+  box-sizing: border-box;
+}
+
+main,
+footer {
+  transition: margin-left var(--sidebar-transition-duration) var(--sidebar-transition-timing),
+              width var(--sidebar-transition-duration) var(--sidebar-transition-timing),
+              padding-left var(--sidebar-transition-duration) var(--sidebar-transition-timing),
+              padding-right var(--sidebar-transition-duration) var(--sidebar-transition-timing);
+  will-change: margin-left, width;
+}
+
+/* Mobile breakpoint (< 768px) */
+@media (max-width: 767px) {
+  .sidebar-hidden {
+    display: none;
+  }
+
+  .content-full-width {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+}
+
+/* Tablet breakpoint (768px - 1023px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .sidebar-collapsed {
+    width: 64px !important;
+  }
+
+  .content-with-sidebar-collapsed {
+    margin-left: 64px;
+    width: calc(100% - 64px);
+  }
+}
+
+/* Desktop breakpoint (>= 1024px) */
+@media (min-width: 1024px) {
+  .sidebar-expanded {
+    width: 200px !important;
+  }
+
+  .sidebar-collapsed {
+    width: 64px !important;
+  }
+
+  .content-with-sidebar-expanded {
+    margin-left: 200px;
+    width: calc(100% - 200px);
+  }
+
+  .content-with-sidebar-collapsed {
+    margin-left: 64px;
+    width: calc(100% - 64px);
+  }
+}
+
+/* Ant Design Sider overrides for smooth animation */
+.ant-layout-sider {
+  transition: all var(--sidebar-transition-duration) var(--sidebar-transition-timing) !important;
+  will-change: width, transform, opacity;
+}
+
+.ant-layout-sider-collapsed {
+  transition: all var(--sidebar-transition-duration) var(--sidebar-transition-timing) !important;
+}
+
+/* Ensure content doesn't jump during transitions */
+.ant-layout-content {
+  transition: margin-left var(--sidebar-transition-duration) var(--sidebar-transition-timing),
+              width var(--sidebar-transition-duration) var(--sidebar-transition-timing);
+  will-change: margin-left, width;
+}
+
+/* Smooth width transitions for Sider */
+.ant-layout-sider-children {
+  transition: opacity var(--sidebar-transition-duration) var(--sidebar-transition-timing);
+}
+
+/* Sidebar menu item hover effects */
+.sidebar-menu-item {
+  transition: all var(--sidebar-transition-duration) var(--sidebar-transition-timing);
+}
+
+.sidebar-menu-item:hover {
+  transform: translateX(2px);
+}
+
+/* Optimize rendering performance */
+.ant-layout-sider,
+.ant-layout-content,
+main,
+footer {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  perspective: 1000px;
+  -webkit-perspective: 1000px;
+}
+
+/* GPU acceleration for smooth transforms */
+.ant-layout-sider {
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+/* Active indicator animation */
+.sidebar-active-indicator {
+  animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideIn {
+  from {
+    height: 0;
+    opacity: 0;
+  }
+  to {
+    height: 60%;
+    opacity: 1;
+  }
+}
+
+/* Tooltip adjustments for collapsed sidebar */
+.ant-tooltip {
+  z-index: 1050 !important;
+}
+
+/* Prevent text overflow in sidebar items */
+.sidebar-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Responsive padding for main content */
+@media (max-width: 767px) {
+  main {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  main {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  main {
+    padding-left: 24px !important;
+    padding-right: 24px !important;
+  }
+}
+
+/* Ensure tables scale properly with sidebar */
+.table-container {
+  overflow-x: auto;
+  width: 100%;
+}
+
+.table-container .ant-table {
+  min-width: 100%;
+}
+
+/* Smooth scrollbar for sidebar if needed */
+.ant-layout-sider::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ant-layout-sider::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ant-layout-sider::-webkit-scrollbar-thumb {
+  background: #d9d9d9;
+  border-radius: 3px;
+}
+
+.ant-layout-sider::-webkit-scrollbar-thumb:hover {
+  background: #bfbfbf;
+}
+
+/* Accessibility - Focus states */
+.sidebar-menu-item:focus-visible {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .sidebar-menu-item {
+    border: 1px solid transparent;
+  }
+
+  .sidebar-menu-item:hover,
+  .sidebar-menu-item:focus {
+    border-color: currentColor;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --sidebar-transition-duration: 0.01ms;
+  }
+
+  .sidebar-transition,
+  .ant-layout-sider,
+  .ant-layout-content,
+  .sidebar-menu-item,
+  main,
+  footer {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* Optimize for different viewport transitions */
+@media (min-width: 768px) and (max-width: 1023px) {
+  /* Tablet-specific optimizations */
+  .ant-layout-sider {
+    width: 64px !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  /* Desktop-specific optimizations */
+  .ant-layout-sider {
+    min-width: 64px;
+  }
+}
+
+/* Ensure smooth resizing on viewport changes */
+@media (orientation: portrait) {
+  main {
+    transition: margin-left var(--sidebar-transition-duration) var(--sidebar-transition-timing),
+                width var(--sidebar-transition-duration) var(--sidebar-transition-timing);
+  }
+}
+
+@media (orientation: landscape) {
+  main {
+    transition: margin-left var(--sidebar-transition-duration) var(--sidebar-transition-timing),
+                width var(--sidebar-transition-duration) var(--sidebar-transition-timing);
+  }
+}

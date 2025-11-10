@@ -129,7 +129,7 @@ const ReceiptTableModal = ({
           </div>
         )}
 
-        {/* Items Table */}
+        {/* Items Table/Cards */}
         <div className="mb-6">
           <div className="flex justify-between items-center mb-4">
             <h4 className="text-lg font-semibold text-gray-800">Items</h4>
@@ -141,7 +141,8 @@ const ReceiptTableModal = ({
             </button>
           </div>
 
-          <div className="overflow-x-auto">
+          {/* Desktop Table View */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full border-collapse border border-gray-300">
               <thead>
                 <tr className="bg-gray-50">
@@ -202,6 +203,88 @@ const ReceiptTableModal = ({
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile Card View */}
+          <div className="md:hidden space-y-3">
+            {items.length > 0 ? (
+              items.map((item, index) => (
+                <div
+                  key={index}
+                  className="bg-white border border-gray-300 rounded-lg p-4 shadow-sm"
+                >
+                  {/* Item Number and Total */}
+                  <div className="flex justify-between items-start mb-3 pb-3 border-b border-gray-200">
+                    <div className="text-xs font-semibold text-gray-600">Item #{index + 1}</div>
+                    <div className="text-right">
+                      <div className="text-xs text-gray-600">Total</div>
+                      <div className="text-lg font-bold text-gray-900">
+                        ${((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Item Name */}
+                  <div className="mb-3">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Item Name
+                    </label>
+                    <input
+                      type="text"
+                      value={item.name || ""}
+                      onChange={(e) => handleItemChange(index, "name", e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
+                      placeholder="Enter item name"
+                    />
+                  </div>
+
+                  {/* Quantity and Unit Price Grid */}
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Quantity
+                      </label>
+                      <input
+                        type="number"
+                        value={item.quantity || 1}
+                        onChange={(e) => handleItemChange(index, "quantity", e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
+                        min="1"
+                        step="1"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Unit Price
+                      </label>
+                      <input
+                        type="number"
+                        value={item.price || 0}
+                        onChange={(e) => handleItemChange(index, "price", e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
+                        min="0"
+                        step="0.01"
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Remove Button */}
+                  <div className="pt-3 border-t border-gray-200">
+                    <button
+                      onClick={() => removeItem(index)}
+                      className="w-full px-4 py-2 bg-red-500 text-white rounded-md text-sm font-medium hover:bg-red-600 transition-colors"
+                    >
+                      Remove Item
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-6 text-gray-500 bg-gray-50 rounded-lg">
+                No items added yet. Click "+ Add Item" to start.
+              </div>
+            )}
           </div>
         </div>
 

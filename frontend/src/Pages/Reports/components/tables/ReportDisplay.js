@@ -112,7 +112,9 @@ const ReportDisplay = ({ report, onExport }) => {
           {/* Jobs List */}
           <div className="bg-white p-6 rounded-lg border">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Jobs List</h3>
-            <div className="overflow-x-auto">
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
@@ -143,6 +145,54 @@ const ReportDisplay = ({ report, onExport }) => {
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3">
+              {report.jobs.map((job) => (
+                <div key={job.id} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  {/* Header with ID, Title, Cost */}
+                  <div className="mb-3 pb-3 border-b border-gray-200">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <div className="text-xs text-gray-500">Job #{job.id}</div>
+                        <div className="text-base font-semibold text-gray-900 mt-1">{job.title}</div>
+                      </div>
+                      <div className="text-right text-lg font-bold text-gray-900">
+                        ${job.totalCost}
+                      </div>
+                    </div>
+                    <div className="flex gap-2 flex-wrap mt-2">
+                      {formatStatus(job.status)}
+                      {formatPriority(job.priority)}
+                    </div>
+                  </div>
+
+                  {/* Dates Grid */}
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                      <div className="text-xs text-gray-600 mb-1">Start Date</div>
+                      <div className="text-sm text-gray-900">{job.startDate || "N/A"}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-600 mb-1">End Date</div>
+                      <div className="text-sm text-gray-900">{job.endDate || "N/A"}</div>
+                    </div>
+                  </div>
+
+                  {/* Hours Grid */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <div className="text-xs text-gray-600 mb-1">Est Hours</div>
+                      <div className="text-sm font-medium text-gray-900">{job.estimatedHours}h</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-600 mb-1">Act Hours</div>
+                      <div className="text-sm font-medium text-gray-900">{job.actualHours}h</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -222,7 +272,9 @@ const ReportDisplay = ({ report, onExport }) => {
           {report.materials.length > 0 && (
             <div className="bg-white p-6 rounded-lg border">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">Materials Used</h3>
-              <div className="overflow-x-auto">
+
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
@@ -245,6 +297,44 @@ const ReportDisplay = ({ report, onExport }) => {
                     ))}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-3">
+                {report.materials.map((material, index) => (
+                  <div key={index} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    {/* Header with Material Name and Total */}
+                    <div className="flex justify-between items-start mb-3 pb-3 border-b border-gray-200">
+                      <div className="flex-1 pr-2">
+                        <div className="text-base font-semibold text-gray-900">{material.name}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-xs text-gray-600">Total</div>
+                        <div className="text-lg font-bold text-gray-900">${material.total}</div>
+                      </div>
+                    </div>
+
+                    {/* Quantity and Unit Price Grid */}
+                    <div className="grid grid-cols-2 gap-3 mb-3">
+                      <div>
+                        <div className="text-xs text-gray-600 mb-1">Quantity</div>
+                        <div className="text-sm font-medium text-gray-900">{material.quantity}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-600 mb-1">Unit Price</div>
+                        <div className="text-sm font-medium text-gray-900">${material.unitPrice}</div>
+                      </div>
+                    </div>
+
+                    {/* Notes */}
+                    {material.notes && material.notes !== "N/A" && (
+                      <div>
+                        <div className="text-xs text-gray-600 mb-1">Notes</div>
+                        <div className="text-sm text-gray-900">{material.notes}</div>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           )}
