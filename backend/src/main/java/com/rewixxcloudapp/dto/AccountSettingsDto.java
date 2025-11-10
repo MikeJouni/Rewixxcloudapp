@@ -5,6 +5,7 @@ public class AccountSettingsDto {
     private String email;
     private String phone;
     private String address;
+    private String logoUrl;
 
     public AccountSettingsDto() {
     }
@@ -40,5 +41,13 @@ public class AccountSettingsDto {
 
     public void setAddress(String address) {
         this.address = address;
+    }
+
+    public String getLogoUrl() {
+        return logoUrl;
+    }
+
+    public void setLogoUrl(String logoUrl) {
+        this.logoUrl = logoUrl;
     }
 }

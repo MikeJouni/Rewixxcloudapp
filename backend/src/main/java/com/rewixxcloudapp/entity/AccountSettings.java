@@ -23,6 +23,9 @@ public class AccountSettings {
     @Column(length = 200)
     private String address;
 
+    @Column(length = 500)
+    private String logoUrl;
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
@@ -87,6 +90,14 @@ public class AccountSettings {
 
     public void setAddress(String address) {
         this.address = address;
+    }
+
+    public String getLogoUrl() {
+        return logoUrl;
+    }
+
+    public void setLogoUrl(String logoUrl) {
+        this.logoUrl = logoUrl;
     }
 
     public LocalDateTime getCreatedAt() {

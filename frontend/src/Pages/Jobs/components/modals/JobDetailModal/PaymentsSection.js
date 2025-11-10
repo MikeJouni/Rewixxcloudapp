@@ -346,18 +346,84 @@ const PaymentsSection = ({ job, totalCost }) => {
         </div>
       )}
 
-      <Table
-        dataSource={payments}
-        columns={columns}
-        rowKey="id"
-        loading={isLoading}
-        pagination={false}
-        size="small"
-        locale={{
-          emptyText: "No payments recorded yet",
-        }}
-        scroll={{ x: true }}
-      />
+      {/* Desktop Table View */}
+      <div className="hidden md:block">
+        <Table
+          dataSource={payments}
+          columns={columns}
+          rowKey="id"
+          loading={isLoading}
+          pagination={false}
+          size="small"
+          locale={{
+            emptyText: "No payments recorded yet",
+          }}
+          scroll={{ x: true }}
+        />
+      </div>
+
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-3">
+        {isLoading ? (
+          <div className="text-center py-6 text-gray-500">Loading...</div>
+        ) : payments && payments.length > 0 ? (
+          payments.map((payment) => (
+            <div
+              key={payment.id}
+              className="bg-white border border-gray-200 rounded-lg p-3 shadow-sm"
+            >
+              {/* Header with Type and Amount */}
+              <div className="flex justify-between items-start mb-3 pb-3 border-b border-gray-100">
+                <div>
+                  <Tag color={payment.paymentType === "CASH" ? "green" : "blue"} className="mb-2">
+                    {payment.paymentType === "CASH" ? "Cash" : "Check"}
+                  </Tag>
+                  <div className="text-xs text-gray-500">
+                    {new Date(payment.paymentDate).toLocaleDateString()}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-lg font-bold text-gray-900">
+                    ${parseFloat(payment.amount).toFixed(2)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Check Number (if applicable) */}
+              {payment.checkNumber && (
+                <div className="mb-3">
+                  <div className="text-xs text-gray-600 mb-1">Check Number</div>
+                  <div className="text-sm font-medium text-gray-900">{payment.checkNumber}</div>
+                </div>
+              )}
+
+              {/* Delete Button */}
+              <div className="mt-3 pt-3 border-t border-gray-100">
+                <Popconfirm
+                  title="Delete Payment"
+                  description="Are you sure you want to delete this payment?"
+                  onConfirm={() => deletePaymentMutation.mutate(payment.id)}
+                  okText="Yes"
+                  cancelText="No"
+                  okButtonProps={{ danger: true }}
+                >
+                  <button
+                    className="w-full px-4 py-2 bg-red-500 text-white rounded-md text-sm font-medium hover:bg-red-600 transition-colors flex items-center justify-center gap-2"
+                    disabled={deletePaymentMutation.isLoading}
+                  >
+                    <DeleteOutlined />
+                    Delete Payment
+                  </button>
+                </Popconfirm>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="text-center py-6 text-gray-500 bg-gray-50 rounded-lg">
+            No payments recorded yet
+          </div>
+        )}
+      </div>
     </div>
   );
 };

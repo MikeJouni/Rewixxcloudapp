@@ -38,6 +38,8 @@ public class Job {
 
     private Boolean includeTax;
 
+    private String workSiteAddress;
+
     @ManyToOne
     private Customer customer;
 
@@ -204,5 +206,13 @@ public class Job {
 
     public void setPayments(List<Payment> payments) {
         this.payments = payments;
+    }
+
+    public String getWorkSiteAddress() {
+        return workSiteAddress;
+    }
+
+    public void setWorkSiteAddress(String workSiteAddress) {
+        this.workSiteAddress = workSiteAddress;
     }
 }

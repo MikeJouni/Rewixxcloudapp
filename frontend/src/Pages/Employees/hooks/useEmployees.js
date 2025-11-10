@@ -10,14 +10,12 @@ const useEmployees = () => {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["employees", searchTerm],
     queryFn: () => employeeService.getAllEmployees(searchTerm),
-    select: (response) => response.data,
   });
 
   // Fetch active employees only
   const { data: activeEmployees } = useQuery({
     queryKey: ["employees", "active"],
     queryFn: () => employeeService.getActiveEmployees(),
-    select: (response) => response.data,
   });
 
   // Create employee mutation

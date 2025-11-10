@@ -44,6 +44,7 @@ public class AccountSettingsService {
         settings.setEmail(dto.getEmail());
         settings.setPhone(dto.getPhone());
         settings.setAddress(dto.getAddress());
+        settings.setLogoUrl(dto.getLogoUrl());
 
         AccountSettings savedSettings = accountSettingsRepository.save(settings);
         logger.info("Account settings updated successfully");

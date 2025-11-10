@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Layout, Drawer, Button, Grid, Tooltip } from "antd";
 import {
@@ -7,18 +7,21 @@ import {
   TeamOutlined,
   DollarOutlined,
   BarChartOutlined,
+  FileTextOutlined,
   MenuOutlined,
   CloseOutlined,
   SettingOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
 } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import * as accountSettingsService from "../services/accountSettingsService";
 import AccountSettingsModal from "./AccountSettingsModal";
 
-const { Header } = Layout;
+const { Header, Sider } = Layout;
 const { useBreakpoint } = Grid;
 
-const Navigation = () => {
+const Navigation = ({ sidebarCollapsed, setSidebarCollapsed }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [drawerVisible, setDrawerVisible] = useState(false);
@@ -29,7 +32,6 @@ const Navigation = () => {
   const { data: accountSettings } = useQuery({
     queryKey: ["accountSettings"],
     queryFn: () => accountSettingsService.getAccountSettings(),
-    select: (response) => response.data,
   });
 
   const companyName = accountSettings?.companyName || "Imad's Electrical LLC";
@@ -40,6 +42,7 @@ const Navigation = () => {
     if (path.startsWith("/jobs")) return "jobs";
     if (path.startsWith("/employees")) return "employees";
     if (path.startsWith("/expenses")) return "expenses";
+    if (path.startsWith("/contracts")) return "contracts";
     if (path.startsWith("/reports")) return "reports";
     return "customers";
   };
@@ -73,128 +76,121 @@ const Navigation = () => {
       label: "Expenses",
     },
     {
+      key: "contracts",
+      icon: <FileTextOutlined />,
+      label: "Contracts",
+    },
+    {
       key: "reports",
       icon: <BarChartOutlined />,
       label: "Reports",
     },
   ];
 
-  const isDesktop = screens.md;
+  // Breakpoints: mobile (< md), tablet (md to lg), desktop (>= lg)
+  const isMobile = !screens.md;
+  const isTablet = screens.md && !screens.lg;
+  const isDesktop = screens.lg;
+
+  // Calculate sidebar state based on screen size
+  const getSidebarState = () => {
+    if (isMobile) return { width: 64, collapsed: true, transform: 'translateX(-100%)' };
+    if (isTablet) return { width: 64, collapsed: true, transform: 'translateX(0)' };
+    return {
+      width: sidebarCollapsed ? 64 : 200,
+      collapsed: sidebarCollapsed,
+      transform: 'translateX(0)'
+    };
+  };
+
+  const sidebarState = getSidebarState();
+
+  // Auto-close drawer when switching from mobile to tablet/desktop
+  useEffect(() => {
+    if (!isMobile && drawerVisible) {
+      setDrawerVisible(false);
+    }
+  }, [isMobile, drawerVisible]);
 
   return (
     <>
+      {/* Top Header - Always visible */}
       <Header
         style={{
           position: "sticky",
           top: 0,
-          zIndex: 1000,
+          zIndex: 1001,
           width: "100%",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: isDesktop ? "0 32px" : "0 16px",
+          padding: isMobile ? "0 16px" : "0 24px",
           background: "linear-gradient(135deg, #1f2937 0%, #111827 100%)",
           boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
           height: "64px",
           borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
         }}
       >
-        {/* Left: Logo */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            cursor: "pointer",
-            transition: "transform 0.2s ease",
-          }}
-          onClick={() => navigate("/customers")}
-          onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
-          onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
-        >
-          <img
-            src="/rewixx_logo.png"
-            alt="Rewixx"
-            style={{
-              height: isDesktop ? "40px" : "32px",
-              filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.3))",
-            }}
-          />
-        </div>
+        {/* Left: Logo and Toggle (Desktop only) */}
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          {/* Desktop Toggle Button */}
+          {isDesktop && (
+            <Button
+              type="text"
+              icon={
+                sidebarCollapsed ? (
+                  <MenuUnfoldOutlined style={{ fontSize: "20px", color: "#fff" }} />
+                ) : (
+                  <MenuFoldOutlined style={{ fontSize: "20px", color: "#fff" }} />
+                )
+              }
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              style={{
+                border: "none",
+                background: "rgba(255, 255, 255, 0.08)",
+                borderRadius: "8px",
+                width: "40px",
+                height: "40px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "all 0.3s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(255, 255, 255, 0.15)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)";
+              }}
+            />
+          )}
 
-        {/* Center: Navigation Tabs - Desktop Only */}
-        {isDesktop && (
+          {/* Logo */}
           <div
             style={{
               display: "flex",
-              gap: "8px",
-              flex: 1,
-              justifyContent: "center",
-              maxWidth: "600px",
+              alignItems: "center",
+              cursor: "pointer",
+              transition: "transform 0.2s ease",
             }}
+            onClick={() => navigate("/customers")}
+            onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
           >
-            {menuItems.map((item) => {
-              const isActive = activeTab === item.key;
-              return (
-                <div
-                  key={item.key}
-                  onClick={() => handleMenuClick(item.key)}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    padding: "8px 20px",
-                    borderRadius: "8px",
-                    cursor: "pointer",
-                    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                    background: isActive
-                      ? "rgba(255, 255, 255, 0.12)"
-                      : "transparent",
-                    color: "#fff",
-                    fontSize: "14px",
-                    fontWeight: isActive ? "600" : "500",
-                    position: "relative",
-                    overflow: "hidden",
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isActive) {
-                      e.currentTarget.style.background =
-                        "rgba(255, 255, 255, 0.06)";
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isActive) {
-                      e.currentTarget.style.background = "transparent";
-                    }
-                  }}
-                >
-                  <span style={{ fontSize: "18px", display: "flex" }}>
-                    {item.icon}
-                  </span>
-                  <span>{item.label}</span>
-                  {isActive && (
-                    <div
-                      style={{
-                        position: "absolute",
-                        bottom: 0,
-                        left: "50%",
-                        transform: "translateX(-50%)",
-                        width: "40%",
-                        height: "2px",
-                        background:
-                          "linear-gradient(90deg, transparent, #60a5fa, transparent)",
-                        borderRadius: "2px",
-                      }}
-                    />
-                  )}
-                </div>
-              );
-            })}
+            <img
+              src="/rewixx_logo.png"
+              alt="Rewixx"
+              style={{
+                height: isMobile ? "32px" : "40px",
+                filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.3))",
+              }}
+            />
           </div>
-        )}
+        </div>
 
         {/* Right: Company Name & Settings */}
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          {isDesktop && (
+          {!isMobile && (
             <div
               style={{
                 fontSize: "14px",
@@ -246,7 +242,7 @@ const Navigation = () => {
           </Tooltip>
 
           {/* Mobile Hamburger Menu */}
-          {!isDesktop && (
+          {isMobile && (
             <Button
               type="text"
               icon={<MenuOutlined style={{ fontSize: "24px", color: "#fff" }} />}
@@ -259,6 +255,111 @@ const Navigation = () => {
           )}
         </div>
       </Header>
+
+      {/* Sidebar - Always rendered for smooth transitions */}
+      <Sider
+        collapsed={sidebarState.collapsed}
+        collapsedWidth={64}
+        width={200}
+        style={{
+          position: "fixed",
+          left: 0,
+          top: 64,
+          bottom: 0,
+          zIndex: isMobile ? -1 : 999,
+          background: "#fff",
+          boxShadow: isMobile ? "none" : "2px 0 8px rgba(0,0,0,0.06)",
+          borderRight: isMobile ? "none" : "1px solid #f0f0f0",
+          overflow: "hidden",
+          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+          transform: sidebarState.transform,
+          opacity: isMobile ? 0 : 1,
+          pointerEvents: isMobile ? "none" : "auto",
+        }}
+      >
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "4px",
+              padding: "16px 8px",
+              height: "100%",
+            }}
+          >
+            {menuItems.map((item) => {
+              const isActive = activeTab === item.key;
+              const showLabel = isDesktop && !sidebarCollapsed;
+
+              return (
+                <Tooltip
+                  key={item.key}
+                  title={!showLabel ? item.label : ""}
+                  placement="right"
+                >
+                  <div
+                    onClick={() => handleMenuClick(item.key)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                      padding: showLabel ? "12px 16px" : "12px 0",
+                      justifyContent: showLabel ? "flex-start" : "center",
+                      borderRadius: "8px",
+                      cursor: "pointer",
+                      transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                      background: isActive ? "#f0f5ff" : "transparent",
+                      color: isActive ? "#1890ff" : "#595959",
+                      fontWeight: isActive ? "600" : "500",
+                      position: "relative",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isActive) {
+                        e.currentTarget.style.background = "#fafafa";
+                        e.currentTarget.style.color = "#262626";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isActive) {
+                        e.currentTarget.style.background = "transparent";
+                        e.currentTarget.style.color = "#595959";
+                      }
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: "20px",
+                        display: "flex",
+                        minWidth: "20px",
+                        justifyContent: "center",
+                      }}
+                    >
+                      {item.icon}
+                    </span>
+                    {showLabel && (
+                      <span style={{ fontSize: "14px", whiteSpace: "nowrap" }}>
+                        {item.label}
+                      </span>
+                    )}
+                    {isActive && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          left: 0,
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          width: "3px",
+                          height: "60%",
+                          background: "#1890ff",
+                          borderRadius: "0 2px 2px 0",
+                        }}
+                      />
+                    )}
+                  </div>
+                </Tooltip>
+              );
+            })}
+          </div>
+        </Sider>
 
       {/* Mobile Drawer Menu */}
       <Drawer
@@ -278,7 +379,10 @@ const Navigation = () => {
         onClose={() => setDrawerVisible(false)}
         open={drawerVisible}
         width={280}
-        closeIcon={<CloseOutlined style={{ fontSize: "20px" }} />}
+        closeIcon={<CloseOutlined style={{ fontSize: "20px", color: "#1f2937" }} />}
+        maskClosable={true}
+        keyboard={true}
+        zIndex={1002}
       >
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           {menuItems.map((item) => {

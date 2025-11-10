@@ -171,8 +171,8 @@ const EmployeeListView = () => {
         </p>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-lg shadow">
+      {/* Desktop Table View */}
+      <div className="hidden md:block bg-white rounded-lg shadow">
         <Table
           columns={columns}
           dataSource={employees}
@@ -184,6 +184,81 @@ const EmployeeListView = () => {
             showTotal: (total) => `Total ${total} employees`,
           }}
         />
+      </div>
+
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-3">
+        {isLoading ? (
+          <div className="text-center py-8 text-gray-500">Loading...</div>
+        ) : employees && employees.length > 0 ? (
+          employees.map((employee) => (
+            <div
+              key={employee.id}
+              className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm"
+            >
+              {/* Header with Name and Status */}
+              <div className="mb-3 pb-3 border-b border-gray-100">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <div className="text-lg font-semibold text-gray-900">{employee.name}</div>
+                    {employee.email && (
+                      <div className="text-xs text-gray-500 mt-1">{employee.email}</div>
+                    )}
+                  </div>
+                  <Tag
+                    color={employee.active ? "green" : "red"}
+                    icon={employee.active ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
+                  >
+                    {employee.active ? "Active" : "Inactive"}
+                  </Tag>
+                </div>
+              </div>
+
+              {/* Contact Info Grid */}
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div>
+                  <div className="text-xs text-gray-600 mb-1">Phone</div>
+                  <div className="text-sm text-gray-900">{employee.phone || "—"}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-600 mb-1">Address</div>
+                  <div className="text-sm text-gray-900 truncate" title={employee.address}>
+                    {employee.address || "—"}
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 mt-4 pt-3 border-t border-gray-100">
+                <button
+                  onClick={() => handleEdit(employee)}
+                  className="flex-1 px-3 py-2 bg-gray-700 text-white rounded-md text-sm font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-1"
+                >
+                  <EditOutlined />
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleToggleStatus(employee)}
+                  className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    employee.active
+                      ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      : 'bg-blue-500 text-white hover:bg-blue-600'
+                  }`}
+                >
+                  {employee.active ? "Deactivate" : "Activate"}
+                </button>
+                <button
+                  onClick={() => handleDelete(employee)}
+                  className="px-3 py-2 bg-red-500 text-white rounded-md text-sm font-medium hover:bg-red-600 transition-colors"
+                >
+                  <DeleteOutlined />
+                </button>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="text-center py-8 text-gray-500">No employees found</div>
+        )}
       </div>
     </div>
   );
