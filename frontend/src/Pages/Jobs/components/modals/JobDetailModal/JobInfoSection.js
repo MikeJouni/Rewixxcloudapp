@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from "react";
 
-const JobInfoSection = forwardRef(({ job, totalCost, onCompleteJob, onUpdateJob }, ref) => {
+const JobInfoSection = forwardRef(({ job, totalCost, actualMaterialCost, onCompleteJob, onUpdateJob }, ref) => {
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [notes, setNotes] = useState(job.description || "");
   const [isSavingNotes, setIsSavingNotes] = useState(false);
@@ -222,8 +222,8 @@ const JobInfoSection = forwardRef(({ job, totalCost, onCompleteJob, onUpdateJob 
   }));
 
   // Financial data
-  const internalMaterialCost = totalCost; // Calculated from actual materials (for display only)
-  const billingMaterialCost = job.customMaterialCost !== undefined && job.customMaterialCost !== null ? job.customMaterialCost : 0; // Only use custom cost for billing, not internal
+  const internalMaterialCost = actualMaterialCost || 0; // Actual sum of materials added
+  const billingMaterialCost = job.customMaterialCost !== undefined && job.customMaterialCost !== null ? job.customMaterialCost : 0; // Manual material cost for billing
   const currentJobPrice = job.jobPrice || 0;
   const subtotal = billingMaterialCost + currentJobPrice; // Total cost only includes manual material cost + job price
   const taxAmount = includeTax ? subtotal * 0.06 : 0;
