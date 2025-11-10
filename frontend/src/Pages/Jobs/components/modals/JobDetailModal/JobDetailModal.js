@@ -36,11 +36,11 @@ const JobDetailModal = ({
   // Extract materials from sales data (do NOT aggregate - show each addition separately)
   const materials = useMemo(() => {
     if (!job || !job.sales) return [];
-    
+
     const allMaterials = [];
-    job.sales.forEach(sale => {
+    job.sales.forEach((sale) => {
       if (sale.saleItems) {
-        sale.saleItems.forEach(saleItem => {
+        sale.saleItems.forEach((saleItem) => {
           if (saleItem.product) {
             const material = {
               id: saleItem.id,
@@ -53,7 +53,7 @@ const JobDetailModal = ({
               saleId: sale.id,
               productId: saleItem.product.id
             };
-            allMaterials.push(material);  
+            allMaterials.push(material);
           }
         });
       }
@@ -62,7 +62,15 @@ const JobDetailModal = ({
     return allMaterials;
   }, [job]);
 
-  // Calculate total cost (customMaterialCost + jobPrice + tax)
+  // Calculate actual material cost from added materials
+  const actualMaterialCost = useMemo(() => {
+    if (!materials || materials.length === 0) return 0;
+    return materials.reduce((sum, material) => {
+      return sum + (material.price * material.quantity);
+    }, 0);
+  }, [materials]);
+
+  // Calculate total cost (customMaterialCost + jobPrice + tax) for billing
   const totalCost = useMemo(() => {
     const materialCost = job.customMaterialCost || 0;
     const jobPrice = job.jobPrice || 0;
@@ -77,7 +85,6 @@ const JobDetailModal = ({
     if (onRemoveMaterial) {
       const material = materials.find(m => m.id === materialId);
       if (material && material.saleId) {
-        // Pass the saleId to remove only this specific sale/material
         onRemoveMaterial({ jobId: job.id, materialId: material.saleId });
       }
     }
@@ -121,6 +128,7 @@ const JobDetailModal = ({
           ref={jobInfoRef}
           job={job}
           totalCost={totalCost}
+          actualMaterialCost={actualMaterialCost}
           onCompleteJob={() => setShowCompleteConfirm(true)}
           onUpdateJob={onUpdateJob}
         />

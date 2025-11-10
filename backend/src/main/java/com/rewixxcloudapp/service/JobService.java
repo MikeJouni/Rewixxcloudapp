@@ -243,9 +243,16 @@ public class JobService {
         job.getSales().add(sale);
 
         // Save the job (this will cascade to save the sale and sale item)
-        jobRepository.save(job);
-        
-        return sale;
+        Job savedJob = jobRepository.save(job);
+
+        // Find and return the persisted sale with its ID populated
+        // The saved sale will be the last one in the list
+        Sale savedSale = savedJob.getSales().get(savedJob.getSales().size() - 1);
+        logger.info("Material added successfully. Sale ID: {}, SaleItem ID: {}",
+                   savedSale.getId(),
+                   savedSale.getSaleItems().isEmpty() ? "N/A" : savedSale.getSaleItems().iterator().next().getId());
+
+        return savedSale;
     }
 
     public void removeMaterialFromJob(Long jobId, Long saleId) {
