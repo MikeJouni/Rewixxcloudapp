@@ -165,17 +165,84 @@ const CustomerTable = ({ customers, onDelete, onUpdate }) => {
 
   return (
     <>
-      <Table
-        columns={columns}
-        dataSource={customers}
-        rowKey="id"
-        pagination={false}
-        scroll={{ x: 'max-content' }}
-        size="small"
-        defaultSortOrder="descend"
-        sortDirections={['descend', 'ascend']}
-        className="responsive-table"
-      />
+      {/* Desktop Table View */}
+      <div className="hidden md:block">
+        <Table
+          columns={columns}
+          dataSource={customers}
+          rowKey="id"
+          pagination={false}
+          scroll={{ x: 'max-content' }}
+          size="small"
+          defaultSortOrder="descend"
+          sortDirections={['descend', 'ascend']}
+          className="responsive-table"
+        />
+      </div>
+
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-3">
+        {customers && customers.length > 0 ? (
+          customers.map((customer) => (
+            <div
+              key={customer.id}
+              className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm"
+            >
+              {/* Header with ID and Name */}
+              <div className="mb-3 pb-3 border-b border-gray-100">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <div className="text-xs text-gray-500 mb-1">ID: {customer.id}</div>
+                    <div className="text-lg font-semibold text-gray-900">{customer.name}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Contact Info Grid */}
+              <div className="grid grid-cols-1 gap-3 mb-3">
+                <div>
+                  <div className="text-xs text-gray-600 mb-1">Email</div>
+                  <div className="text-sm text-gray-900">{customer.username}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-600 mb-1">Phone</div>
+                  <div className="text-sm text-gray-900">{customer.phone}</div>
+                </div>
+              </div>
+
+              {/* Address */}
+              <div className="mb-3">
+                <div className="text-xs text-gray-600 mb-1">Address</div>
+                <div className="text-sm text-gray-900">
+                  {[customer.addressLine1, customer.addressLine2].filter(Boolean).join(", ")}
+                </div>
+                <div className="text-sm text-gray-500">
+                  {[customer.city, customer.state, customer.zip].filter(Boolean).join(", ")}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 mt-4 pt-3 border-t border-gray-100">
+                <button
+                  onClick={() => handleEdit(customer)}
+                  className="flex-1 px-4 py-2 bg-yellow-500 text-white rounded-md text-sm font-medium hover:bg-yellow-600 transition-colors"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => onDelete(customer)}
+                  className="flex-1 px-4 py-2 bg-red-500 text-white rounded-md text-sm font-medium hover:bg-red-600 transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="text-center py-8 text-gray-500">No customers found</div>
+        )}
+      </div>
+
       {/* Edit Form Modal */}
       {editingCustomer && (
         <div className="fixed inset-0 bg-black/80 flex justify-center items-center z-50 p-4">
