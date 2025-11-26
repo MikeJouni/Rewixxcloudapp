@@ -5,6 +5,7 @@ import BarcodeScannerModal from "../BarcodeScannerModal";
 import ReceiptUploadModal from "../ReceiptUploadModal";
 import JobInfoSection from "./JobInfoSection";
 import MaterialsSection from "./MaterialsSection";
+import PaymentsSection from "./PaymentsSection";
 import ReceiptLoadingModal from "./ReceiptLoadingModal";
 
 const JobDetailModal = ({
@@ -35,11 +36,11 @@ const JobDetailModal = ({
   // Extract materials from sales data (do NOT aggregate - show each addition separately)
   const materials = useMemo(() => {
     if (!job || !job.sales) return [];
-    
+
     const allMaterials = [];
-    job.sales.forEach(sale => {
+    job.sales.forEach((sale) => {
       if (sale.saleItems) {
-        sale.saleItems.forEach(saleItem => {
+        sale.saleItems.forEach((saleItem) => {
           if (saleItem.product) {
             const material = {
               id: saleItem.id,
@@ -52,7 +53,7 @@ const JobDetailModal = ({
               saleId: sale.id,
               productId: saleItem.product.id
             };
-            allMaterials.push(material);  
+            allMaterials.push(material);
           }
         });
       }
@@ -61,12 +62,22 @@ const JobDetailModal = ({
     return allMaterials;
   }, [job]);
 
-  // Calculate total cost from materials
-  const totalCost = useMemo(() => {
-    return materials.reduce((total, material) => {
-      return total + (material.price * material.quantity);
+  // Calculate actual material cost from added materials
+  const actualMaterialCost = useMemo(() => {
+    if (!materials || materials.length === 0) return 0;
+    return materials.reduce((sum, material) => {
+      return sum + (material.price * material.quantity);
     }, 0);
   }, [materials]);
+
+  // Calculate total cost (customMaterialCost + jobPrice + tax) for billing
+  const totalCost = useMemo(() => {
+    const materialCost = job.customMaterialCost || 0;
+    const jobPrice = job.jobPrice || 0;
+    const subtotal = materialCost + jobPrice;
+    const tax = job.includeTax ? subtotal * 0.06 : 0;
+    return subtotal + tax;
+  }, [job]);
 
   if (!isOpen || !job) return null;
 
@@ -74,7 +85,6 @@ const JobDetailModal = ({
     if (onRemoveMaterial) {
       const material = materials.find(m => m.id === materialId);
       if (material && material.saleId) {
-        // Pass the saleId to remove only this specific sale/material
         onRemoveMaterial({ jobId: job.id, materialId: material.saleId });
       }
     }
@@ -95,8 +105,8 @@ const JobDetailModal = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-2 sm:p-3 pt-16 md:pt-20 lg:pt-24" onClick={handleClose}>
-      <div className="bg-white rounded-lg w-full max-w-4xl max-h-[85vh] md:max-h-[88vh] lg:max-h-[88vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/90 flex items-start sm:items-center justify-center z-50 p-2 sm:p-3 pt-16 sm:pt-20 md:pt-24" onClick={handleClose}>
+      <div className="bg-white rounded-lg w-full max-w-4xl max-h-[calc(100vh-4rem)] sm:max-h-[90vh] md:max-h-[88vh] lg:max-h-[88vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
         {/* Header - Sticky */}
         <div className="sticky top-0 bg-white border-b border-gray-200 px-3 sm:px-4 py-2.5 sm:py-3 flex justify-between items-center z-10">
           <h2 className="text-base sm:text-lg md:text-xl font-semibold m-0">
@@ -118,9 +128,13 @@ const JobDetailModal = ({
           ref={jobInfoRef}
           job={job}
           totalCost={totalCost}
+          actualMaterialCost={actualMaterialCost}
           onCompleteJob={() => setShowCompleteConfirm(true)}
           onUpdateJob={onUpdateJob}
         />
+
+        {/* Payments Section */}
+        <PaymentsSection job={job} totalCost={totalCost} />
 
         {/* Materials Section */}
         <MaterialsSection

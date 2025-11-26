@@ -1,24 +1,40 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Menu, Layout, Drawer, Button, Grid } from "antd";
+import { Layout, Drawer, Button, Grid, Tooltip } from "antd";
 import {
   UserOutlined,
   ToolOutlined,
   TeamOutlined,
   DollarOutlined,
   BarChartOutlined,
+  FileTextOutlined,
   MenuOutlined,
-  CloseOutlined
+  CloseOutlined,
+  SettingOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
 } from "@ant-design/icons";
+import { useQuery } from "@tanstack/react-query";
+import * as accountSettingsService from "../services/accountSettingsService";
+import AccountSettingsModal from "./AccountSettingsModal";
 
-const { Header } = Layout;
+const { Header, Sider } = Layout;
 const { useBreakpoint } = Grid;
 
-const Navigation = () => {
+const Navigation = ({ sidebarCollapsed, setSidebarCollapsed }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [drawerVisible, setDrawerVisible] = useState(false);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const screens = useBreakpoint();
+
+  // Fetch account settings
+  const { data: accountSettings } = useQuery({
+    queryKey: ["accountSettings"],
+    queryFn: () => accountSettingsService.getAccountSettings(),
+  });
+
+  const companyName = accountSettings?.companyName || "Imad's Electrical LLC";
 
   const getActiveTab = () => {
     const path = location.pathname;
@@ -26,238 +42,384 @@ const Navigation = () => {
     if (path.startsWith("/jobs")) return "jobs";
     if (path.startsWith("/employees")) return "employees";
     if (path.startsWith("/expenses")) return "expenses";
+    if (path.startsWith("/contracts")) return "contracts";
     if (path.startsWith("/reports")) return "reports";
     return "customers";
   };
 
-  const handleMenuClick = (e) => {
-    navigate(`/${e.key}`);
+  const activeTab = getActiveTab();
+
+  const handleMenuClick = (key) => {
+    navigate(`/${key}`);
     setDrawerVisible(false);
   };
 
   const menuItems = [
     {
       key: "customers",
-      icon: <UserOutlined style={{ fontSize: '18px' }} />,
+      icon: <UserOutlined />,
       label: "Customers",
     },
     {
       key: "jobs",
-      icon: <ToolOutlined style={{ fontSize: '18px' }} />,
+      icon: <ToolOutlined />,
       label: "Jobs",
     },
     {
       key: "employees",
-      icon: <TeamOutlined style={{ fontSize: '18px' }} />,
+      icon: <TeamOutlined />,
       label: "Employees",
     },
     {
       key: "expenses",
-      icon: <DollarOutlined style={{ fontSize: '18px' }} />,
+      icon: <DollarOutlined />,
       label: "Expenses",
     },
     {
+      key: "contracts",
+      icon: <FileTextOutlined />,
+      label: "Contracts",
+    },
+    {
       key: "reports",
-      icon: <BarChartOutlined style={{ fontSize: '18px' }} />,
+      icon: <BarChartOutlined />,
       label: "Reports",
     },
   ];
 
-  const isDesktop = screens.md;
+  // Breakpoints: mobile (< md), tablet (md to lg), desktop (>= lg)
+  const isMobile = !screens.md;
+  const isTablet = screens.md && !screens.lg;
+  const isDesktop = screens.lg;
+
+  // Calculate sidebar state based on screen size
+  const getSidebarState = () => {
+    if (isMobile) return { width: 64, collapsed: true, transform: 'translateX(-100%)' };
+    if (isTablet) return { width: 64, collapsed: true, transform: 'translateX(0)' };
+    return {
+      width: sidebarCollapsed ? 64 : 200,
+      collapsed: sidebarCollapsed,
+      transform: 'translateX(0)'
+    };
+  };
+
+  const sidebarState = getSidebarState();
+
+  // Auto-close drawer when switching from mobile to tablet/desktop
+  useEffect(() => {
+    if (!isMobile && drawerVisible) {
+      setDrawerVisible(false);
+    }
+  }, [isMobile, drawerVisible]);
 
   return (
     <>
-      <Header 
+      {/* Top Header - Always visible */}
+      <Header
         style={{
-          position: 'sticky',
+          position: "sticky",
           top: 0,
-          zIndex: 1000,
-          width: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: isDesktop ? '0 24px' : '0 16px',
-          background: 'linear-gradient(135deg, #374151 0%, #1f2937 100%)',
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
-          height: '90px',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+          zIndex: 1001,
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: isMobile ? "0 16px" : "0 24px",
+          background: "linear-gradient(135deg, #1f2937 0%, #111827 100%)",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+          height: "64px",
+          borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
         }}
       >
-        {/* Left: SaaS Business Logo (Rewixx) */}
-        <div 
-          style={{ 
-            display: 'flex', 
-            alignItems: 'center',
-            flex: isDesktop ? '0 0 auto' : '1',
-            minWidth: '120px',
-            cursor: 'pointer',
-            transition: 'transform 0.2s ease',
-          }}
-          onClick={() => navigate('/customers')}
-          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-        >
-          <img 
-            src="/rewixx_logo.png" 
-            alt="Rewixx SaaS Platform" 
-            style={{ 
-              height: isDesktop ? '50px' : '40px',
-              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))',
-            }} 
-          />
-        </div>
-
-        {/* Center: Navigation Menu - Desktop Only */}
-        {isDesktop && (
-          <div style={{ display: 'flex', justifyContent: 'center', flex: '1' }}>
-            <Menu
-              mode="horizontal"
-              selectedKeys={[getActiveTab()]}
-              onClick={handleMenuClick}
-              items={menuItems}
+        {/* Left: Logo and Toggle (Desktop only) */}
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          {/* Desktop Toggle Button */}
+          {isDesktop && (
+            <Button
+              type="text"
+              icon={
+                sidebarCollapsed ? (
+                  <MenuUnfoldOutlined style={{ fontSize: "20px", color: "#fff" }} />
+                ) : (
+                  <MenuFoldOutlined style={{ fontSize: "20px", color: "#fff" }} />
+                )
+              }
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
               style={{
-                background: 'transparent',
-                border: 'none',
-                fontSize: '16px',
-                fontWeight: 500,
+                border: "none",
+                background: "rgba(255, 255, 255, 0.08)",
+                borderRadius: "8px",
+                width: "40px",
+                height: "40px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "all 0.3s",
               }}
-              theme="dark"
-              className="modern-nav-menu"
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(255, 255, 255, 0.15)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)";
+              }}
+            />
+          )}
+
+          {/* Logo */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              cursor: "pointer",
+              transition: "transform 0.2s ease",
+            }}
+            onClick={() => navigate("/customers")}
+            onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+          >
+            <img
+              src="/rewixx_logo.png"
+              alt="Rewixx"
+              style={{
+                height: isMobile ? "32px" : "40px",
+                filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.3))",
+              }}
             />
           </div>
-        )}
+        </div>
 
-        {/* Right: Company Name - Desktop Only */}
-        {isDesktop && (
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'flex-end', 
-            flex: '0 0 auto',
-            minWidth: '200px',
-            maxWidth: '240px',
-            textAlign: 'right',
-            padding: '8px 16px',
-            whiteSpace: 'nowrap',
-          }}>
-            <div style={{ 
-              fontSize: '14px',
-              fontWeight: '600',
-              color: '#fff',
-              letterSpacing: '0.5px',
-              lineHeight: '1.4',
-              fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
-            }}>
-              Imad's Electrical LLC
+        {/* Right: Company Name & Settings */}
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          {!isMobile && (
+            <div
+              style={{
+                fontSize: "14px",
+                fontWeight: "600",
+                color: "#fff",
+                letterSpacing: "0.3px",
+                whiteSpace: "nowrap",
+                maxWidth: "200px",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {companyName}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Mobile Hamburger Menu */}
-        {!isDesktop && (
-          <Button
-            type="text"
-            icon={<MenuOutlined style={{ fontSize: '24px', color: '#fff' }} />}
-            onClick={() => setDrawerVisible(true)}
-            style={{
-              border: 'none',
-              background: 'transparent',
-            }}
-          />
-        )}
+          <Tooltip title="Account Settings">
+            <Button
+              type="text"
+              icon={
+                <SettingOutlined
+                  style={{
+                    fontSize: "20px",
+                    color: "#fff",
+                  }}
+                />
+              }
+              onClick={() => setSettingsModalOpen(true)}
+              style={{
+                border: "none",
+                background: "rgba(255, 255, 255, 0.08)",
+                borderRadius: "8px",
+                width: "40px",
+                height: "40px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "all 0.3s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(255, 255, 255, 0.15)";
+                e.currentTarget.style.transform = "rotate(90deg)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)";
+                e.currentTarget.style.transform = "rotate(0deg)";
+              }}
+            />
+          </Tooltip>
+
+          {/* Mobile Hamburger Menu */}
+          {isMobile && (
+            <Button
+              type="text"
+              icon={<MenuOutlined style={{ fontSize: "24px", color: "#fff" }} />}
+              onClick={() => setDrawerVisible(true)}
+              style={{
+                border: "none",
+                background: "transparent",
+              }}
+            />
+          )}
+        </div>
       </Header>
+
+      {/* Sidebar - Always rendered for smooth transitions */}
+      <Sider
+        collapsed={sidebarState.collapsed}
+        collapsedWidth={64}
+        width={200}
+        style={{
+          position: "fixed",
+          left: 0,
+          top: 64,
+          bottom: 0,
+          zIndex: isMobile ? -1 : 999,
+          background: "#fff",
+          boxShadow: isMobile ? "none" : "2px 0 8px rgba(0,0,0,0.06)",
+          borderRight: isMobile ? "none" : "1px solid #f0f0f0",
+          overflow: "hidden",
+          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+          transform: sidebarState.transform,
+          opacity: isMobile ? 0 : 1,
+          pointerEvents: isMobile ? "none" : "auto",
+        }}
+      >
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "4px",
+              padding: "16px 8px",
+              height: "100%",
+            }}
+          >
+            {menuItems.map((item) => {
+              const isActive = activeTab === item.key;
+              const showLabel = isDesktop && !sidebarCollapsed;
+
+              return (
+                <Tooltip
+                  key={item.key}
+                  title={!showLabel ? item.label : ""}
+                  placement="right"
+                >
+                  <div
+                    onClick={() => handleMenuClick(item.key)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                      padding: showLabel ? "12px 16px" : "12px 0",
+                      justifyContent: showLabel ? "flex-start" : "center",
+                      borderRadius: "8px",
+                      cursor: "pointer",
+                      transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                      background: isActive ? "#f0f5ff" : "transparent",
+                      color: isActive ? "#1890ff" : "#595959",
+                      fontWeight: isActive ? "600" : "500",
+                      position: "relative",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isActive) {
+                        e.currentTarget.style.background = "#fafafa";
+                        e.currentTarget.style.color = "#262626";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isActive) {
+                        e.currentTarget.style.background = "transparent";
+                        e.currentTarget.style.color = "#595959";
+                      }
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: "20px",
+                        display: "flex",
+                        minWidth: "20px",
+                        justifyContent: "center",
+                      }}
+                    >
+                      {item.icon}
+                    </span>
+                    {showLabel && (
+                      <span style={{ fontSize: "14px", whiteSpace: "nowrap" }}>
+                        {item.label}
+                      </span>
+                    )}
+                    {isActive && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          left: 0,
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          width: "3px",
+                          height: "60%",
+                          background: "#1890ff",
+                          borderRadius: "0 2px 2px 0",
+                        }}
+                      />
+                    )}
+                  </div>
+                </Tooltip>
+              );
+            })}
+          </div>
+        </Sider>
 
       {/* Mobile Drawer Menu */}
       <Drawer
         title={
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            padding: '4px 0'
-          }}>
-            <div style={{ 
-              fontSize: '16px', 
-              color: '#1f2937', 
-              textAlign: 'center', 
-              fontWeight: '600',
-              letterSpacing: '0.3px',
-              lineHeight: '1.4',
-              fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
-            }}>
-              Imad's Electrical LLC
-            </div>
+          <div
+            style={{
+              fontSize: "16px",
+              color: "#1f2937",
+              textAlign: "center",
+              fontWeight: "600",
+            }}
+          >
+            {companyName}
           </div>
         }
         placement="right"
         onClose={() => setDrawerVisible(false)}
         open={drawerVisible}
         width={280}
-        closeIcon={<CloseOutlined style={{ fontSize: '20px' }} />}
+        closeIcon={<CloseOutlined style={{ fontSize: "20px", color: "#1f2937" }} />}
+        maskClosable={true}
+        keyboard={true}
+        zIndex={1002}
       >
-        <Menu
-          mode="vertical"
-          selectedKeys={[getActiveTab()]}
-          onClick={handleMenuClick}
-          items={menuItems}
-          style={{
-            border: 'none',
-            fontSize: '16px',
-          }}
-        />
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          {menuItems.map((item) => {
+            const isActive = activeTab === item.key;
+            return (
+              <div
+                key={item.key}
+                onClick={() => handleMenuClick(item.key)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  padding: "12px 16px",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                  background: isActive ? "#f3f4f6" : "transparent",
+                  color: isActive ? "#1f2937" : "#6b7280",
+                  fontWeight: isActive ? "600" : "500",
+                }}
+              >
+                <span style={{ fontSize: "20px", display: "flex" }}>
+                  {item.icon}
+                </span>
+                <span style={{ fontSize: "15px" }}>{item.label}</span>
+              </div>
+            );
+          })}
+        </div>
       </Drawer>
 
-      <style jsx="true">{`
-        /* Desktop Menu Styles */
-        .modern-nav-menu {
-          display: flex;
-          justify-content: center;
-        }
-
-        .modern-nav-menu .ant-menu-item {
-          height: 90px;
-          line-height: 90px;
-          padding: 0 20px !important;
-          margin: 0 4px !important;
-          border-radius: 0 !important;
-          transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1) !important;
-          position: relative;
-        }
-
-        .modern-nav-menu .ant-menu-item:hover {
-          background: rgba(255, 255, 255, 0.15) !important;
-        }
-
-        .modern-nav-menu .ant-menu-item-selected {
-          background: rgba(255, 255, 255, 0.25) !important;
-          color: #fff !important;
-        }
-
-        .modern-nav-menu .ant-menu-item-selected::after {
-          content: '';
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          margin: 0 auto;
-          width: 70%;
-          height: 3px;
-          background: #fff;
-          border-radius: 3px 3px 0 0;
-          box-shadow: 0 -2px 8px rgba(255, 255, 255, 0.6);
-        }
-
-        .modern-nav-menu .ant-menu-item .anticon {
-          margin-right: 8px;
-          font-size: 18px;
-        }
-
-        .modern-nav-menu .ant-menu-title-content {
-          font-size: 16px;
-          font-weight: 500;
-          letter-spacing: 0.3px;
-        }
-      `}</style>
+      {/* Account Settings Modal */}
+      <AccountSettingsModal
+        open={settingsModalOpen}
+        onClose={() => setSettingsModalOpen(false)}
+        currentSettings={accountSettings}
+      />
     </>
   );
 };

@@ -52,6 +52,11 @@ public class JobService {
         job.setTitle(dto.getTitle());
         job.setDescription(dto.getDescription() != null ? dto.getDescription() : "");
         
+        // Set work site address if provided
+        if (dto.getWorkSiteAddress() != null) {
+            job.setWorkSiteAddress(dto.getWorkSiteAddress());
+        }
+        
         // Set status and priority with defaults if not provided
         if (dto.getStatus() != null && !dto.getStatus().trim().isEmpty()) {
             try {
@@ -124,6 +129,10 @@ public class JobService {
         if (dto.getDescription() != null) {
             logger.info("Setting description to: {}", dto.getDescription());
             job.setDescription(dto.getDescription());
+        }
+        if (dto.getWorkSiteAddress() != null) {
+            logger.info("Setting work site address to: {}", dto.getWorkSiteAddress());
+            job.setWorkSiteAddress(dto.getWorkSiteAddress());
         }
         if (dto.getStatus() != null && !dto.getStatus().trim().isEmpty()) {
             try {
@@ -234,9 +243,16 @@ public class JobService {
         job.getSales().add(sale);
 
         // Save the job (this will cascade to save the sale and sale item)
-        jobRepository.save(job);
-        
-        return sale;
+        Job savedJob = jobRepository.save(job);
+
+        // Find and return the persisted sale with its ID populated
+        // The saved sale will be the last one in the list
+        Sale savedSale = savedJob.getSales().get(savedJob.getSales().size() - 1);
+        logger.info("Material added successfully. Sale ID: {}, SaleItem ID: {}",
+                   savedSale.getId(),
+                   savedSale.getSaleItems().isEmpty() ? "N/A" : savedSale.getSaleItems().iterator().next().getId());
+
+        return savedSale;
     }
 
     public void removeMaterialFromJob(Long jobId, Long saleId) {

@@ -75,6 +75,11 @@ const MaterialsSection = ({
       return;
     }
 
+    if (!material.saleId) {
+      alert("Cannot update material: Sale ID not found");
+      return;
+    }
+
     try {
       await onUpdateMaterial({
         jobId: job.id,
@@ -102,6 +107,8 @@ const MaterialsSection = ({
       customName: "",
     });
     setProductSearchTerm("");
+    setEditingMaterialId(null);
+    setEditingQuantity("");
   };
 
   const handleSubmitAdd = async (e) => {
@@ -164,6 +171,11 @@ const MaterialsSection = ({
       setIsSubmitting(false);
     }
   };
+
+  const handleRemoveClick = (material) => {
+    onRemoveMaterial(material.id);
+  };
+
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4 mt-3">
       <div className="mb-3">
@@ -378,7 +390,7 @@ const MaterialsSection = ({
                         ${material.price?.toFixed(2) || "0.00"}
                       </td>
                       <td className="px-3 py-2 text-sm">
-                        {editingMaterialId === material.id ? (
+                        {editingMaterialId !== null && editingMaterialId === material.id ? (
                           <div className="flex items-center gap-1">
                             <input
                               type="number"
@@ -421,7 +433,7 @@ const MaterialsSection = ({
                       </td>
                       <td className="px-3 py-2">
                         <button
-                          onClick={() => onRemoveMaterial(material.id)}
+                          onClick={() => handleRemoveClick(material)}
                           className="px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600 transition-colors"
                         >
                           Remove
@@ -437,7 +449,7 @@ const MaterialsSection = ({
           {/* Mobile Card View */}
           <div className="md:hidden space-y-2 max-h-[250px] overflow-y-auto">
             {materials.map((material, idx) => (
-              <div 
+              <div
                 key={material.id ?? `${material.name}-${material.price}-${idx}`}
                 className="bg-gray-50 p-3 rounded-lg border border-gray-200"
               >
@@ -449,7 +461,7 @@ const MaterialsSection = ({
                     </div>
                   </div>
                   <button
-                    onClick={() => onRemoveMaterial(material.id)}
+                    onClick={() => handleRemoveClick(material)}
                     className="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600 transition-colors flex-shrink-0"
                   >
                     Remove
@@ -458,7 +470,7 @@ const MaterialsSection = ({
                 <div className="flex justify-between items-center mt-2">
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-gray-600">Qty:</span>
-                    {editingMaterialId === material.id ? (
+                    {editingMaterialId !== null && editingMaterialId === material.id ? (
                       <div className="flex items-center gap-1">
                         <input
                           type="number"
