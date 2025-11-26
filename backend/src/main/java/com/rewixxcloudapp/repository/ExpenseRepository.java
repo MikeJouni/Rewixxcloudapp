@@ -12,9 +12,9 @@ import java.util.List;
 @Repository
 public interface ExpenseRepository extends JpaRepository<Expense, Long>, CustomExpenseRepository {
 
-    List<Expense> findByJobId(Long jobId);
+    List<Expense> findByJob_Id(Long jobId);
 
-    List<Expense> findByCustomerId(Long customerId);
+    List<Expense> findByCustomer_Id(Long customerId);
 
     @Query("SELECT e FROM Expense e WHERE e.expenseDate BETWEEN :startDate AND :endDate ORDER BY e.expenseDate DESC")
     List<Expense> findByDateRange(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
