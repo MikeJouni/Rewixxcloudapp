@@ -8,8 +8,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
 
-import java.sql.SQLException;
-
 @Configuration
 public class DatabaseConfig {
 
@@ -50,7 +48,7 @@ public class DatabaseConfig {
 
     @Bean
     @Profile("!test")
-    public javax.sql.DataSource dataSource() throws SQLException {
+    public javax.sql.DataSource dataSource() {
         // Use H2 in-memory database for development
         DataSource dataSource = new DataSource();
         dataSource.setDriverClassName("org.h2.Driver");
