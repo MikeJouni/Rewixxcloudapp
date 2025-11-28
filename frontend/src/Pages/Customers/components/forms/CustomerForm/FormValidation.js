@@ -44,11 +44,7 @@ export const validateForm = (formData) => {
     }
   }
 
-  // Name and city validation (no numbers)
-  if (formData.name && /\d/.test(formData.name)) {
-    errors.name = "Name must not contain numbers.";
-  }
-
+  // City validation (no numbers)
   if (formData.city && /\d/.test(formData.city)) {
     errors.city = "City must not contain numbers.";
   }
