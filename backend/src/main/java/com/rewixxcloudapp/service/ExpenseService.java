@@ -234,7 +234,7 @@ public class ExpenseService {
     // Additional methods for reporting
     public List<Expense> getExpensesByJob(Long jobId) {
         logger.info("Fetching expenses for job ID: {}", jobId);
-        return expenseRepository.findByJob_Id(jobId);
+        return expenseRepository.findByJobId(jobId);
     }
 
     public List<Expense> getExpensesByDateRange(LocalDate startDate, LocalDate endDate) {
@@ -244,7 +244,7 @@ public class ExpenseService {
 
     public BigDecimal getTotalExpensesByJob(Long jobId) {
         logger.info("Calculating total expenses for job ID: {}", jobId);
-        List<Expense> expenses = expenseRepository.findByJob_Id(jobId);
+        List<Expense> expenses = expenseRepository.findByJobId(jobId);
         return expenses.stream()
                 .map(Expense::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);

@@ -40,7 +40,7 @@ const CustomerForm = ({ onSubmit, onCancel, initialData = null, isLoading = fals
     const { name, value } = e.target;
 
     if (name === "zip" && !/^\d{0,5}$/.test(value)) return;
-    if (["name", "city"].includes(name) && /\d/.test(value)) return;
+    if (name === "city" && /\d/.test(value)) return;
 
     let processedValue = value;
     
@@ -49,11 +49,41 @@ const CustomerForm = ({ onSubmit, onCancel, initialData = null, isLoading = fals
       processedValue = formatPhoneNumber(value);
     }
 
-    // Clear field-specific error when user starts typing
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: null }));
+    // Live validation for email and phone
+    const newErrors = { ...errors };
+    if (name === "username") {
+      // Clear error when user starts typing
+      if (newErrors[name]) {
+        delete newErrors[name];
+      }
+      // Validate email format in real-time
+      if (value && value.trim() !== "") {
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+          newErrors.username = "Please enter a valid email address.";
+        }
+      }
+    }
+    
+    if (name === "phone") {
+      // Clear error when user starts typing
+      if (newErrors[name]) {
+        delete newErrors[name];
+      }
+      // Validate phone format in real-time
+      if (processedValue && processedValue.trim() !== "") {
+        const phoneDigits = processedValue.replace(/\D/g, "");
+        if (phoneDigits.length > 0 && phoneDigits.length !== 10) {
+          newErrors.phone = "Phone must be exactly 10 digits.";
+        }
+      }
     }
 
+    // Clear field-specific error when user starts typing (for other fields)
+    if (errors[name] && name !== "username" && name !== "phone") {
+      delete newErrors[name];
+    }
+
+    setErrors(newErrors);
     setFormData({
       ...formData,
       [name]: processedValue,
