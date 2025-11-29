@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Button, Input } from "antd";
+import { formatPhoneNumber } from "../../Customers/components/forms/CustomerForm/PhoneFormatter";
 
 const { TextArea } = Input;
 
@@ -15,10 +16,52 @@ const EmployeeForm = ({ onSubmit, onCancel, initialData, isLoading }) => {
   const [errors, setErrors] = useState({});
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: null }));
+    let processedValue = value;
+    
+    // Format phone number
+    if (field === "phone") {
+      processedValue = formatPhoneNumber(value);
     }
+    
+    setFormData(prev => ({ ...prev, [field]: processedValue }));
+    
+    // Live validation for email and phone
+    const newErrors = { ...errors };
+    if (field === "email") {
+      // Clear error when user starts typing
+      if (newErrors[field]) {
+        delete newErrors[field];
+      }
+      // Validate email format in real-time
+      if (processedValue && processedValue.trim() !== "") {
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(processedValue)) {
+          newErrors.email = "Please enter a valid email address.";
+        }
+      }
+    }
+    
+    if (field === "phone") {
+      // Clear error when user starts typing
+      if (newErrors[field]) {
+        delete newErrors[field];
+      }
+      // Validate phone format in real-time (basic check for 10 digits)
+      if (processedValue && processedValue.trim() !== "") {
+        const phoneDigits = processedValue.replace(/\D/g, "");
+        if (phoneDigits.length > 0 && phoneDigits.length < 10) {
+          newErrors.phone = "Phone number must be at least 10 digits.";
+        } else if (phoneDigits.length > 10) {
+          newErrors.phone = "Phone number cannot exceed 10 digits.";
+        }
+      }
+    }
+
+    // Clear field-specific error when user starts typing (for other fields)
+    if (errors[field] && field !== "email" && field !== "phone") {
+      delete newErrors[field];
+    }
+
+    setErrors(newErrors);
   };
 
   const validateForm = () => {
@@ -69,7 +112,9 @@ const EmployeeForm = ({ onSubmit, onCancel, initialData, isLoading }) => {
           onChange={(e) => handleInputChange("phone", e.target.value)}
           placeholder="Enter phone number"
           size="large"
+          status={errors.phone ? "error" : ""}
         />
+        {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
       </div>
 
       {/* Email (Optional) */}
@@ -83,7 +128,9 @@ const EmployeeForm = ({ onSubmit, onCancel, initialData, isLoading }) => {
           onChange={(e) => handleInputChange("email", e.target.value)}
           placeholder="Enter email address"
           size="large"
+          status={errors.email ? "error" : ""}
         />
+        {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
       </div>
 
       {/* Address (Optional) */}

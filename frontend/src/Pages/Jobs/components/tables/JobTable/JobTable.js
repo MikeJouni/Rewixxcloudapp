@@ -113,7 +113,7 @@ const JobTable = ({
       const subtotal = billingMaterialCost + jobPrice;
       const taxAmount = job.includeTax ? subtotal * 0.06 : 0;
       const totalCost = subtotal + taxAmount;
-      const totalPaid = job.payments && job.payments.length > 0
+      const totalPaid = Array.isArray(job.payments) && job.payments.length > 0
         ? job.payments.reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0)
         : 0;
       if (totalPaid === 0) return "UNPAID";

@@ -37,6 +37,8 @@ import * as customerService from "../Customers/services/customerService";
 import * as jobService from "../Jobs/services/jobService";
 import * as reportService from "./services/reportService";
 import * as exportService from "./services/exportService";
+import * as accountSettingsService from "../../services/accountSettingsService";
+import config from "../../config";
 import "./reports.css";
 // Logo will be loaded from public directory
 
@@ -65,6 +67,17 @@ const Reports = () => {
     queryKey: ["jobs"],
     queryFn: () => jobService.getJobsList({ searchTerm: "", page: 0, pageSize: 10000, statusFilter: "All" }),
   });
+
+  // Fetch account settings for company branding
+  const { data: accountSettings } = useQuery({
+    queryKey: ["accountSettings"],
+    queryFn: () => accountSettingsService.getAccountSettings(),
+  });
+
+  const companyName = accountSettings?.companyName || "Reports Dashboard";
+  const companyLogoUrl = accountSettings?.logoUrl
+    ? `${config.SPRING_API_BASE}${accountSettings.logoUrl}`
+    : null;
 
   // Fetch comprehensive report data
   const { data: reportData, isLoading: reportLoading, refetch: refetchReport } = useQuery({
@@ -166,46 +179,51 @@ const Reports = () => {
   return (
     <div className="w-full">
       {/* Header with Logo and Company Branding */}
-        <Card className="mb-6 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-          <div className="flex flex-col sm:flex-row items-center justify-between mb-6">
-            <div className="flex items-center space-x-4 mb-4 sm:mb-0">
-              <img 
-                src="/logo.png" 
-                alt="Rewixx Logo" 
+      <Card className="mb-6 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+        <div className="flex flex-col sm:flex-row items-center justify-between mb-6">
+          <div className="flex items-center space-x-4 mb-4 sm:mb-0">
+            {companyLogoUrl && (
+              <img
+                src={companyLogoUrl}
+                alt="Company Logo"
                 className="h-12 w-12 object-contain"
               />
-              <div>
-                <Title level={1} className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-0">
-                  Rewixx Reports Dashboard
-            </Title>
-                <Text className="text-gray-600 text-sm">
-                  Comprehensive Business Intelligence & Analytics
-            </Text>
-              </div>
-              </div>
-            
-            <div className="flex flex-col sm:flex-row gap-3">
-              <RangePicker
-                value={dateRange}
-                onChange={setDateRange}
-                size="large"
-                className="w-full sm:w-auto"
-              />
-              <Button 
-                type="primary" 
-                size="large"
-                icon={<DownloadOutlined />}
-                loading={isGeneratingReport}
-                onClick={exportToPDF}
-                style={{ 
-                  background: 'linear-gradient(135deg, #1f2937 0%, #111827 100%)', 
-                  border: 'none',
-                }}
+            )}
+            <div>
+              <Title
+                level={1}
+                className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-0"
               >
-                Export Report
-              </Button>
-              </div>
+                {companyName}
+              </Title>
+              <Text className="text-gray-600 text-sm">
+                Comprehensive Business Intelligence & Analytics
+              </Text>
+            </div>
           </div>
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <RangePicker
+              value={dateRange}
+              onChange={setDateRange}
+              size="large"
+              className="w-full sm:w-auto"
+            />
+            <Button
+              type="primary"
+              size="large"
+              icon={<DownloadOutlined />}
+              loading={isGeneratingReport}
+              onClick={exportToPDF}
+              style={{
+                background: "linear-gradient(135deg, #1f2937 0%, #111827 100%)",
+                border: "none",
+              }}
+            >
+              Export Report
+            </Button>
+          </div>
+        </div>
 
           {/* Quick Stats Overview */}
           <Row gutter={[16, 16]} className="mb-6">

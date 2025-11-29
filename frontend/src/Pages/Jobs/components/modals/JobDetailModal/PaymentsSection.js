@@ -21,7 +21,8 @@ const PaymentsSection = ({ job, totalCost }) => {
     queryFn: () => paymentService.getPaymentsByJobId(job.id),
   });
 
-  const payments = paymentsData || [];
+  // Ensure payments is always an array
+  const payments = Array.isArray(paymentsData) ? paymentsData : [];
 
   // Create payment mutation
   const createPaymentMutation = useMutation({

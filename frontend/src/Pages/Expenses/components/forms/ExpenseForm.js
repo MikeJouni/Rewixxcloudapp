@@ -48,13 +48,30 @@ const ExpenseForm = ({ onSubmit, onCancel, initialData, isLoading }) => {
 
   const jobs = jobsData?.jobs || [];
 
-  // Fetch active employees for dropdown
-  const { data: employeesData } = useQuery({
-    queryKey: ["employees", "active"],
-    queryFn: () => employeeService.getActiveEmployees(),
+  // Fetch employees for dropdown using the same /list endpoint as the Employees page
+  const {
+    data: employeesData,
+    isLoading: employeesLoading,
+    error: employeesError,
+  } = useQuery({
+    queryKey: ["employees", "for-expenses"],
+    queryFn: async () => {
+      try {
+        // Reuse the POST /api/employees/list endpoint to get all employees
+        const response = await employeeService.getAllEmployees("");
+        // response can be either an array or an object with employees property
+        const list =
+          Array.isArray(response) ? response : Array.isArray(response?.employees) ? response.employees : [];
+        return list;
+      } catch (error) {
+        console.error("Error fetching employees for expenses:", error);
+        throw error;
+      }
+    },
+    staleTime: 30000,
   });
 
-  const employees = employeesData?.data || [];
+  const employees = Array.isArray(employeesData) ? employeesData : [];
 
   // Auto-calculate amount for labor expenses
   useEffect(() => {
@@ -153,9 +170,11 @@ const ExpenseForm = ({ onSubmit, onCancel, initialData, isLoading }) => {
               onChange={(value) => handleInputChange("employeeName", value)}
               className="w-full"
               size="large"
-              placeholder="Select an employee"
+              placeholder={employeesLoading ? "Loading employees..." : employees.length === 0 ? "No employees available" : "Select an employee"}
               status={errors.employeeName ? "error" : ""}
               showSearch
+              loading={employeesLoading}
+              notFoundContent={employeesLoading ? "Loading..." : "No employees found"}
               filterOption={(input, option) =>
                 option.children.toLowerCase().includes(input.toLowerCase())
               }
