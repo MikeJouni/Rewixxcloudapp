@@ -1,17 +1,20 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button, Input, Table, Tag, Modal } from "antd";
+import { Button, Input, Table, Tag, message } from "antd";
 import { PlusOutlined, SearchOutlined, EditOutlined, DeleteOutlined, CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons";
 import useEmployees from "../hooks/useEmployees";
+import ConfirmModal from "../../../components/ConfirmModal";
 
 const { Search } = Input;
-const { confirm } = Modal;
 
 const EmployeeListView = () => {
   const navigate = useNavigate();
+  const [employeeToDelete, setEmployeeToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const {
     employees,
     isLoading,
+    error,
     searchTerm,
     setSearchTerm,
     deleteEmployee,
@@ -27,27 +30,21 @@ const EmployeeListView = () => {
   };
 
   const handleDelete = (employee) => {
-    confirm({
-      title: "Delete Employee",
-      content: `Are you sure you want to delete ${employee.name}?`,
-      okText: "Delete",
-      okType: "danger",
-      cancelText: "Cancel",
-      onOk: async () => {
-        try {
-          await deleteEmployee.mutateAsync(employee.id);
-        } catch (error) {
-          console.error("Failed to delete employee:", error);
-        }
-      },
-    });
+    if (!employee || !employee.id) {
+      message.error("Invalid employee data");
+      return;
+    }
+    setEmployeeToDelete(employee);
   };
 
   const handleToggleStatus = async (employee) => {
     try {
       await toggleStatus.mutateAsync(employee.id);
+      message.success(`Employee ${employee.active ? "deactivated" : "activated"} successfully`);
     } catch (error) {
       console.error("Failed to toggle employee status:", error);
+      const errorMessage = error.response?.data?.error || error.response?.data?.message || "Failed to update employee status. Please try again.";
+      message.error(errorMessage);
     }
   };
 
@@ -156,6 +153,15 @@ const EmployeeListView = () => {
         />
       </div>
 
+      {/* Error Display */}
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-sm text-red-600">
+            Error loading employees: {error.message || "Unknown error"}
+          </p>
+        </div>
+      )}
+
       {/* Summary */}
       <div className="mb-4 p-3 bg-gray-50 rounded-lg">
         <p className="text-sm text-gray-600">
@@ -260,6 +266,34 @@ const EmployeeListView = () => {
           <div className="text-center py-8 text-gray-500">No employees found</div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={!!employeeToDelete}
+        title="Delete Employee"
+        message={employeeToDelete ? `This will permanently delete employee "${employeeToDelete.name}" and cannot be undone.` : ""}
+        confirmLabel="Delete Employee"
+        confirmButtonClass="bg-red-600 hover:bg-red-700"
+        onCancel={() => setEmployeeToDelete(null)}
+        onConfirm={() => {
+          if (!employeeToDelete) return;
+          setIsDeleting(true);
+          deleteEmployee.mutate(employeeToDelete.id, {
+            onSuccess: () => {
+              message.success("Employee deleted successfully");
+              setEmployeeToDelete(null);
+            },
+            onError: (error) => {
+              console.error("Failed to delete employee:", error);
+              const errorMessage = error.response?.data?.error || error.response?.data?.message || "Failed to delete employee. Please try again.";
+              message.error(errorMessage);
+            },
+            onSettled: () => {
+              setIsDeleting(false);
+            }
+          });
+        }}
+      />
     </div>
   );
 };

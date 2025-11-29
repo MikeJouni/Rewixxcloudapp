@@ -123,6 +123,28 @@ public class EmployeeController {
         }
     }
 
+    @PostMapping("/list")
+    public ResponseEntity<?> getEmployeesList(@RequestBody Map<String, Object> request) {
+        logger.info("POST /api/employees/list");
+        try {
+            String searchTerm = (String) request.getOrDefault("searchTerm", "");
+            List<Employee> employees;
+            if (searchTerm != null && !searchTerm.trim().isEmpty()) {
+                employees = employeeService.searchEmployees(searchTerm.trim());
+            } else {
+                employees = employeeService.getAllEmployees();
+            }
+            Map<String, Object> result = new HashMap<>();
+            result.put("employees", employees);
+            result.put("totalEmployees", employees.size());
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            logger.error("Error fetching employees list", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(createErrorResponse("Error fetching employees: " + e.getMessage()));
+        }
+    }
+
     @PutMapping("/{id}/toggle")
     public ResponseEntity<?> toggleEmployeeStatus(@PathVariable Long id) {
         logger.info("PUT /api/employees/{}/toggle", id);

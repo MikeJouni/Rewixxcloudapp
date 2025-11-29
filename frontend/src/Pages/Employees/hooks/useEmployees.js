@@ -9,7 +9,11 @@ const useEmployees = () => {
   // Fetch all employees
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["employees", searchTerm],
-    queryFn: () => employeeService.getAllEmployees(searchTerm),
+    queryFn: async () => {
+      const response = await employeeService.getAllEmployees(searchTerm);
+      // Handle both old format (array) and new format (object with employees property)
+      return Array.isArray(response) ? response : (response?.employees || []);
+    },
   });
 
   // Fetch active employees only
@@ -21,8 +25,14 @@ const useEmployees = () => {
   // Create employee mutation
   const addEmployee = useMutation({
     mutationFn: employeeService.createEmployee,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["employees"] });
+    onSuccess: async () => {
+      // Invalidate all employee queries to ensure fresh data
+      await queryClient.invalidateQueries({ queryKey: ["employees"] });
+      // Refetch all employee queries to get the latest data
+      await queryClient.refetchQueries({ queryKey: ["employees"] });
+    },
+    onError: (error) => {
+      console.error("Create employee mutation error:", error);
     },
   });
 
@@ -40,6 +50,9 @@ const useEmployees = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["employees"] });
     },
+    onError: (error) => {
+      console.error("Delete employee mutation error:", error);
+    },
   });
 
   // Toggle employee status mutation
@@ -51,8 +64,8 @@ const useEmployees = () => {
   });
 
   return {
-    employees: data || [],
-    activeEmployees: activeEmployees || [],
+    employees: Array.isArray(data) ? data : [],
+    activeEmployees: Array.isArray(activeEmployees) ? activeEmployees : [],
     isLoading,
     error,
     searchTerm,

@@ -86,7 +86,7 @@ const JobTableColumns = ({
       const totalCost = subtotal + taxAmount;
 
       // Calculate total paid from payments
-      const totalPaid = job.payments && job.payments.length > 0
+      const totalPaid = Array.isArray(job.payments) && job.payments.length > 0
         ? job.payments.reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0)
         : 0;
 

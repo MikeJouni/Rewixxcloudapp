@@ -22,4 +22,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long>, CustomE
     List<Expense> findByDateRange(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
     List<Expense> findByType(com.rewixxcloudapp.entity.ExpenseType type);
+
+    // Delete all expenses associated with a given employee name (used when deleting an employee)
+    void deleteByEmployeeName(String employeeName);
 }

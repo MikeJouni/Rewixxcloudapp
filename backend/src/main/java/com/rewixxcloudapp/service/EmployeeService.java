@@ -3,10 +3,12 @@ package com.rewixxcloudapp.service;
 import com.rewixxcloudapp.dto.EmployeeDto;
 import com.rewixxcloudapp.entity.Employee;
 import com.rewixxcloudapp.repository.EmployeeRepository;
+import com.rewixxcloudapp.repository.ExpenseRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -18,6 +20,9 @@ public class EmployeeService {
 
     @Autowired
     private EmployeeRepository employeeRepository;
+
+    @Autowired
+    private ExpenseRepository expenseRepository;
 
     public List<Employee> getAllEmployees() {
         logger.info("Fetching all employees");
@@ -98,13 +103,27 @@ public class EmployeeService {
         return updatedEmployee;
     }
 
+    @Transactional
     public void deleteEmployee(Long id) {
         logger.info("Deleting employee with ID: {}", id);
 
-        if (!employeeRepository.existsById(id)) {
-            throw new IllegalArgumentException("Employee not found with ID: " + id);
+        // Fetch employee to get name used in labor expenses
+        Employee employee = employeeRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Employee not found with ID: " + id));
+
+        // First delete all expenses associated with this employee (labor expenses reference employeeName)
+        try {
+            String employeeName = employee.getName();
+            if (employeeName != null && !employeeName.trim().isEmpty()) {
+                logger.info("Deleting expenses associated with employee '{}'", employeeName);
+                expenseRepository.deleteByEmployeeName(employeeName.trim());
+            }
+        } catch (Exception e) {
+            logger.error("Error deleting expenses for employee ID {}: {}", id, e.getMessage(), e);
+            throw new IllegalStateException("Failed to delete expenses for employee: " + e.getMessage(), e);
         }
 
+        // Now delete the employee itself
         employeeRepository.deleteById(id);
         logger.info("Employee deleted successfully: {}", id);
     }

@@ -23,7 +23,7 @@ const ExpenseTable = ({ expenses, onEdit, onDelete, isLoading }) => {
       title: "Date",
       dataIndex: "expenseDate",
       key: "expenseDate",
-      width: 120,
+      width: 110,
       render: (date) => new Date(date).toLocaleDateString(),
       sorter: (a, b) => new Date(a.expenseDate) - new Date(b.expenseDate),
     },
@@ -31,7 +31,7 @@ const ExpenseTable = ({ expenses, onEdit, onDelete, isLoading }) => {
       title: "Type",
       dataIndex: "type",
       key: "type",
-      width: 150,
+      width: 120,
       render: (type) => (
         <Tag color={EXPENSE_TYPE_COLORS[type] || "default"}>
           {type.replace(/_/g, " ")}
@@ -47,6 +47,7 @@ const ExpenseTable = ({ expenses, onEdit, onDelete, isLoading }) => {
       title: "Description",
       dataIndex: "description",
       key: "description",
+      width: 260,
       ellipsis: true,
       render: (text, record) => (
         <div>
@@ -66,7 +67,7 @@ const ExpenseTable = ({ expenses, onEdit, onDelete, isLoading }) => {
       title: "Job",
       dataIndex: "jobTitle",
       key: "jobTitle",
-      width: 150,
+      width: 140,
       ellipsis: true,
       render: (title, record) => title ? (
         <span className="text-blue-600">#{record.jobId} - {title}</span>
@@ -78,7 +79,7 @@ const ExpenseTable = ({ expenses, onEdit, onDelete, isLoading }) => {
       title: "Vendor",
       dataIndex: "vendor",
       key: "vendor",
-      width: 120,
+      width: 110,
       ellipsis: true,
       render: (vendor) => vendor || <span className="text-gray-400">—</span>,
     },
@@ -86,7 +87,7 @@ const ExpenseTable = ({ expenses, onEdit, onDelete, isLoading }) => {
       title: "Amount",
       dataIndex: "amount",
       key: "amount",
-      width: 120,
+      width: 110,
       align: "right",
       render: (amount) => (
         <span className="font-semibold text-gray-900">
@@ -99,7 +100,7 @@ const ExpenseTable = ({ expenses, onEdit, onDelete, isLoading }) => {
       title: "Billable",
       dataIndex: "billable",
       key: "billable",
-      width: 100,
+      width: 90,
       align: "center",
       render: (billable) => billable ? (
         <Tag color="green">Yes</Tag>
@@ -110,28 +111,25 @@ const ExpenseTable = ({ expenses, onEdit, onDelete, isLoading }) => {
     {
       title: "Actions",
       key: "actions",
-      width: 120,
-      fixed: "right",
+      width: 130,
+      align: "center",
       render: (_, record) => (
-        <Space>
-          <Button
-            type="link"
-            icon={<EditOutlined />}
+        <div className="flex items-center justify-center gap-2">
+          <button
             onClick={() => onEdit(record)}
-            size="small"
+            className="px-2 py-1 bg-gray-700 text-white rounded text-xs font-medium hover:bg-gray-800 transition-colors flex items-center gap-1"
           >
+            <EditOutlined />
             Edit
-          </Button>
-          <Button
-            type="link"
-            danger
-            icon={<DeleteOutlined />}
+          </button>
+          <button
             onClick={() => onDelete(record.id)}
-            size="small"
+            className="px-2 py-1 bg-red-500 text-white rounded text-xs font-medium hover:bg-red-600 transition-colors flex items-center gap-1"
           >
+            <DeleteOutlined />
             Delete
-          </Button>
-        </Space>
+          </button>
+        </div>
       ),
     },
   ];
@@ -146,7 +144,6 @@ const ExpenseTable = ({ expenses, onEdit, onDelete, isLoading }) => {
           rowKey="id"
           loading={isLoading}
           pagination={false}
-          scroll={{ x: 1200 }}
         />
       </div>
 

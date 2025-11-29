@@ -118,8 +118,13 @@ public class ExpenseController {
             int pageSize = params.containsKey("pageSize") ? (Integer) params.get("pageSize") : 10;
             String searchTerm = params.containsKey("searchTerm") ? (String) params.get("searchTerm") : "";
             String typeFilter = params.containsKey("typeFilter") ? (String) params.get("typeFilter") : "All";
-            Long jobId = params.containsKey("jobId") ?
-                ((Number) params.get("jobId")).longValue() : null;
+            Long jobId = null;
+            if (params.containsKey("jobId") && params.get("jobId") != null) {
+                Object jobIdObj = params.get("jobId");
+                if (jobIdObj instanceof Number) {
+                    jobId = ((Number) jobIdObj).longValue();
+                }
+            }
 
             logger.info("Listing expenses - page: {}, pageSize: {}, searchTerm: '{}', typeFilter: '{}', jobId: {}",
                        page, pageSize, searchTerm, typeFilter, jobId);

@@ -1,8 +1,10 @@
 import Backend from "../../../Backend";
 
 export const getAllEmployees = (search = "") => {
-  const params = search ? `?search=${encodeURIComponent(search)}` : "";
-  return Backend.get(`api/employees${params}`);
+  // Use POST /list endpoint for consistency with customers
+  return Backend.post("api/employees/list", {
+    searchTerm: search || ""
+  });
 };
 
 export const getActiveEmployees = () => {
