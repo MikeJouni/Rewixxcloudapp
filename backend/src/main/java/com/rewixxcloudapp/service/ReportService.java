@@ -22,8 +22,8 @@ public class ReportService {
     // ProductRepository not currently used but available for future enhancements
 
     // Revenue Report
-    public Map<String, Object> generateRevenueReport(LocalDate startDate, LocalDate endDate) {
-        List<Job> jobs = jobRepository.findByDateRange(startDate, endDate);
+    public Map<String, Object> generateRevenueReport(LocalDate startDate, LocalDate endDate, Long userId) {
+        List<Job> jobs = jobRepository.findByDateRangeAndUserId(startDate, endDate, userId);
         
         BigDecimal totalRevenue = BigDecimal.ZERO;
         BigDecimal totalMaterials = BigDecimal.ZERO;
@@ -78,8 +78,8 @@ public class ReportService {
     }
     
     // Labor Report
-    public Map<String, Object> generateLaborReport(LocalDate startDate, LocalDate endDate) {
-        List<Job> jobs = jobRepository.findByDateRange(startDate, endDate);
+    public Map<String, Object> generateLaborReport(LocalDate startDate, LocalDate endDate, Long userId) {
+        List<Job> jobs = jobRepository.findByDateRangeAndUserId(startDate, endDate, userId);
         
         int totalEstimatedHours = 0;
         int totalActualHours = 0;
@@ -129,8 +129,8 @@ public class ReportService {
     }
     
     // Expenses Report
-    public Map<String, Object> generateExpensesReport(LocalDate startDate, LocalDate endDate) {
-        List<Job> jobs = jobRepository.findByDateRange(startDate, endDate);
+    public Map<String, Object> generateExpensesReport(LocalDate startDate, LocalDate endDate, Long userId) {
+        List<Job> jobs = jobRepository.findByDateRangeAndUserId(startDate, endDate, userId);
         
         BigDecimal totalBillableExpenses = BigDecimal.ZERO;
         BigDecimal totalNonBillableExpenses = BigDecimal.ZERO;
@@ -185,8 +185,9 @@ public class ReportService {
     }
     
     // Business Insights Report
-    public Map<String, Object> generateBusinessInsightsReport(LocalDate startDate, LocalDate endDate) {
-        List<Job> jobs = jobRepository.findByDateRange(startDate, endDate);
+    public Map<String, Object> generateBusinessInsightsReport(LocalDate startDate, LocalDate endDate, Long userId) {
+        List<Job> jobs = jobRepository.findByDateRangeAndUserId(startDate, endDate, userId);
+        // Note: customers should also be filtered by userId, but for now using all (needs repository update)
         List<Customer> customers = customerRepository.findAll();
         
         // Key metrics

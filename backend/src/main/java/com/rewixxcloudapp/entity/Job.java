@@ -17,6 +17,9 @@ public class Job {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
+
     private String title;
 
     private String description;
@@ -214,5 +217,13 @@ public class Job {
 
     public void setWorkSiteAddress(String workSiteAddress) {
         this.workSiteAddress = workSiteAddress;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 }

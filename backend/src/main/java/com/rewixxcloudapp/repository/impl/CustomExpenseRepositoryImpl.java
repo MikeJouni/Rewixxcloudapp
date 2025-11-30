@@ -13,9 +13,9 @@ public class CustomExpenseRepositoryImpl implements CustomExpenseRepository {
     private EntityManager entityManager;
 
     @Override
-    public List<Expense> findExpensesWithSearch(String searchTerm, String typeFilter, Long jobId, int page, int pageSize) {
+    public List<Expense> findExpensesWithSearch(String searchTerm, String typeFilter, Long jobId, int page, int pageSize, Long userId) {
         StringBuilder queryBuilder = new StringBuilder(
-                "SELECT e FROM Expense e LEFT JOIN FETCH e.job LEFT JOIN FETCH e.customer WHERE 1=1"
+                "SELECT e FROM Expense e LEFT JOIN FETCH e.job LEFT JOIN FETCH e.customer WHERE e.userId = :userId"
         );
 
         // Add search term filter
@@ -40,6 +40,8 @@ public class CustomExpenseRepositoryImpl implements CustomExpenseRepository {
         queryBuilder.append(" ORDER BY e.expenseDate DESC, e.id DESC");
 
         TypedQuery<Expense> query = entityManager.createQuery(queryBuilder.toString(), Expense.class);
+        
+        query.setParameter("userId", userId);
 
         if (searchTerm != null && !searchTerm.trim().isEmpty()) {
             query.setParameter("searchTerm", "%" + searchTerm.trim() + "%");
@@ -64,9 +66,9 @@ public class CustomExpenseRepositoryImpl implements CustomExpenseRepository {
     }
 
     @Override
-    public long countExpensesWithSearch(String searchTerm, String typeFilter, Long jobId) {
+    public long countExpensesWithSearch(String searchTerm, String typeFilter, Long jobId, Long userId) {
         StringBuilder queryBuilder = new StringBuilder(
-                "SELECT COUNT(e) FROM Expense e WHERE 1=1"
+                "SELECT COUNT(e) FROM Expense e WHERE e.userId = :userId"
         );
 
         // Add search term filter
@@ -89,6 +91,8 @@ public class CustomExpenseRepositoryImpl implements CustomExpenseRepository {
         }
 
         TypedQuery<Long> query = entityManager.createQuery(queryBuilder.toString(), Long.class);
+        
+        query.setParameter("userId", userId);
 
         if (searchTerm != null && !searchTerm.trim().isEmpty()) {
             query.setParameter("searchTerm", "%" + searchTerm.trim() + "%");

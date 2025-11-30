@@ -9,6 +9,18 @@ const api = axios.create({
   },
 });
 
+// Attach JWT token from localStorage if available
+api.interceptors.request.use(
+  (request) => {
+    const token = localStorage.getItem("auth_token");
+    if (token) {
+      request.headers.Authorization = `Bearer ${token}`;
+    }
+    return request;
+  },
+  (error) => Promise.reject(error)
+);
+
 class Backend {
   /**
    * Helper method to build URL with query parameters
@@ -67,4 +79,4 @@ class Backend {
   }
 }
 
-export default Backend; 
+export default Backend;

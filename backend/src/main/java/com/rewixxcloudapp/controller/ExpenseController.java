@@ -1,5 +1,6 @@
 package com.rewixxcloudapp.controller;
 
+import com.rewixxcloudapp.config.JwtUtil;
 import com.rewixxcloudapp.dto.ExpenseDto;
 import com.rewixxcloudapp.entity.Expense;
 import com.rewixxcloudapp.service.ExpenseService;
@@ -9,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -23,8 +25,20 @@ public class ExpenseController {
     @Autowired
     private ExpenseService expenseService;
 
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    private Long getUserIdFromRequest(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            return jwtUtil.getUserIdFromToken(token);
+        }
+        return null;
+    }
+
     @PostMapping("/create")
-    public ResponseEntity<?> createExpense(@RequestBody ExpenseDto dto) {
+    public ResponseEntity<?> createExpense(@RequestBody ExpenseDto dto, HttpServletRequest request) {
         try {
             logger.info("Received expense creation request: {}", dto);
 
@@ -39,7 +53,12 @@ public class ExpenseController {
                 return ResponseEntity.badRequest().body("Expense date is required");
             }
 
-            Expense expense = expenseService.createExpense(dto);
+            Long userId = getUserIdFromRequest(request);
+            if (userId == null) {
+                return ResponseEntity.status(401).body(Map.of("message", "Unauthorized"));
+            }
+
+            Expense expense = expenseService.createExpense(dto, userId);
             logger.info("Expense created successfully with ID: {}", expense.getId());
             return ResponseEntity.ok(expense);
         } catch (IllegalArgumentException e) {
@@ -52,10 +71,14 @@ public class ExpenseController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getExpenseById(@PathVariable Long id) {
+    public ResponseEntity<?> getExpenseById(@PathVariable Long id, HttpServletRequest request) {
         try {
-            logger.info("Fetching expense with ID: {}", id);
-            Optional<Expense> expense = expenseService.getExpenseById(id);
+            Long userId = getUserIdFromRequest(request);
+            if (userId == null) {
+                return ResponseEntity.status(401).build();
+            }
+            logger.info("Fetching expense with ID: {} for user {}", id, userId);
+            Optional<Expense> expense = expenseService.getExpenseById(id, userId);
             if (expense.isPresent()) {
                 return ResponseEntity.ok(expense.get());
             } else {
@@ -69,11 +92,15 @@ public class ExpenseController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateExpense(@PathVariable Long id, @RequestBody ExpenseDto dto) {
+    public ResponseEntity<?> updateExpense(@PathVariable Long id, @RequestBody ExpenseDto dto, HttpServletRequest request) {
         try {
+            Long userId = getUserIdFromRequest(request);
+            if (userId == null) {
+                return ResponseEntity.status(401).body(Map.of("message", "Unauthorized"));
+            }
             logger.info("Received update request for expense ID: {}", id);
 
-            Optional<Expense> expenseOpt = expenseService.getExpenseById(id);
+            Optional<Expense> expenseOpt = expenseService.getExpenseById(id, userId);
             if (expenseOpt.isPresent()) {
                 Expense existing = expenseOpt.get();
                 logger.info("Found existing expense: {}", existing.getId());
@@ -94,11 +121,15 @@ public class ExpenseController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteExpense(@PathVariable Long id) {
+    public ResponseEntity<?> deleteExpense(@PathVariable Long id, HttpServletRequest request) {
         try {
-            Optional<Expense> expenseOpt = expenseService.getExpenseById(id);
+            Long userId = getUserIdFromRequest(request);
+            if (userId == null) {
+                return ResponseEntity.status(401).build();
+            }
+            Optional<Expense> expenseOpt = expenseService.getExpenseById(id, userId);
             if (expenseOpt.isPresent()) {
-                expenseService.deleteExpenseById(id);
+                expenseService.deleteExpenseById(id, userId);
                 logger.info("Expense deleted successfully: {}", id);
                 return ResponseEntity.ok().build();
             } else {
@@ -112,8 +143,12 @@ public class ExpenseController {
     }
 
     @PostMapping("/list")
-    public ResponseEntity<?> listExpenses(@RequestBody Map<String, Object> params) {
+    public ResponseEntity<?> listExpenses(@RequestBody Map<String, Object> params, HttpServletRequest request) {
         try {
+            Long userId = getUserIdFromRequest(request);
+            if (userId == null) {
+                return ResponseEntity.status(401).body(Map.of("message", "Unauthorized"));
+            }
             int page = params.containsKey("page") ? (Integer) params.get("page") : 0;
             int pageSize = params.containsKey("pageSize") ? (Integer) params.get("pageSize") : 10;
             String searchTerm = params.containsKey("searchTerm") ? (String) params.get("searchTerm") : "";
@@ -126,10 +161,10 @@ public class ExpenseController {
                 }
             }
 
-            logger.info("Listing expenses - page: {}, pageSize: {}, searchTerm: '{}', typeFilter: '{}', jobId: {}",
-                       page, pageSize, searchTerm, typeFilter, jobId);
+            logger.info("Listing expenses - page: {}, pageSize: {}, searchTerm: '{}', typeFilter: '{}', jobId: {}, userId: {}",
+                       page, pageSize, searchTerm, typeFilter, jobId, userId);
 
-            Map<String, Object> response = expenseService.getExpensesList(page, pageSize, searchTerm, typeFilter, jobId);
+            Map<String, Object> response = expenseService.getExpensesList(page, pageSize, searchTerm, typeFilter, jobId, userId);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             logger.error("Error listing expenses", e);
@@ -140,11 +175,15 @@ public class ExpenseController {
     }
 
     @GetMapping("/job/{jobId}")
-    public ResponseEntity<?> getExpensesByJob(@PathVariable Long jobId) {
+    public ResponseEntity<?> getExpensesByJob(@PathVariable Long jobId, HttpServletRequest request) {
         try {
-            logger.info("Fetching expenses for job ID: {}", jobId);
-            var expenses = expenseService.getExpensesByJob(jobId);
-            var totalAmount = expenseService.getTotalExpensesByJob(jobId);
+            Long userId = getUserIdFromRequest(request);
+            if (userId == null) {
+                return ResponseEntity.status(401).build();
+            }
+            logger.info("Fetching expenses for job ID: {} for user {}", jobId, userId);
+            var expenses = expenseService.getExpensesByJob(jobId, userId);
+            var totalAmount = expenseService.getTotalExpensesByJob(jobId, userId);
 
             Map<String, Object> response = new HashMap<>();
             response.put("expenses", expenses);

@@ -15,6 +15,9 @@ public class Expense {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
+
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private ExpenseType type;
@@ -224,5 +227,13 @@ public class Expense {
 
     public String getCustomerName() {
         return customer != null ? customer.getName() : null;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 }

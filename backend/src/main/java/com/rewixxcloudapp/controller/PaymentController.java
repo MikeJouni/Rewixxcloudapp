@@ -1,5 +1,6 @@
 package com.rewixxcloudapp.controller;
 
+import com.rewixxcloudapp.config.JwtUtil;
 import com.rewixxcloudapp.dto.PaymentDto;
 import com.rewixxcloudapp.entity.Payment;
 import com.rewixxcloudapp.service.PaymentService;
@@ -10,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
@@ -25,11 +27,27 @@ public class PaymentController {
     @Autowired
     private PaymentService paymentService;
 
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    private Long getUserIdFromRequest(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            return jwtUtil.getUserIdFromToken(token);
+        }
+        return null;
+    }
+
     @GetMapping("/job/{jobId}")
-    public ResponseEntity<?> getPaymentsByJobId(@PathVariable Long jobId) {
+    public ResponseEntity<?> getPaymentsByJobId(@PathVariable Long jobId, HttpServletRequest request) {
         logger.info("GET /api/payments/job/{} - Fetching payments for job", jobId);
         try {
-            List<Payment> payments = paymentService.getPaymentsByJobId(jobId);
+            Long userId = getUserIdFromRequest(request);
+            if (userId == null) {
+                return ResponseEntity.status(401).body(createErrorResponse("Unauthorized"));
+            }
+            List<Payment> payments = paymentService.getPaymentsByJobId(jobId, userId);
             return ResponseEntity.ok(payments);
         } catch (Exception e) {
             logger.error("Error fetching payments for job ID: {}", jobId, e);
@@ -39,10 +57,14 @@ public class PaymentController {
     }
 
     @GetMapping("/job/{jobId}/total")
-    public ResponseEntity<?> getTotalPaidByJobId(@PathVariable Long jobId) {
+    public ResponseEntity<?> getTotalPaidByJobId(@PathVariable Long jobId, HttpServletRequest request) {
         logger.info("GET /api/payments/job/{}/total - Calculating total paid", jobId);
         try {
-            BigDecimal total = paymentService.getTotalPaidByJobId(jobId);
+            Long userId = getUserIdFromRequest(request);
+            if (userId == null) {
+                return ResponseEntity.status(401).body(createErrorResponse("Unauthorized"));
+            }
+            BigDecimal total = paymentService.getTotalPaidByJobId(jobId, userId);
             Map<String, Object> response = new HashMap<>();
             response.put("jobId", jobId);
             response.put("totalPaid", total);
@@ -55,10 +77,14 @@ public class PaymentController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createPayment(@RequestBody PaymentDto paymentDto) {
+    public ResponseEntity<?> createPayment(@RequestBody PaymentDto paymentDto, HttpServletRequest request) {
         logger.info("POST /api/payments - Creating payment for job ID: {}", paymentDto.getJobId());
         try {
-            Payment payment = paymentService.createPayment(paymentDto);
+            Long userId = getUserIdFromRequest(request);
+            if (userId == null) {
+                return ResponseEntity.status(401).body(createErrorResponse("Unauthorized"));
+            }
+            Payment payment = paymentService.createPayment(paymentDto, userId);
             return ResponseEntity.status(HttpStatus.CREATED).body(payment);
         } catch (IllegalArgumentException e) {
             logger.warn("Validation error creating payment: {}", e.getMessage());
@@ -72,10 +98,14 @@ public class PaymentController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deletePayment(@PathVariable Long id) {
+    public ResponseEntity<?> deletePayment(@PathVariable Long id, HttpServletRequest request) {
         logger.info("DELETE /api/payments/{}", id);
         try {
-            paymentService.deletePayment(id);
+            Long userId = getUserIdFromRequest(request);
+            if (userId == null) {
+                return ResponseEntity.status(401).body(createErrorResponse("Unauthorized"));
+            }
+            paymentService.deletePayment(id, userId);
             return ResponseEntity.ok(createSuccessResponse("Payment deleted successfully"));
         } catch (IllegalArgumentException e) {
             logger.warn("Error deleting payment: {}", e.getMessage());

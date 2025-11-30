@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import * as customerService from "../../Customers/services/customerService";
 import * as jobService from "../../Jobs/services/jobService";
 import * as accountSettingsService from "../../../services/accountSettingsService";
+import { useAuth } from "../../../AuthContext";
 import dayjs from "dayjs";
 
 const { TextArea } = Input;
@@ -35,9 +36,11 @@ const ContractForm = ({ form, onValuesChange, setSelectedCustomer, setSelectedJo
     : allJobs;
 
   // Fetch account settings
+  const { token } = useAuth();
   const { data: accountSettings } = useQuery({
-    queryKey: ["accountSettings"],
+    queryKey: ["accountSettings", token],
     queryFn: () => accountSettingsService.getAccountSettings(),
+    enabled: !!token,
   });
 
   useEffect(() => {

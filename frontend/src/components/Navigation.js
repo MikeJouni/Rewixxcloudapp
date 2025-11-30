@@ -13,10 +13,13 @@ import {
   SettingOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
+  LogoutOutlined,
 } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import * as accountSettingsService from "../services/accountSettingsService";
 import AccountSettingsModal from "./AccountSettingsModal";
+import { useAuth } from "../AuthContext";
+import config from "../config";
 
 const { Header, Sider } = Layout;
 const { useBreakpoint } = Grid;
@@ -28,13 +31,34 @@ const Navigation = ({ sidebarCollapsed, setSidebarCollapsed }) => {
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const screens = useBreakpoint();
 
-  // Fetch account settings
+  const { email: authEmail, name: authName, logout, token } = useAuth();
+
+  // Fetch account settings - include token in query key to ensure per-user caching
   const { data: accountSettings } = useQuery({
-    queryKey: ["accountSettings"],
+    queryKey: ["accountSettings", token],
     queryFn: () => accountSettingsService.getAccountSettings(),
+    enabled: !!token, // Only fetch when we have a token
   });
 
-  const companyName = accountSettings?.companyName || "Imad's Electrical LLC";
+  // Show Google account name first, then account settings company name, then email
+  // This ensures each user sees their own name initially
+  const companyName = authName || accountSettings?.companyName || authEmail || "Rewixx Cloud";
+
+  // Only use persisted logoUrl from account settings (do not fall back to avatar here)
+  const rawLogoUrl = accountSettings?.logoUrl || null;
+  const logoSrc =
+    rawLogoUrl && rawLogoUrl.startsWith("http")
+      ? rawLogoUrl
+      : rawLogoUrl
+      ? `${config.SPRING_API_BASE}${rawLogoUrl}`
+      : null;
+
+  const mergedSettings = {
+    ...(accountSettings || {}),
+    companyName: accountSettings?.companyName || authName || authEmail || "",
+    email: accountSettings?.email || authEmail || "",
+    logoUrl: rawLogoUrl,
+  };
 
   const getActiveTab = () => {
     const path = location.pathname;
@@ -188,23 +212,63 @@ const Navigation = ({ sidebarCollapsed, setSidebarCollapsed }) => {
           </div>
         </div>
 
-        {/* Right: Company Name & Settings */}
-        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+        {/* Right: User Avatar, Company Name & Settings */}
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           {!isMobile && (
-            <div
-              style={{
-                fontSize: "14px",
-                fontWeight: "600",
-                color: "#fff",
-                letterSpacing: "0.3px",
-                whiteSpace: "nowrap",
-                maxWidth: "200px",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-              }}
-            >
-              {companyName}
-            </div>
+            <>
+              {logoSrc && (
+                <img
+                  src={logoSrc}
+                  alt="Company Logo"
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: "999px",
+                    objectFit: "cover",
+                    border: "2px solid rgba(255,255,255,0.4)",
+                    boxShadow: "0 0 0 1px rgba(0,0,0,0.2)",
+                  }}
+                />
+              )}
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-end",
+                  justifyContent: "center",
+                  maxWidth: "220px",
+                  height: "40px",
+                  lineHeight: 1.15,
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: "600",
+                    color: "#fff",
+                    letterSpacing: "0.3px",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {companyName}
+                </div>
+                {authEmail && (
+                  <div
+                    style={{
+                      fontSize: "11px",
+                      color: "rgba(255,255,255,0.7)",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {authEmail}
+                  </div>
+                )}
+              </div>
+            </>
           )}
 
           <Tooltip title="Account Settings">
@@ -237,6 +301,42 @@ const Navigation = ({ sidebarCollapsed, setSidebarCollapsed }) => {
               onMouseLeave={(e) => {
                 e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)";
                 e.currentTarget.style.transform = "rotate(0deg)";
+              }}
+            />
+          </Tooltip>
+
+          {/* Sign Out */}
+          <Tooltip title="Sign Out">
+            <Button
+              type="text"
+              icon={
+                <LogoutOutlined
+                  style={{
+                    fontSize: "18px",
+                    color: "#f87171",
+                  }}
+                />
+              }
+              onClick={() => {
+                logout();
+                navigate("/");
+              }}
+              style={{
+                border: "none",
+                background: "rgba(248, 113, 113, 0.15)",
+                borderRadius: "8px",
+                width: "40px",
+                height: "40px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "all 0.3s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(248, 113, 113, 0.25)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(248, 113, 113, 0.15)";
               }}
             />
           </Tooltip>
@@ -411,6 +511,40 @@ const Navigation = ({ sidebarCollapsed, setSidebarCollapsed }) => {
               </div>
             );
           })}
+          {/* Sign Out Button in Mobile Drawer */}
+          <div
+            onClick={() => {
+              logout();
+              navigate("/");
+              setDrawerVisible(false);
+            }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              padding: "12px 16px",
+              borderRadius: "8px",
+              cursor: "pointer",
+              transition: "all 0.2s",
+              background: "transparent",
+              color: "#ef4444",
+              fontWeight: "500",
+              marginTop: "16px",
+              borderTop: "1px solid #e5e7eb",
+              paddingTop: "16px",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "#fef2f2";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "transparent";
+            }}
+          >
+            <span style={{ fontSize: "20px", display: "flex" }}>
+              <LogoutOutlined />
+            </span>
+            <span style={{ fontSize: "15px" }}>Sign Out</span>
+          </div>
         </div>
       </Drawer>
 
@@ -418,7 +552,7 @@ const Navigation = ({ sidebarCollapsed, setSidebarCollapsed }) => {
       <AccountSettingsModal
         open={settingsModalOpen}
         onClose={() => setSettingsModalOpen(false)}
-        currentSettings={accountSettings}
+        currentSettings={mergedSettings}
       />
     </>
   );

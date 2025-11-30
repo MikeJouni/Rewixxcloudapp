@@ -38,6 +38,7 @@ import * as jobService from "../Jobs/services/jobService";
 import * as reportService from "./services/reportService";
 import * as exportService from "./services/exportService";
 import * as accountSettingsService from "../../services/accountSettingsService";
+import { useAuth } from "../../AuthContext";
 import config from "../../config";
 import "./reports.css";
 // Logo will be loaded from public directory
@@ -69,9 +70,11 @@ const Reports = () => {
   });
 
   // Fetch account settings for company branding
+  const { token } = useAuth();
   const { data: accountSettings } = useQuery({
-    queryKey: ["accountSettings"],
+    queryKey: ["accountSettings", token],
     queryFn: () => accountSettingsService.getAccountSettings(),
+    enabled: !!token,
   });
 
   const companyName = accountSettings?.companyName || "Reports Dashboard";
