@@ -24,30 +24,30 @@ public class EmployeeService {
     @Autowired
     private ExpenseRepository expenseRepository;
 
-    public List<Employee> getAllEmployees() {
-        logger.info("Fetching all employees");
-        return employeeRepository.findAll();
+    public List<Employee> getAllEmployees(Long userId) {
+        logger.info("Fetching all employees for user {}", userId);
+        return employeeRepository.findByUserId(userId);
     }
 
-    public List<Employee> getActiveEmployees() {
-        logger.info("Fetching active employees only");
-        return employeeRepository.findByActiveTrue();
+    public List<Employee> getActiveEmployees(Long userId) {
+        logger.info("Fetching active employees only for user {}", userId);
+        return employeeRepository.findByActiveTrueAndUserId(userId);
     }
 
-    public List<Employee> searchEmployees(String searchTerm) {
-        logger.info("Searching employees with term: {}", searchTerm);
+    public List<Employee> searchEmployees(String searchTerm, Long userId) {
+        logger.info("Searching employees with term: {} for user {}", searchTerm, userId);
         if (searchTerm == null || searchTerm.trim().isEmpty()) {
-            return getAllEmployees();
+            return getAllEmployees(userId);
         }
-        return employeeRepository.searchEmployees(searchTerm.trim());
+        return employeeRepository.searchEmployees(searchTerm.trim(), userId);
     }
 
-    public Optional<Employee> getEmployeeById(Long id) {
-        logger.info("Fetching employee by ID: {}", id);
-        return employeeRepository.findById(id);
+    public Optional<Employee> getEmployeeById(Long id, Long userId) {
+        logger.info("Fetching employee by ID: {} for user {}", id, userId);
+        return employeeRepository.findByIdAndUserId(id, userId);
     }
 
-    public Employee createEmployee(EmployeeDto dto) {
+    public Employee createEmployee(EmployeeDto dto, Long userId) {
         logger.info("Creating employee with name: {}", dto.getName());
 
         // Validate required fields
@@ -56,6 +56,7 @@ public class EmployeeService {
         }
 
         Employee employee = new Employee();
+        employee.setUserId(userId);
         employee.setName(dto.getName().trim());
         employee.setPhone(dto.getPhone());
         employee.setEmail(dto.getEmail());
@@ -68,10 +69,10 @@ public class EmployeeService {
         return savedEmployee;
     }
 
-    public Employee updateEmployee(Long id, EmployeeDto dto) {
-        logger.info("Updating employee with ID: {}", id);
+    public Employee updateEmployee(Long id, EmployeeDto dto, Long userId) {
+        logger.info("Updating employee with ID: {} for user {}", id, userId);
 
-        Optional<Employee> employeeOpt = employeeRepository.findById(id);
+        Optional<Employee> employeeOpt = employeeRepository.findByIdAndUserId(id, userId);
         if (!employeeOpt.isPresent()) {
             throw new IllegalArgumentException("Employee not found with ID: " + id);
         }
@@ -104,19 +105,19 @@ public class EmployeeService {
     }
 
     @Transactional
-    public void deleteEmployee(Long id) {
-        logger.info("Deleting employee with ID: {}", id);
+    public void deleteEmployee(Long id, Long userId) {
+        logger.info("Deleting employee with ID: {} for user {}", id, userId);
 
         // Fetch employee to get name used in labor expenses
-        Employee employee = employeeRepository.findById(id)
+        Employee employee = employeeRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new IllegalArgumentException("Employee not found with ID: " + id));
 
         // First delete all expenses associated with this employee (labor expenses reference employeeName)
         try {
             String employeeName = employee.getName();
             if (employeeName != null && !employeeName.trim().isEmpty()) {
-                logger.info("Deleting expenses associated with employee '{}'", employeeName);
-                expenseRepository.deleteByEmployeeName(employeeName.trim());
+                logger.info("Deleting expenses associated with employee '{}' for user {}", employeeName, userId);
+                expenseRepository.deleteByEmployeeNameAndUserId(employeeName.trim(), userId);
             }
         } catch (Exception e) {
             logger.error("Error deleting expenses for employee ID {}: {}", id, e.getMessage(), e);
@@ -128,10 +129,10 @@ public class EmployeeService {
         logger.info("Employee deleted successfully: {}", id);
     }
 
-    public Employee toggleEmployeeStatus(Long id) {
-        logger.info("Toggling active status for employee ID: {}", id);
+    public Employee toggleEmployeeStatus(Long id, Long userId) {
+        logger.info("Toggling active status for employee ID: {} for user {}", id, userId);
 
-        Optional<Employee> employeeOpt = employeeRepository.findById(id);
+        Optional<Employee> employeeOpt = employeeRepository.findByIdAndUserId(id, userId);
         if (!employeeOpt.isPresent()) {
             throw new IllegalArgumentException("Employee not found with ID: " + id);
         }

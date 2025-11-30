@@ -19,24 +19,52 @@ import ExpensesPage from "./Pages/Expenses";
 import ContractsPage from "./Pages/Contracts";
 import ReportsPage from "./Pages/Reports";
 import Footer from "./components/Footer";
+import { AuthProvider, useAuth } from "./AuthContext";
+import Login from "./Pages/Auth/Login";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30 * 1000, // Data is considered fresh for 30 seconds
+      gcTime: 5 * 60 * 1000, // Garbage collect unused cache after 5 minutes
+      refetchOnWindowFocus: false, // Don't refetch on window focus
+    },
+  },
+});
+
+// Make queryClient globally available for clearing cache
+if (typeof window !== 'undefined') {
+  window.queryClient = queryClient;
+}
+
 const { useBreakpoint } = Grid;
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router>
-        <AppContent />
-      </Router>
+      <AuthProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
 
 function AppContent() {
+  const { token } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const screens = useBreakpoint();
+  
+  // Clear all cached queries when token changes (user logs in/out)
+  useEffect(() => {
+    if (window.queryClient) {
+      // Always clear cache when token changes - this ensures fresh data for each user
+      window.queryClient.clear();
+      window.queryClient.removeQueries();
+    }
+  }, [token]);
 
   // Breakpoints: mobile (< md), tablet (md to lg), desktop (>= lg)
   const isMobile = !screens.md;
@@ -60,6 +88,11 @@ function AppContent() {
       setSidebarCollapsed(true);
     }
   }, [isTablet]);
+
+  // If not authenticated, show login screen only
+  if (!token) {
+    return <Login />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col w-full h-full" style={{ background: '#f0f2f5' }}>

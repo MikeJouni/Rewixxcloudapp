@@ -27,20 +27,20 @@ public class CustomerService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    public Optional<Customer> getCustomerById(Long id) {
-        return customerRepository.findById(id);
+    public Optional<Customer> getCustomerById(Long id, Long userId) {
+        return customerRepository.findByIdAndUserId(id, userId);
     }
 
     public Customer saveCustomer(Customer customer) {
         return customerRepository.save(customer);
     }
 
-    public Customer createCustomer(CustomerDto dto) {
-        if (customerRepository.findByUsername(dto.getUsername()).isPresent()) {
+    public Customer createCustomer(CustomerDto dto, Long userId) {
+        if (customerRepository.findByUsernameAndUserId(dto.getUsername(), userId).isPresent()) {
             throw new RuntimeException("Email already exists");
         }
         if (dto.getPhone() != null && !dto.getPhone().trim().isEmpty()) {
-            if (customerRepository.findByPhone(dto.getPhone()).isPresent()) {
+            if (customerRepository.findByPhoneAndUserId(dto.getPhone(), userId).isPresent()) {
                 throw new RuntimeException("Phone number already exists");
             }
         }
@@ -51,6 +51,7 @@ public class CustomerService {
             throw new IllegalArgumentException("Name cannot be empty");
         }
         Customer customer = new Customer(dto.getUsername(), null, dto.getName());
+        customer.setUserId(userId);
         if (dto.getPassword() != null && !dto.getPassword().trim().isEmpty()) {
             customer.setPassword(passwordEncoder.encode(dto.getPassword()));
         }
@@ -67,7 +68,7 @@ public class CustomerService {
         if (dto.getUsername() != null) {
             // Check if username is being changed and if it already exists
             if (!dto.getUsername().equals(customer.getUsername()) && 
-                customerRepository.findByUsername(dto.getUsername()).isPresent()) {
+                customerRepository.findByUsernameAndUserId(dto.getUsername(), customer.getUserId()).isPresent()) {
                 throw new RuntimeException("Email already exists");
             }
             customer.setUsername(dto.getUsername());
@@ -77,7 +78,7 @@ public class CustomerService {
         if (dto.getPhone() != null) {
             // Check if phone is being changed and if it already exists
             if (!dto.getPhone().equals(customer.getPhone()) && 
-                customerRepository.findByPhone(dto.getPhone()).isPresent()) {
+                customerRepository.findByPhoneAndUserId(dto.getPhone(), customer.getUserId()).isPresent()) {
                 throw new RuntimeException("Phone number already exists");
             }
             customer.setPhone(dto.getPhone());
@@ -99,10 +100,14 @@ public class CustomerService {
         return customerRepository.save(customer);
     }
 
-    public void deleteCustomerById(Long id) {
+    public void deleteCustomerById(Long id, Long userId) {
         try {
+            Optional<Customer> customerOpt = customerRepository.findByIdAndUserId(id, userId);
+            if (customerOpt.isEmpty()) {
+                throw new RuntimeException("Customer not found");
+            }
             // First delete all jobs associated with this customer
-            List<Job> customerJobs = jobRepository.findByCustomerId(id);
+            List<Job> customerJobs = jobRepository.findByCustomerIdAndUserId(id, userId);
             if (customerJobs != null && !customerJobs.isEmpty()) {
                 logger.info("Deleting {} jobs associated with customer ID {}", customerJobs.size(), id);
                 jobRepository.deleteAll(customerJobs);
@@ -120,9 +125,9 @@ public class CustomerService {
         }
     }
 
-    public Map<String, Object> getCustomersList(int page, int pageSize, String searchTerm) {
-        List<Customer> customers = customerRepository.findCustomersWithSearch(searchTerm, page, pageSize);
-        long totalCustomers = customerRepository.countCustomersWithSearch(searchTerm);
+    public Map<String, Object> getCustomersList(int page, int pageSize, String searchTerm, Long userId) {
+        List<Customer> customers = customerRepository.findCustomersWithSearch(searchTerm, page, pageSize, userId);
+        long totalCustomers = customerRepository.countCustomersWithSearch(searchTerm, userId);
         int totalPages = (int) Math.ceil((double) totalCustomers / pageSize);
 
         Map<String, Object> result = new HashMap<>();

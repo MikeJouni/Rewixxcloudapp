@@ -3,6 +3,7 @@ import { Card, Button, Form, Drawer, Space, message, Grid } from "antd";
 import { FileTextOutlined, PlusCircleOutlined, EyeOutlined, DownloadOutlined, CloseOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import * as accountSettingsService from "../../services/accountSettingsService";
+import { useAuth } from "../../AuthContext";
 import ContractForm from "./components/ContractForm";
 import ContractPreview from "./components/ContractPreview";
 import ContractList from "./components/ContractList";
@@ -20,9 +21,11 @@ const ContractsPage = () => {
   const screens = useBreakpoint();
 
   // Fetch account settings
+  const { token } = useAuth();
   const { data: accountSettings } = useQuery({
-    queryKey: ["accountSettings"],
+    queryKey: ["accountSettings", token],
     queryFn: () => accountSettingsService.getAccountSettings(),
+    enabled: !!token,
   });
 
   const handleValuesChange = () => {

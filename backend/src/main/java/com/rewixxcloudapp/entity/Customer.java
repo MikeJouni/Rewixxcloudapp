@@ -8,6 +8,9 @@ import java.util.Collection;
 @Table(name = "customers")
 public class Customer extends User {
 
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
+
     private String name;
 
     public Customer() {
@@ -42,5 +45,13 @@ public class Customer extends User {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 }

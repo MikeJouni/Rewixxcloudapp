@@ -15,7 +15,7 @@ public class CustomJobRepositoryImpl implements CustomJobRepository {
     private EntityManager entityManager;
 
     @Override
-    public List<Job> findJobsWithSearch(String searchTerm, String statusFilter, int page, int pageSize) {
+    public List<Job> findJobsWithSearch(String searchTerm, String statusFilter, int page, int pageSize, Long userId) {
         JobStatus statusEnum = null;
         if (statusFilter != null && !statusFilter.equalsIgnoreCase("All")) {
             try {
@@ -25,14 +25,15 @@ public class CustomJobRepositoryImpl implements CustomJobRepository {
             }
         }
 
-        String baseQuery = "SELECT j FROM Job j LEFT JOIN j.customer c WHERE " +
-                "(:searchTerm = '' OR LOWER(j.title) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
+        String baseQuery = "SELECT j FROM Job j LEFT JOIN j.customer c WHERE j.userId = :userId " +
+                "AND (:searchTerm = '' OR LOWER(j.title) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
                 "OR LOWER(j.description) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
                 "OR LOWER(j.status) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
                 "OR (c IS NOT NULL AND LOWER(c.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')))) " +
                 "AND (:statusEnum IS NULL OR j.status = :statusEnum) " +
                 "ORDER BY j.id DESC";
         TypedQuery<Job> query = entityManager.createQuery(baseQuery, Job.class);
+        query.setParameter("userId", userId);
         query.setParameter("searchTerm", searchTerm);
         query.setParameter("statusEnum", statusEnum);
         query.setFirstResult(page * pageSize);
@@ -41,7 +42,7 @@ public class CustomJobRepositoryImpl implements CustomJobRepository {
     }
 
     @Override
-    public long countJobsWithSearch(String searchTerm, String statusFilter) {
+    public long countJobsWithSearch(String searchTerm, String statusFilter, Long userId) {
         JobStatus statusEnum = null;
         if (statusFilter != null && !statusFilter.equalsIgnoreCase("All")) {
             try {
@@ -50,13 +51,14 @@ public class CustomJobRepositoryImpl implements CustomJobRepository {
                 statusEnum = null;
             }
         }
-        String countQuery = "SELECT COUNT(j) FROM Job j LEFT JOIN j.customer c WHERE " +
-                "(:searchTerm = '' OR LOWER(j.title) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
+        String countQuery = "SELECT COUNT(j) FROM Job j LEFT JOIN j.customer c WHERE j.userId = :userId " +
+                "AND (:searchTerm = '' OR LOWER(j.title) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
                 "OR LOWER(j.description) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
                 "OR LOWER(j.status) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
                 "OR (c IS NOT NULL AND LOWER(c.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')))) " +
                 "AND (:statusEnum IS NULL OR j.status = :statusEnum)";
         TypedQuery<Long> query = entityManager.createQuery(countQuery, Long.class);
+        query.setParameter("userId", userId);
         query.setParameter("searchTerm", searchTerm);
         query.setParameter("statusEnum", statusEnum);
         return query.getSingleResult();

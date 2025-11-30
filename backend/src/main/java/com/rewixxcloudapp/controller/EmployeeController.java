@@ -1,5 +1,6 @@
 package com.rewixxcloudapp.controller;
 
+import com.rewixxcloudapp.config.JwtUtil;
 import com.rewixxcloudapp.dto.EmployeeDto;
 import com.rewixxcloudapp.entity.Employee;
 import com.rewixxcloudapp.service.EmployeeService;
@@ -10,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,15 +27,31 @@ public class EmployeeController {
     @Autowired
     private EmployeeService employeeService;
 
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    private Long getUserIdFromRequest(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            return jwtUtil.getUserIdFromToken(token);
+        }
+        return null;
+    }
+
     @GetMapping
-    public ResponseEntity<List<Employee>> getAllEmployees(@RequestParam(required = false) String search) {
+    public ResponseEntity<?> getAllEmployees(@RequestParam(required = false) String search, HttpServletRequest request) {
         logger.info("GET /api/employees - search: {}", search);
         try {
+            Long userId = getUserIdFromRequest(request);
+            if (userId == null) {
+                return ResponseEntity.status(401).body(createErrorResponse("Unauthorized"));
+            }
             List<Employee> employees;
             if (search != null && !search.trim().isEmpty()) {
-                employees = employeeService.searchEmployees(search);
+                employees = employeeService.searchEmployees(search, userId);
             } else {
-                employees = employeeService.getAllEmployees();
+                employees = employeeService.getAllEmployees(userId);
             }
             return ResponseEntity.ok(employees);
         } catch (Exception e) {
@@ -43,10 +61,14 @@ public class EmployeeController {
     }
 
     @GetMapping("/active")
-    public ResponseEntity<List<Employee>> getActiveEmployees() {
+    public ResponseEntity<?> getActiveEmployees(HttpServletRequest request) {
         logger.info("GET /api/employees/active");
         try {
-            List<Employee> employees = employeeService.getActiveEmployees();
+            Long userId = getUserIdFromRequest(request);
+            if (userId == null) {
+                return ResponseEntity.status(401).body(createErrorResponse("Unauthorized"));
+            }
+            List<Employee> employees = employeeService.getActiveEmployees(userId);
             return ResponseEntity.ok(employees);
         } catch (Exception e) {
             logger.error("Error fetching active employees", e);
@@ -55,10 +77,14 @@ public class EmployeeController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getEmployeeById(@PathVariable Long id) {
+    public ResponseEntity<?> getEmployeeById(@PathVariable Long id, HttpServletRequest request) {
         logger.info("GET /api/employees/{}", id);
         try {
-            Optional<Employee> employee = employeeService.getEmployeeById(id);
+            Long userId = getUserIdFromRequest(request);
+            if (userId == null) {
+                return ResponseEntity.status(401).body(createErrorResponse("Unauthorized"));
+            }
+            Optional<Employee> employee = employeeService.getEmployeeById(id, userId);
             if (employee.isPresent()) {
                 return ResponseEntity.ok(employee.get());
             } else {
@@ -73,10 +99,14 @@ public class EmployeeController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createEmployee(@RequestBody EmployeeDto employeeDto) {
+    public ResponseEntity<?> createEmployee(@RequestBody EmployeeDto employeeDto, HttpServletRequest request) {
         logger.info("POST /api/employees - name: {}", employeeDto.getName());
         try {
-            Employee employee = employeeService.createEmployee(employeeDto);
+            Long userId = getUserIdFromRequest(request);
+            if (userId == null) {
+                return ResponseEntity.status(401).body(createErrorResponse("Unauthorized"));
+            }
+            Employee employee = employeeService.createEmployee(employeeDto, userId);
             return ResponseEntity.status(HttpStatus.CREATED).body(employee);
         } catch (IllegalArgumentException e) {
             logger.warn("Validation error creating employee: {}", e.getMessage());
@@ -90,10 +120,14 @@ public class EmployeeController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateEmployee(@PathVariable Long id, @RequestBody EmployeeDto employeeDto) {
+    public ResponseEntity<?> updateEmployee(@PathVariable Long id, @RequestBody EmployeeDto employeeDto, HttpServletRequest request) {
         logger.info("PUT /api/employees/{}", id);
         try {
-            Employee employee = employeeService.updateEmployee(id, employeeDto);
+            Long userId = getUserIdFromRequest(request);
+            if (userId == null) {
+                return ResponseEntity.status(401).body(createErrorResponse("Unauthorized"));
+            }
+            Employee employee = employeeService.updateEmployee(id, employeeDto, userId);
             return ResponseEntity.ok(employee);
         } catch (IllegalArgumentException e) {
             logger.warn("Validation error updating employee: {}", e.getMessage());
@@ -107,10 +141,14 @@ public class EmployeeController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteEmployee(@PathVariable Long id) {
+    public ResponseEntity<?> deleteEmployee(@PathVariable Long id, HttpServletRequest request) {
         logger.info("DELETE /api/employees/{}", id);
         try {
-            employeeService.deleteEmployee(id);
+            Long userId = getUserIdFromRequest(request);
+            if (userId == null) {
+                return ResponseEntity.status(401).body(createErrorResponse("Unauthorized"));
+            }
+            employeeService.deleteEmployee(id, userId);
             return ResponseEntity.ok(createSuccessResponse("Employee deleted successfully"));
         } catch (IllegalArgumentException e) {
             logger.warn("Error deleting employee: {}", e.getMessage());
@@ -124,15 +162,19 @@ public class EmployeeController {
     }
 
     @PostMapping("/list")
-    public ResponseEntity<?> getEmployeesList(@RequestBody Map<String, Object> request) {
+    public ResponseEntity<?> getEmployeesList(@RequestBody Map<String, Object> requestBody, HttpServletRequest request) {
         logger.info("POST /api/employees/list");
         try {
-            String searchTerm = (String) request.getOrDefault("searchTerm", "");
+            Long userId = getUserIdFromRequest(request);
+            if (userId == null) {
+                return ResponseEntity.status(401).body(createErrorResponse("Unauthorized"));
+            }
+            String searchTerm = (String) requestBody.getOrDefault("searchTerm", "");
             List<Employee> employees;
             if (searchTerm != null && !searchTerm.trim().isEmpty()) {
-                employees = employeeService.searchEmployees(searchTerm.trim());
+                employees = employeeService.searchEmployees(searchTerm.trim(), userId);
             } else {
-                employees = employeeService.getAllEmployees();
+                employees = employeeService.getAllEmployees(userId);
             }
             Map<String, Object> result = new HashMap<>();
             result.put("employees", employees);
@@ -146,10 +188,14 @@ public class EmployeeController {
     }
 
     @PutMapping("/{id}/toggle")
-    public ResponseEntity<?> toggleEmployeeStatus(@PathVariable Long id) {
+    public ResponseEntity<?> toggleEmployeeStatus(@PathVariable Long id, HttpServletRequest request) {
         logger.info("PUT /api/employees/{}/toggle", id);
         try {
-            Employee employee = employeeService.toggleEmployeeStatus(id);
+            Long userId = getUserIdFromRequest(request);
+            if (userId == null) {
+                return ResponseEntity.status(401).body(createErrorResponse("Unauthorized"));
+            }
+            Employee employee = employeeService.toggleEmployeeStatus(id, userId);
             return ResponseEntity.ok(employee);
         } catch (IllegalArgumentException e) {
             logger.warn("Error toggling employee status: {}", e.getMessage());

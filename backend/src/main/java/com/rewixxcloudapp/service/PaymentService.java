@@ -26,13 +26,23 @@ public class PaymentService {
     @Autowired
     private JobRepository jobRepository;
 
-    public List<Payment> getPaymentsByJobId(Long jobId) {
-        logger.info("Fetching payments for job ID: {}", jobId);
+    public List<Payment> getPaymentsByJobId(Long jobId, Long userId) {
+        logger.info("Fetching payments for job ID: {} for user {}", jobId, userId);
+        // Verify job belongs to user
+        Optional<Job> jobOpt = jobRepository.findByIdAndUserId(jobId, userId);
+        if (!jobOpt.isPresent()) {
+            throw new IllegalArgumentException("Job not found or does not belong to you");
+        }
         return paymentRepository.findByJobId(jobId);
     }
 
-    public BigDecimal getTotalPaidByJobId(Long jobId) {
-        logger.info("Calculating total paid for job ID: {}", jobId);
+    public BigDecimal getTotalPaidByJobId(Long jobId, Long userId) {
+        logger.info("Calculating total paid for job ID: {} for user {}", jobId, userId);
+        // Verify job belongs to user
+        Optional<Job> jobOpt = jobRepository.findByIdAndUserId(jobId, userId);
+        if (!jobOpt.isPresent()) {
+            throw new IllegalArgumentException("Job not found or does not belong to you");
+        }
         BigDecimal total = paymentRepository.getTotalPaidByJobId(jobId);
         return total != null ? total : BigDecimal.ZERO;
     }
@@ -55,8 +65,8 @@ public class PaymentService {
         return subtotal;
     }
 
-    public Payment createPayment(PaymentDto dto) {
-        logger.info("Creating payment for job ID: {}", dto.getJobId());
+    public Payment createPayment(PaymentDto dto, Long userId) {
+        logger.info("Creating payment for job ID: {} for user {}", dto.getJobId(), userId);
 
         // Validate required fields
         if (dto.getJobId() == null) {
@@ -76,17 +86,17 @@ public class PaymentService {
             }
         }
 
-        // Verify job exists
-        Optional<Job> jobOpt = jobRepository.findById(dto.getJobId());
+        // Verify job exists and belongs to user
+        Optional<Job> jobOpt = jobRepository.findByIdAndUserId(dto.getJobId(), userId);
         if (!jobOpt.isPresent()) {
-            throw new IllegalArgumentException("Job not found with ID: " + dto.getJobId());
+            throw new IllegalArgumentException("Job not found or does not belong to you");
         }
 
         Job job = jobOpt.get();
 
         // Calculate total cost and validate payment doesn't exceed remaining balance
         BigDecimal totalCost = calculateJobTotalCost(job);
-        BigDecimal totalPaid = getTotalPaidByJobId(dto.getJobId());
+        BigDecimal totalPaid = getTotalPaidByJobId(dto.getJobId(), userId);
         BigDecimal remainingBalance = totalCost.subtract(totalPaid);
 
         if (dto.getAmount().compareTo(remainingBalance) > 0) {
@@ -111,11 +121,18 @@ public class PaymentService {
         return savedPayment;
     }
 
-    public void deletePayment(Long id) {
-        logger.info("Deleting payment with ID: {}", id);
+    public void deletePayment(Long id, Long userId) {
+        logger.info("Deleting payment with ID: {} for user {}", id, userId);
 
-        if (!paymentRepository.existsById(id)) {
+        Optional<Payment> paymentOpt = paymentRepository.findById(id);
+        if (!paymentOpt.isPresent()) {
             throw new IllegalArgumentException("Payment not found with ID: " + id);
+        }
+
+        Payment payment = paymentOpt.get();
+        // Verify the payment's job belongs to the user
+        if (payment.getJob() == null || !payment.getJob().getUserId().equals(userId)) {
+            throw new IllegalArgumentException("Payment does not belong to you");
         }
 
         paymentRepository.deleteById(id);

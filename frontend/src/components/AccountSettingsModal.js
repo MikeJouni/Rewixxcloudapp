@@ -27,7 +27,8 @@ const AccountSettingsModal = ({ open, onClose, currentSettings }) => {
   const updateMutation = useMutation({
     mutationFn: accountSettingsService.updateAccountSettings,
     onSuccess: () => {
-      queryClient.invalidateQueries(["accountSettings"]);
+      // Invalidate all accountSettings queries (they're keyed by token)
+      queryClient.invalidateQueries({ queryKey: ["accountSettings"] });
       message.success("Account settings updated successfully!");
       onClose();
     },

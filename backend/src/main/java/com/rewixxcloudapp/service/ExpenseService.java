@@ -34,12 +34,12 @@ public class ExpenseService {
     @Autowired
     private CustomerRepository customerRepository;
 
-    public Optional<Expense> getExpenseById(Long id) {
-        logger.info("Fetching expense by ID: {}", id);
-        return expenseRepository.findById(id);
+    public Optional<Expense> getExpenseById(Long id, Long userId) {
+        logger.info("Fetching expense by ID: {} for user {}", id, userId);
+        return expenseRepository.findByIdAndUserId(id, userId);
     }
 
-    public Expense createExpense(ExpenseDto dto) {
+    public Expense createExpense(ExpenseDto dto, Long userId) {
         logger.info("Creating expense with type: {}, amount: {}, date: {}",
                    dto.getType(), dto.getAmount(), dto.getExpenseDate());
 
@@ -72,6 +72,7 @@ public class ExpenseService {
         }
 
         Expense expense = new Expense();
+        expense.setUserId(userId);
         expense.setType(type);
         expense.setAmount(dto.getAmount());
         expense.setDescription(dto.getDescription());
@@ -83,25 +84,27 @@ public class ExpenseService {
         expense.setReceiptNumber(dto.getReceiptNumber());
         expense.setBillable(dto.getBillable() != null ? dto.getBillable() : false);
 
-        // Set job relationship if provided
+        // Set job relationship if provided - verify it belongs to the user
         if (dto.getJobId() != null) {
-            Optional<Job> jobOpt = jobRepository.findById(dto.getJobId());
+            Optional<Job> jobOpt = jobRepository.findByIdAndUserId(dto.getJobId(), userId);
             if (jobOpt.isPresent()) {
                 expense.setJob(jobOpt.get());
                 logger.info("Associated expense with job ID: {}", dto.getJobId());
             } else {
-                logger.warn("Job not found with ID: {}, proceeding without job association", dto.getJobId());
+                logger.warn("Job not found with ID: {} for user {}, proceeding without job association", dto.getJobId(), userId);
+                throw new IllegalArgumentException("Job not found or does not belong to you");
             }
         }
 
-        // Set customer relationship if provided
+        // Set customer relationship if provided - verify it belongs to the user
         if (dto.getCustomerId() != null) {
-            Optional<Customer> customerOpt = customerRepository.findById(dto.getCustomerId());
+            Optional<Customer> customerOpt = customerRepository.findByIdAndUserId(dto.getCustomerId(), userId);
             if (customerOpt.isPresent()) {
                 expense.setCustomer(customerOpt.get());
                 logger.info("Associated expense with customer ID: {}", dto.getCustomerId());
             } else {
-                logger.warn("Customer not found with ID: {}, proceeding without customer association", dto.getCustomerId());
+                logger.warn("Customer not found with ID: {} for user {}, proceeding without customer association", dto.getCustomerId(), userId);
+                throw new IllegalArgumentException("Customer not found or does not belong to you");
             }
         }
 
@@ -180,21 +183,27 @@ public class ExpenseService {
             expense.setBillable(dto.getBillable());
         }
 
-        // Update job relationship
+        // Update job relationship - verify it belongs to the user
         if (dto.getJobId() != null) {
-            Optional<Job> jobOpt = jobRepository.findById(dto.getJobId());
+            Optional<Job> jobOpt = jobRepository.findByIdAndUserId(dto.getJobId(), expense.getUserId());
             if (jobOpt.isPresent()) {
                 logger.info("Setting job to: {}", jobOpt.get().getTitle());
                 expense.setJob(jobOpt.get());
+            } else {
+                logger.warn("Job not found with ID: {} for user {}", dto.getJobId(), expense.getUserId());
+                throw new IllegalArgumentException("Job not found or does not belong to you");
             }
         }
 
-        // Update customer relationship
+        // Update customer relationship - verify it belongs to the user
         if (dto.getCustomerId() != null) {
-            Optional<Customer> customerOpt = customerRepository.findById(dto.getCustomerId());
+            Optional<Customer> customerOpt = customerRepository.findByIdAndUserId(dto.getCustomerId(), expense.getUserId());
             if (customerOpt.isPresent()) {
                 logger.info("Setting customer to: {}", customerOpt.get().getName());
                 expense.setCustomer(customerOpt.get());
+            } else {
+                logger.warn("Customer not found with ID: {} for user {}", dto.getCustomerId(), expense.getUserId());
+                throw new IllegalArgumentException("Customer not found or does not belong to you");
             }
         }
 
@@ -204,17 +213,21 @@ public class ExpenseService {
         return savedExpense;
     }
 
-    public void deleteExpenseById(Long id) {
-        logger.info("Deleting expense with ID: {}", id);
+    public void deleteExpenseById(Long id, Long userId) {
+        logger.info("Deleting expense with ID: {} for user {}", id, userId);
+        Optional<Expense> expenseOpt = expenseRepository.findByIdAndUserId(id, userId);
+        if (expenseOpt.isEmpty()) {
+            throw new IllegalArgumentException("Expense not found");
+        }
         expenseRepository.deleteById(id);
     }
 
-    public Map<String, Object> getExpensesList(int page, int pageSize, String searchTerm, String typeFilter, Long jobId) {
-        logger.info("Fetching expenses list - page: {}, pageSize: {}, searchTerm: '{}', typeFilter: '{}', jobId: {}",
-                   page, pageSize, searchTerm, typeFilter, jobId);
+    public Map<String, Object> getExpensesList(int page, int pageSize, String searchTerm, String typeFilter, Long jobId, Long userId) {
+        logger.info("Fetching expenses list - page: {}, pageSize: {}, searchTerm: '{}', typeFilter: '{}', jobId: {}, userId: {}",
+                   page, pageSize, searchTerm, typeFilter, jobId, userId);
 
-        List<Expense> expenses = expenseRepository.findExpensesWithSearch(searchTerm, typeFilter, jobId, page, pageSize);
-        long totalExpenses = expenseRepository.countExpensesWithSearch(searchTerm, typeFilter, jobId);
+        List<Expense> expenses = expenseRepository.findExpensesWithSearch(searchTerm, typeFilter, jobId, page, pageSize, userId);
+        long totalExpenses = expenseRepository.countExpensesWithSearch(searchTerm, typeFilter, jobId, userId);
         int totalPages = (int) Math.ceil((double) totalExpenses / pageSize);
 
         logger.info("Found {} total expenses, returning page {} of {}", totalExpenses, page + 1, totalPages);
@@ -232,19 +245,19 @@ public class ExpenseService {
     }
 
     // Additional methods for reporting
-    public List<Expense> getExpensesByJob(Long jobId) {
-        logger.info("Fetching expenses for job ID: {}", jobId);
-        return expenseRepository.findByJobId(jobId);
+    public List<Expense> getExpensesByJob(Long jobId, Long userId) {
+        logger.info("Fetching expenses for job ID: {} for user {}", jobId, userId);
+        return expenseRepository.findByJobIdAndUserId(jobId, userId);
     }
 
-    public List<Expense> getExpensesByDateRange(LocalDate startDate, LocalDate endDate) {
-        logger.info("Fetching expenses between {} and {}", startDate, endDate);
-        return expenseRepository.findByDateRange(startDate, endDate);
+    public List<Expense> getExpensesByDateRange(LocalDate startDate, LocalDate endDate, Long userId) {
+        logger.info("Fetching expenses between {} and {} for user {}", startDate, endDate, userId);
+        return expenseRepository.findByDateRangeAndUserId(startDate, endDate, userId);
     }
 
-    public BigDecimal getTotalExpensesByJob(Long jobId) {
-        logger.info("Calculating total expenses for job ID: {}", jobId);
-        List<Expense> expenses = expenseRepository.findByJobId(jobId);
+    public BigDecimal getTotalExpensesByJob(Long jobId, Long userId) {
+        logger.info("Calculating total expenses for job ID: {} for user {}", jobId, userId);
+        List<Expense> expenses = expenseRepository.findByJobIdAndUserId(jobId, userId);
         return expenses.stream()
                 .map(Expense::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);

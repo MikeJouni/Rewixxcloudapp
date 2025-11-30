@@ -11,6 +11,9 @@ public class AccountSettings {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "user_id", nullable = false, unique = true)
+    private Long userId;
+
     @Column(nullable = false, length = 200)
     private String companyName;
 
@@ -114,5 +117,13 @@ public class AccountSettings {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 }

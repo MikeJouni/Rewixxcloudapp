@@ -1,5 +1,6 @@
 package com.rewixxcloudapp.controller;
 
+import com.rewixxcloudapp.config.JwtUtil;
 import com.rewixxcloudapp.dto.AccountSettingsDto;
 import com.rewixxcloudapp.entity.AccountSettings;
 import com.rewixxcloudapp.service.AccountSettingsService;
@@ -8,6 +9,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import javax.servlet.http.HttpServletRequest;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/account-settings")
@@ -19,11 +23,27 @@ public class AccountSettingsController {
     @Autowired
     private AccountSettingsService accountSettingsService;
 
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    private Long getUserIdFromRequest(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            return jwtUtil.getUserIdFromToken(token);
+        }
+        return null;
+    }
+
     @GetMapping
-    public ResponseEntity<AccountSettings> getAccountSettings() {
+    public ResponseEntity<?> getAccountSettings(HttpServletRequest request) {
         logger.info("GET /api/account-settings - Fetching account settings");
         try {
-            AccountSettings settings = accountSettingsService.getAccountSettings();
+            Long userId = getUserIdFromRequest(request);
+            if (userId == null) {
+                return ResponseEntity.status(401).body(Map.of("message", "Unauthorized"));
+            }
+            AccountSettings settings = accountSettingsService.getAccountSettings(userId);
             return ResponseEntity.ok(settings);
         } catch (Exception e) {
             logger.error("Error fetching account settings", e);
@@ -32,10 +52,14 @@ public class AccountSettingsController {
     }
 
     @PutMapping
-    public ResponseEntity<AccountSettings> updateAccountSettings(@RequestBody AccountSettingsDto dto) {
+    public ResponseEntity<?> updateAccountSettings(@RequestBody AccountSettingsDto dto, HttpServletRequest request) {
         logger.info("PUT /api/account-settings - Updating account settings");
         try {
-            AccountSettings updatedSettings = accountSettingsService.updateAccountSettings(dto);
+            Long userId = getUserIdFromRequest(request);
+            if (userId == null) {
+                return ResponseEntity.status(401).body(Map.of("message", "Unauthorized"));
+            }
+            AccountSettings updatedSettings = accountSettingsService.updateAccountSettings(dto, userId);
             return ResponseEntity.ok(updatedSettings);
         } catch (IllegalArgumentException e) {
             logger.warn("Invalid account settings data: {}", e.getMessage());

@@ -32,15 +32,15 @@ public class JobService {
     @Autowired
     private ProductRepository productRepository;
 
-    public Optional<Job> getJobById(Long id) {
-        return jobRepository.findById(id);
+    public Optional<Job> getJobById(Long id, Long userId) {
+        return jobRepository.findByIdAndUserId(id, userId);
     }
 
     public Job saveJob(Job job) {
         return jobRepository.save(job);
     }
 
-    public Job createJob(JobDto dto) {
+    public Job createJob(JobDto dto, Long userId) {
         if (dto.getTitle() == null || dto.getTitle().trim().isEmpty()) {
             throw new IllegalArgumentException("Title cannot be empty");
         }
@@ -49,6 +49,7 @@ public class JobService {
                    dto.getTitle(), dto.getCustomerId(), dto.getStatus());
 
         Job job = new Job();
+        job.setUserId(userId);
         job.setTitle(dto.getTitle());
         job.setDescription(dto.getDescription() != null ? dto.getDescription() : "");
         
@@ -97,15 +98,15 @@ public class JobService {
             job.setIncludeTax(dto.getIncludeTax());
         }
 
-        // Set customer if provided
+        // Set customer if provided - verify it belongs to the user
         if (dto.getCustomerId() != null) {
-            Optional<Customer> customer = customerRepository.findById(dto.getCustomerId());
+            Optional<Customer> customer = customerRepository.findByIdAndUserId(dto.getCustomerId(), userId);
             if (customer.isPresent()) {
                 job.setCustomer(customer.get());
                 logger.info("Customer found and set: {}", customer.get().getUsername());
             } else {
-                logger.warn("Customer with ID {} not found, setting customer to null", dto.getCustomerId());
-                job.setCustomer(null);
+                logger.warn("Customer with ID {} not found for user {}, setting customer to null", dto.getCustomerId(), userId);
+                throw new IllegalArgumentException("Customer not found or does not belong to you");
             }
         } else {
             logger.warn("No customer ID provided, setting customer to null");
@@ -171,10 +172,13 @@ public class JobService {
         //     job.setEstimatedHours(dto.getEstimatedHours());
         // }
         if (dto.getCustomerId() != null) {
-            Optional<Customer> customer = customerRepository.findById(dto.getCustomerId());
+            Optional<Customer> customer = customerRepository.findByIdAndUserId(dto.getCustomerId(), job.getUserId());
             if (customer.isPresent()) {
                 logger.info("Setting customer to: {}", customer.get().getUsername());
                 job.setCustomer(customer.get());
+            } else {
+                logger.warn("Customer with ID {} not found for user {}, cannot update customer", dto.getCustomerId(), job.getUserId());
+                throw new IllegalArgumentException("Customer not found or does not belong to you");
             }
         }
         
@@ -184,13 +188,17 @@ public class JobService {
         return savedJob;
     }
 
-    public void deleteJobById(Long id) {
+    public void deleteJobById(Long id, Long userId) {
+        Optional<Job> jobOpt = jobRepository.findByIdAndUserId(id, userId);
+        if (jobOpt.isEmpty()) {
+            throw new IllegalArgumentException("Job not found");
+        }
         jobRepository.deleteById(id);
     }
 
-    public Map<String, Object> getJobsList(int page, int pageSize, String searchTerm, String statusFilter) {
-        List<Job> jobs = jobRepository.findJobsWithSearch(searchTerm, statusFilter, page, pageSize);
-        long totalJobs = jobRepository.countJobsWithSearch(searchTerm, statusFilter);
+    public Map<String, Object> getJobsList(int page, int pageSize, String searchTerm, String statusFilter, Long userId) {
+        List<Job> jobs = jobRepository.findJobsWithSearch(searchTerm, statusFilter, page, pageSize, userId);
+        long totalJobs = jobRepository.countJobsWithSearch(searchTerm, statusFilter, userId);
         int totalPages = (int) Math.ceil((double) totalJobs / pageSize);
 
         Map<String, Object> result = new HashMap<>();
@@ -205,10 +213,10 @@ public class JobService {
         return result;
     }
 
-    public Sale addMaterialToJob(Long jobId, MaterialDto materialDto) {
-        Optional<Job> jobOpt = jobRepository.findById(jobId);
+    public Sale addMaterialToJob(Long jobId, MaterialDto materialDto, Long userId) {
+        Optional<Job> jobOpt = jobRepository.findByIdAndUserId(jobId, userId);
         if (!jobOpt.isPresent()) {
-            throw new IllegalArgumentException("Job not found");
+            throw new IllegalArgumentException("Job not found or does not belong to you");
         }
 
         Optional<Product> productOpt = productRepository.findById(materialDto.getProductId());
@@ -255,13 +263,13 @@ public class JobService {
         return savedSale;
     }
 
-    public void removeMaterialFromJob(Long jobId, Long saleId) {
-        logger.info("Removing sale {} from job {}", saleId, jobId);
+    public void removeMaterialFromJob(Long jobId, Long saleId, Long userId) {
+        logger.info("Removing sale {} from job {} for user {}", saleId, jobId, userId);
         
-        Optional<Job> jobOpt = jobRepository.findById(jobId);
+        Optional<Job> jobOpt = jobRepository.findByIdAndUserId(jobId, userId);
         if (!jobOpt.isPresent()) {
-            logger.error("Job not found with ID: {}", jobId);
-            throw new IllegalArgumentException("Job not found");
+            logger.error("Job not found with ID: {} for user {}", jobId, userId);
+            throw new IllegalArgumentException("Job not found or does not belong to you");
         }
 
         Job job = jobOpt.get();
@@ -296,13 +304,13 @@ public class JobService {
         }
     }
 
-    public Sale updateMaterialInJob(Long jobId, Long saleId, MaterialDto materialDto) {
-        logger.info("Updating sale {} in job {} with new quantity: {}", saleId, jobId, materialDto.getQuantity());
+    public Sale updateMaterialInJob(Long jobId, Long saleId, MaterialDto materialDto, Long userId) {
+        logger.info("Updating sale {} in job {} with new quantity: {} for user {}", saleId, jobId, materialDto.getQuantity(), userId);
 
-        Optional<Job> jobOpt = jobRepository.findById(jobId);
+        Optional<Job> jobOpt = jobRepository.findByIdAndUserId(jobId, userId);
         if (!jobOpt.isPresent()) {
-            logger.error("Job not found with ID: {}", jobId);
-            throw new IllegalArgumentException("Job not found");
+            logger.error("Job not found with ID: {} for user {}", jobId, userId);
+            throw new IllegalArgumentException("Job not found or does not belong to you");
         }
 
         Job job = jobOpt.get();
