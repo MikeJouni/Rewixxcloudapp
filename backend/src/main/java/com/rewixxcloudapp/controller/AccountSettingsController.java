@@ -37,16 +37,24 @@ public class AccountSettingsController {
 
     @GetMapping
     public ResponseEntity<?> getAccountSettings(HttpServletRequest request) {
-        logger.info("GET /api/account-settings - Fetching account settings");
+        logger.info("=== GET ACCOUNT SETTINGS ===");
         try {
             Long userId = getUserIdFromRequest(request);
             if (userId == null) {
+                logger.warn("✗ No userId found in token");
                 return ResponseEntity.status(401).body(Map.of("message", "Unauthorized"));
             }
+            logger.info("✓ Extracted userId from token: {}", userId);
+            logger.info("Fetching account settings for userId: {}", userId);
             AccountSettings settings = accountSettingsService.getAccountSettings(userId);
+            logger.info("✓ Found account settings:");
+            logger.info("  - userId: {}", settings.getUserId());
+            logger.info("  - companyName: {}", settings.getCompanyName());
+            logger.info("  - email: {}", settings.getEmail());
+            logger.info("=== END GET ACCOUNT SETTINGS ===");
             return ResponseEntity.ok(settings);
         } catch (Exception e) {
-            logger.error("Error fetching account settings", e);
+            logger.error("✗ Error fetching account settings", e);
             return ResponseEntity.internalServerError().build();
         }
     }

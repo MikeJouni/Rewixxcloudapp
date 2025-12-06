@@ -11,8 +11,8 @@ public class AuthUser {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 200)
-    private String email;
+    @Column(nullable = false, length = 200)
+    private String email; // Not unique - multiple Google accounts can have the same email
 
     @Column(nullable = false, length = 200)
     private String passwordHash;

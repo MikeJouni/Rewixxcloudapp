@@ -15,10 +15,37 @@ api.interceptors.request.use(
     const token = localStorage.getItem("auth_token");
     if (token) {
       request.headers.Authorization = `Bearer ${token}`;
+      console.log("Request with token:", request.url, "Token present:", !!token);
+    } else {
+      console.warn("No token found in localStorage for request:", request.url);
     }
     return request;
   },
   (error) => Promise.reject(error)
+);
+
+// Add response interceptor to handle 401 errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      console.error("401 Unauthorized - Token may be invalid or expired");
+      console.error("Request URL:", error.config?.url);
+      console.error("Token in localStorage:", !!localStorage.getItem("auth_token"));
+      // Optionally clear token and redirect to login
+      const token = localStorage.getItem("auth_token");
+      if (token) {
+        console.error("Token exists but is invalid. Clearing...");
+        localStorage.removeItem("auth_token");
+        localStorage.removeItem("auth_email");
+        localStorage.removeItem("auth_name");
+        localStorage.removeItem("auth_avatar");
+        // Reload to trigger login screen
+        window.location.reload();
+      }
+    }
+    return Promise.reject(error);
+  }
 );
 
 class Backend {
