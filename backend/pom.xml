@@ -13,7 +13,8 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <properties>
-        <java.version>11</java.version>
+        <java.version>21</java.version>
+        <lombok.version>1.18.30</lombok.version>
     </properties>
     <dependencies>
         <dependency>

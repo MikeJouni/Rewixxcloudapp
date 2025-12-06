@@ -177,34 +177,34 @@ const MaterialsSection = ({
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4 mt-3">
-      <div className="mb-3">
+    <div className="bg-white border border-gray-200 rounded-lg p-2.5 sm:p-4 mt-2 sm:mt-3">
+      <div className="mb-2 sm:mb-3">
         <h3 className="text-sm sm:text-base font-semibold mb-2">Materials ({materials.length})</h3>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1.5 sm:gap-2">
           <button
             onClick={handleAddMaterialClick}
-            className="px-3 py-1.5 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors"
+            className="px-2 sm:px-3 py-1 sm:py-1.5 bg-blue-500 text-white rounded text-xs sm:text-sm hover:bg-blue-600 transition-colors"
           >
-            + Add Material
+            + Add
           </button>
           <button
             onClick={onScanBarcode}
-            className="px-3 py-1.5 bg-gray-600 text-white rounded text-sm hover:bg-gray-700 transition-colors"
+            className="px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-600 text-white rounded text-xs sm:text-sm hover:bg-gray-700 transition-colors"
           >
-            Scan Barcode
+            Scan
           </button>
           <button
             onClick={onProcessReceipt}
-            className="px-3 py-1.5 bg-gray-600 text-white rounded text-sm hover:bg-gray-700 transition-colors"
+            className="px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-600 text-white rounded text-xs sm:text-sm hover:bg-gray-700 transition-colors"
           >
-            Process Receipt
+            Receipt
           </button>
         </div>
       </div>
 
       {/* Inline Add Material Form */}
       {showAddForm && (
-        <div className="bg-blue-50 border-2 border-blue-500 rounded-lg p-4 mb-3 animate-fadeIn">
+        <div className="bg-blue-50 border-2 border-blue-500 rounded-lg p-3 sm:p-4 mb-2 sm:mb-3 animate-fadeIn">
           <div className="flex justify-between items-center mb-3">
             <h4 className="font-semibold text-gray-800">Add New Material</h4>
             <button
@@ -367,7 +367,7 @@ const MaterialsSection = ({
         <>
           {/* Desktop Table View */}
           <div className="hidden md:block border border-gray-200 rounded-lg overflow-hidden">
-            <div className="max-h-[250px] overflow-y-auto">
+            <div className="max-h-[300px] sm:max-h-[350px] overflow-y-auto">
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
@@ -447,7 +447,7 @@ const MaterialsSection = ({
           </div>
 
           {/* Mobile Card View */}
-          <div className="md:hidden space-y-2 max-h-[250px] overflow-y-auto">
+          <div className="md:hidden space-y-2">
             {materials.map((material, idx) => (
               <div
                 key={material.id ?? `${material.name}-${material.price}-${idx}`}

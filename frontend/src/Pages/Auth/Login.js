@@ -26,7 +26,7 @@ const Login = () => {
       setLoadingGoogle(false);
       return;
     }
-    
+
     // Decode ID token payload to get email, name, picture
     let email = null;
     let name = null;
@@ -44,7 +44,7 @@ const Login = () => {
     } catch (e) {
       console.warn("Failed to decode Google ID token payload:", e);
     }
-    
+
     try {
       const result = await Backend.post("api/auth/google", { idToken });
       const { token, isNewUser, defaultPassword } = result;
@@ -58,7 +58,7 @@ const Login = () => {
           window.queryClient.clear();
           window.queryClient.removeQueries();
         }
-        
+
         // Store token and basic profile in auth context
         login(token, email, true, name, picture);
         if (isNewUser && defaultPassword) {
@@ -94,7 +94,7 @@ const Login = () => {
       // Google redirect callback - credential is in the URL
       const urlParams = new URLSearchParams(window.location.search);
       const credential = urlParams.get("credential");
-      
+
       if (!credential) {
         message.error("Google login failed. No credential received.");
         setLoadingGoogle(false);
@@ -102,9 +102,9 @@ const Login = () => {
         window.history.replaceState({}, document.title, window.location.pathname);
         return;
       }
-      
+
       await processGoogleAuth(credential);
-      
+
       // Clean up URL
       window.history.replaceState({}, document.title, window.location.pathname);
     } catch (error) {
@@ -118,7 +118,7 @@ const Login = () => {
     // Check if we're handling a redirect callback from Google (if redirect mode was used)
     const urlParams = new URLSearchParams(window.location.search);
     const credential = urlParams.get("credential");
-    
+
     if (credential) {
       // Handle redirect callback (though we're not using redirect mode anymore)
       handleGoogleRedirectCallback();
@@ -132,8 +132,6 @@ const Login = () => {
     script.defer = true;
     document.body.appendChild(script);
 
-    let hasRendered = false; // Flag to prevent multiple renders
-
     script.onload = () => {
       if (window.google && window.google.accounts && window.google.accounts.id) {
         // Always use popup mode - it works better cross-platform and doesn't require redirect URI registration
@@ -144,87 +142,26 @@ const Login = () => {
         });
 
         const buttonDiv = document.getElementById("googleSignInDiv");
-        if (buttonDiv && !hasRendered) {
+        if (buttonDiv) {
           // Clear any existing content
           buttonDiv.innerHTML = "";
-          
-          // Wait for DOM to be ready and measure container
-          const renderButton = () => {
-            // Prevent multiple renders
-            if (hasRendered) return;
-            
-            // Wait for next frame to ensure layout is complete
-            requestAnimationFrame(() => {
-              requestAnimationFrame(() => {
-                if (hasRendered) return;
-                
-                // Get the actual container width after layout is stable
-                const cardBody = buttonDiv.closest('.ant-card-body');
-                const wrapper = buttonDiv.parentElement;
-                let containerWidth = 400;
-                
-                if (cardBody && cardBody.offsetWidth > 0) {
-                  containerWidth = cardBody.offsetWidth - 48;
-                } else if (wrapper && wrapper.offsetWidth > 0) {
-                  containerWidth = wrapper.offsetWidth - 32;
-                }
-                
-                // Set container width explicitly to prevent layout shift
-                buttonDiv.style.width = '100%';
-                buttonDiv.style.maxWidth = '100%';
-                buttonDiv.style.display = 'block';
-                buttonDiv.style.textAlign = 'center';
-                buttonDiv.style.margin = '0 auto';
-                
-                // Render button with calculated width
-                try {
-                  window.google.accounts.id.renderButton(buttonDiv, {
-                    type: "standard",
-                    theme: "outline",
-                    text: "continue_with",
-                    shape: "rectangular",
-                    size: "large",
-                    width: containerWidth,
-                    locale: "en",
-                  });
-                  
-                  hasRendered = true;
-                  
-                  // After rendering, ensure iframe maintains proper width and centering
-                  setTimeout(() => {
-                    const iframe = buttonDiv.querySelector('iframe');
-                    const innerDiv = buttonDiv.querySelector('div');
-                    if (innerDiv) {
-                      innerDiv.style.margin = '0 auto';
-                      innerDiv.style.display = 'inline-block';
-                    }
-                    if (iframe) {
-                      iframe.style.width = `${containerWidth}px`;
-                      iframe.style.maxWidth = '100%';
-                      iframe.style.margin = '0 auto';
-                      iframe.style.display = 'block';
-                    }
-                    setGoogleButtonReady(true);
-                  }, 50);
-                } catch (error) {
-                  console.error("Error rendering Google button:", error);
-                  hasRendered = true;
-                  setGoogleButtonReady(true);
-                }
-              });
+
+          // Render button with fixed width for consistency across dev/prod
+          // The CSS flexbox will center it properly
+          try {
+            window.google.accounts.id.renderButton(buttonDiv, {
+              type: "standard",
+              theme: "outline",
+              text: "continue_with",
+              shape: "rectangular",
+              size: "large",
+              width: 352, // Fixed width that works well in the card
+              locale: "en",
             });
-          };
-          
-          // Wait for page to be fully loaded and layout to be stable
-          if (document.readyState === 'complete') {
-            // Use requestAnimationFrame to ensure layout is complete
-            setTimeout(renderButton, 200);
-          } else {
-            // Only use load event, remove fallback to prevent double render
-            const handleLoad = () => {
-              setTimeout(renderButton, 200);
-            };
-            window.addEventListener('load', handleLoad, { once: true });
+            setGoogleButtonReady(true);
+          } catch (error) {
+            console.error("Error rendering Google button:", error);
+            setGoogleButtonReady(true);
           }
         }
       }
@@ -278,36 +215,30 @@ const Login = () => {
         </div>
 
         {/* Google Sign-In Button will be rendered into this div by Google Identity Services */}
-        <div className="w-full mb-4 flex justify-center items-center">
-          <div 
-            id="googleSignInDiv" 
-            className="google-signin-container"
-          />
-        </div>
-        
-        {/* Add CSS to ensure button is centered */}
+        <div
+          id="googleSignInDiv"
+          className="google-signin-container"
+        />
+
+        {/* Add CSS to ensure button is full width and centered */}
         <style>{`
           .google-signin-container {
             width: 100% !important;
-            max-width: 100% !important;
-            margin: 0 auto !important;
-            padding: 0 !important;
-            display: block !important;
-            text-align: center !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
             box-sizing: border-box !important;
-            min-height: 40px !important;
+            margin-bottom: 16px !important;
           }
           .google-signin-container > div {
-            margin: 0 auto !important;
-            display: inline-block !important;
-            box-sizing: border-box !important;
-            text-align: left !important;
+            width: 100% !important;
+            display: flex !important;
+            justify-content: center !important;
           }
-          .google-signin-container iframe,
-          #googleSignInDiv iframe {
-            margin: 0 auto !important;
-            display: block !important;
-            box-sizing: border-box !important;
+          .google-signin-container > div > div {
+            width: 100% !important;
+            display: flex !important;
+            justify-content: center !important;
           }
         `}</style>
 
@@ -363,7 +294,7 @@ const Login = () => {
         </Form>
 
         <div className="mt-2 text-xs text-gray-500">
-          First time with Google? We’ll create your account and show you a default password you
+          First time with Google? We'll create your account and show you a default password you
           can save for email login later.
         </div>
       </Card>
@@ -372,5 +303,3 @@ const Login = () => {
 };
 
 export default Login;
-
-
