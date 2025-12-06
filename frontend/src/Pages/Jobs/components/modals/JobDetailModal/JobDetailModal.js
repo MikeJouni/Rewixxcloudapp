@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from "react";
+import React, { useState, useMemo, useRef, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import ConfirmModal from "../../../../../components/ConfirmModal";
 import BarcodeScannerModal from "../BarcodeScannerModal";
@@ -32,6 +32,24 @@ const JobDetailModal = ({
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [showCompleteConfirm, setShowCompleteConfirm] = useState(false);
+
+  // Local state for live cost updates (so Payment button appears immediately)
+  const [liveMaterialCost, setLiveMaterialCost] = useState(job?.customMaterialCost || 0);
+  const [liveJobPrice, setLiveJobPrice] = useState(job?.jobPrice || 0);
+  const [liveIncludeTax, setLiveIncludeTax] = useState(job?.includeTax || false);
+
+  // Callback to update live costs from JobInfoSection
+  const handleLiveCostUpdate = useCallback((updates) => {
+    if (updates.customMaterialCost !== undefined) {
+      setLiveMaterialCost(updates.customMaterialCost);
+    }
+    if (updates.jobPrice !== undefined) {
+      setLiveJobPrice(updates.jobPrice);
+    }
+    if (updates.includeTax !== undefined) {
+      setLiveIncludeTax(updates.includeTax);
+    }
+  }, []);
 
   // Extract materials from sales data (do NOT aggregate - show each addition separately)
   const materials = useMemo(() => {
@@ -71,13 +89,14 @@ const JobDetailModal = ({
   }, [materials]);
 
   // Calculate total cost (customMaterialCost + jobPrice + tax) for billing
+  // Uses live values so the Add Payment button appears immediately when costs are entered
   const totalCost = useMemo(() => {
-    const materialCost = job.customMaterialCost || 0;
-    const jobPrice = job.jobPrice || 0;
-    const subtotal = materialCost + jobPrice;
-    const tax = job.includeTax ? subtotal * 0.06 : 0;
+    const materialCost = liveMaterialCost || 0;
+    const jobPriceVal = liveJobPrice || 0;
+    const subtotal = materialCost + jobPriceVal;
+    const tax = liveIncludeTax ? subtotal * 0.06 : 0;
     return subtotal + tax;
-  }, [job]);
+  }, [liveMaterialCost, liveJobPrice, liveIncludeTax]);
 
   if (!isOpen || !job) return null;
 
@@ -105,23 +124,23 @@ const JobDetailModal = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/90 flex items-start sm:items-center justify-center z-50 p-2 sm:p-3 pt-16 sm:pt-20 md:pt-24" onClick={handleClose}>
-      <div className="bg-white rounded-lg w-full max-w-4xl max-h-[calc(100vh-4rem)] sm:max-h-[90vh] md:max-h-[88vh] lg:max-h-[88vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/90 flex items-start justify-center z-50 overflow-y-auto" onClick={handleClose}>
+      <div className="bg-white w-full min-h-screen sm:min-h-0 sm:rounded-lg sm:max-w-4xl sm:my-4 sm:mx-4 md:my-8 shadow-2xl" onClick={(e) => e.stopPropagation()}>
         {/* Header - Sticky */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-3 sm:px-4 py-2.5 sm:py-3 flex justify-between items-center z-10">
-          <h2 className="text-base sm:text-lg md:text-xl font-semibold m-0">
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-3 sm:px-4 py-3 flex justify-between items-center z-10">
+          <h2 className="text-base sm:text-lg md:text-xl font-semibold m-0 truncate pr-2">
             Job #{job.id} - {job.title}
           </h2>
           <button
             onClick={handleClose}
-            className="text-2xl sm:text-3xl text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0 leading-none"
+            className="w-8 h-8 flex items-center justify-center text-2xl text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors flex-shrink-0"
           >
             ×
           </button>
         </div>
-        
+
         {/* Content */}
-        <div className="p-3 sm:p-4">
+        <div className="p-3 sm:p-4 pb-8">
 
         {/* Job Details */}
         <JobInfoSection
@@ -131,6 +150,7 @@ const JobDetailModal = ({
           actualMaterialCost={actualMaterialCost}
           onCompleteJob={() => setShowCompleteConfirm(true)}
           onUpdateJob={onUpdateJob}
+          onLiveCostUpdate={handleLiveCostUpdate}
         />
 
         {/* Payments Section */}
