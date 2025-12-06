@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from "react";
 
-const JobInfoSection = forwardRef(({ job, totalCost, actualMaterialCost, onCompleteJob, onUpdateJob }, ref) => {
+const JobInfoSection = forwardRef(({ job, totalCost, actualMaterialCost, onCompleteJob, onUpdateJob, onLiveCostUpdate }, ref) => {
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [notes, setNotes] = useState(job.description || "");
   const [isSavingNotes, setIsSavingNotes] = useState(false);
@@ -155,6 +155,10 @@ const JobInfoSection = forwardRef(({ job, totalCost, actualMaterialCost, onCompl
 
   const handleToggleTax = async (checked) => {
     setIsSavingTax(true);
+    // Update parent with live value immediately
+    if (onLiveCostUpdate) {
+      onLiveCostUpdate({ includeTax: checked });
+    }
     try {
       console.log("Updating tax setting for job:", job.id, "Include tax:", checked);
       const result = await onUpdateJob({ id: job.id, includeTax: checked });
@@ -166,6 +170,10 @@ const JobInfoSection = forwardRef(({ job, totalCost, actualMaterialCost, onCompl
     } catch (error) {
       console.error("Failed to update tax setting:", error);
       alert("Failed to update tax setting: " + (error.response?.data || error.message));
+      // Revert the live update on error
+      if (onLiveCostUpdate) {
+        onLiveCostUpdate({ includeTax: !checked });
+      }
     } finally {
       setIsSavingTax(false);
     }
@@ -230,38 +238,28 @@ const JobInfoSection = forwardRef(({ job, totalCost, actualMaterialCost, onCompl
   const totalJobCost = subtotal + taxAmount;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2 sm:space-y-3">
       {/* First Row: Customer, Status, Dates */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
         <div className="bg-gray-50 p-2 rounded border border-gray-200">
           <h4 className="font-medium text-gray-600 mb-1 text-xs">Customer</h4>
-          <p className="text-sm font-semibold break-words">{job.customerName || job.customer?.name || job.customer?.username || "Unknown Customer"}</p>
+          <p className="text-xs sm:text-sm font-semibold break-words">{job.customerName || job.customer?.name || job.customer?.username || "Unknown Customer"}</p>
         </div>
         <div className="bg-gray-50 p-2 rounded border border-gray-200">
           <h4 className="font-medium text-gray-600 mb-1 text-xs">Status</h4>
-          <div className="flex items-center justify-between gap-2">
-            <span 
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2">
+            <span
+              className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium whitespace-nowrap"
               style={{
                 backgroundColor: job.status === "IN_PROGRESS" ? '#EFF6FF' : '#ECFDF5',
                 color: job.status === "IN_PROGRESS" ? '#1E40AF' : '#047857',
                 border: job.status === "IN_PROGRESS" ? '1px solid #BFDBFE' : '1px solid #A7F3D0',
-                padding: '6px 14px',
-                borderRadius: '6px',
-                fontSize: '14px',
-                fontWeight: '500',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                whiteSpace: 'nowrap'
               }}
             >
-              <span style={{
-                width: '6px',
-                height: '6px',
-                borderRadius: '50%',
-                backgroundColor: job.status === "IN_PROGRESS" ? '#3B82F6' : '#10B981',
-                display: 'inline-block'
-              }} />
+              <span
+                className="w-1.5 h-1.5 rounded-full"
+                style={{ backgroundColor: job.status === "IN_PROGRESS" ? '#3B82F6' : '#10B981' }}
+              />
               {job.status === "IN_PROGRESS" ? "In Progress" : "Completed"}
             </span>
             {job.status === "IN_PROGRESS" && (
@@ -285,7 +283,7 @@ const JobInfoSection = forwardRef(({ job, totalCost, actualMaterialCost, onCompl
       </div>
 
       {/* Financial Metrics Row */}
-      <div key={refreshKey} className="grid grid-cols-1 lg:grid-cols-3 gap-2">
+      <div key={refreshKey} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
         {/* Left Column - Costs */}
         <div className="space-y-2">
           <div className="bg-gray-50 p-2 rounded border border-gray-200">
@@ -300,8 +298,13 @@ const JobInfoSection = forwardRef(({ job, totalCost, actualMaterialCost, onCompl
               min="0"
               value={customMaterialCost}
               onChange={(e) => {
-                setCustomMaterialCost(e.target.value);
+                const value = e.target.value;
+                setCustomMaterialCost(value);
                 hasUnsavedMaterialCost.current = true;
+                // Update parent with live value so Add Payment button appears immediately
+                if (onLiveCostUpdate) {
+                  onLiveCostUpdate({ customMaterialCost: parseFloat(value) || 0 });
+                }
               }}
               onBlur={handleMaterialCostBlur}
               placeholder="0.00"
@@ -321,8 +324,13 @@ const JobInfoSection = forwardRef(({ job, totalCost, actualMaterialCost, onCompl
               min="0"
               value={jobPrice}
               onChange={(e) => {
-                setJobPrice(e.target.value);
+                const value = e.target.value;
+                setJobPrice(value);
                 hasUnsavedJobPrice.current = true;
+                // Update parent with live value so Add Payment button appears immediately
+                if (onLiveCostUpdate) {
+                  onLiveCostUpdate({ jobPrice: parseFloat(value) || 0 });
+                }
               }}
               onBlur={handleJobPriceBlur}
               placeholder="0.00"
