@@ -170,16 +170,16 @@ const PaymentsSection = ({ job, totalCost }) => {
   ];
 
   return (
-    <div className="mb-4 mt-2">
-      <div className="flex justify-between items-center mb-3 pt-2">
-        <div className="flex items-center gap-2">
-          <DollarOutlined className="text-lg" />
-          <h3 className="text-base sm:text-lg font-semibold m-0">
+    <div className="mb-3 mt-2">
+      <div className="flex flex-wrap justify-between items-center gap-2 mb-2 pt-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <DollarOutlined className="text-base sm:text-lg" />
+          <h3 className="text-sm sm:text-base font-semibold m-0">
             Payments
           </h3>
           {isFullyPaid && totalCost > 0 && (
-            <Tag color="success">
-              Fully Paid ✓
+            <Tag color="success" className="text-xs">
+              Paid ✓
             </Tag>
           )}
         </div>
@@ -188,10 +188,12 @@ const PaymentsSection = ({ job, totalCost }) => {
             type="primary"
             icon={<PlusOutlined />}
             onClick={() => setShowAddPaymentForm(true)}
-            size="middle"
+            size="small"
+            className="sm:size-middle"
             style={{ background: '#1f2937' }}
           >
-            Add Payment
+            <span className="hidden sm:inline">Add Payment</span>
+            <span className="sm:hidden">Add</span>
           </Button>
         )}
       </div>

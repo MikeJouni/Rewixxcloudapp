@@ -13,7 +13,7 @@ const AccountSettingsModal = ({ open, onClose, currentSettings }) => {
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
-    if (currentSettings) {
+    if (open && currentSettings) {
       form.setFieldsValue({
         companyName: currentSettings.companyName,
         email: currentSettings.email || "",
@@ -22,7 +22,7 @@ const AccountSettingsModal = ({ open, onClose, currentSettings }) => {
       });
       setLogoUrl(currentSettings.logoUrl || null);
     }
-  }, [currentSettings, form]);
+  }, [open, currentSettings, form]);
 
   const updateMutation = useMutation({
     mutationFn: accountSettingsService.updateAccountSettings,
@@ -44,20 +44,25 @@ const AccountSettingsModal = ({ open, onClose, currentSettings }) => {
     formData.append("file", file);
 
     try {
+      const token = localStorage.getItem("auth_token");
       const response = await fetch(`${config.SPRING_API_BASE}/api/logo/upload`, {
         method: "POST",
+        headers: {
+          Authorization: token ? `Bearer ${token}` : "",
+        },
         body: formData,
       });
 
       if (!response.ok) {
-        throw new Error("Upload failed");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Upload failed");
       }
 
       const data = await response.json();
       setLogoUrl(data.url);
       message.success("Logo uploaded successfully!");
     } catch (error) {
-      message.error("Failed to upload logo");
+      message.error(error.message || "Failed to upload logo");
       console.error("Upload error:", error);
     } finally {
       setUploading(false);
@@ -79,10 +84,10 @@ const AccountSettingsModal = ({ open, onClose, currentSettings }) => {
         ...values,
         logoUrl: logoUrl,
       });
-      setLoading(false);
     } catch (error) {
+      console.error("Save failed:", error);
+    } finally {
       setLoading(false);
-      console.error("Validation failed:", error);
     }
   };
 

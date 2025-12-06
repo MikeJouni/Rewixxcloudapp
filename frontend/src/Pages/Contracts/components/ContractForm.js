@@ -11,8 +11,16 @@ import dayjs from "dayjs";
 const { TextArea } = Input;
 const { Option } = Select;
 
-const ContractForm = ({ form, onValuesChange, setSelectedCustomer, setSelectedJob }) => {
+const ContractForm = ({ form, onValuesChange, setSelectedCustomer, setSelectedJob, isOpen }) => {
   const [selectedCustomerId, setSelectedCustomerId] = React.useState(null);
+
+  // Reset internal state when drawer closes/reopens
+  useEffect(() => {
+    if (isOpen) {
+      // Reset selectedCustomerId when drawer opens to show all jobs
+      setSelectedCustomerId(null);
+    }
+  }, [isOpen]);
 
   // Fetch customers
   const { data: customersData, isLoading: customersLoading, error: customersError } = useQuery({
@@ -78,9 +86,32 @@ const ContractForm = ({ form, onValuesChange, setSelectedCustomer, setSelectedJo
     const job = jobs.find((j) => j.id === jobId);
     if (job) {
       setSelectedJob(job);
+
+      // Calculate total job cost (material cost + job price + tax)
+      const materialCost = job.customMaterialCost || 0;
+      const jobPrice = job.jobPrice || 0;
+      const subtotal = materialCost + jobPrice;
+      const tax = job.includeTax ? subtotal * 0.06 : 0;
+      const totalJobCost = subtotal + tax;
+
+      // Calculate payment status from job payments
+      const totalPaid = (job.payments || []).reduce((sum, payment) => sum + parseFloat(payment.amount || 0), 0);
+      const remainingBalance = totalJobCost - totalPaid;
+
+      // Determine contract status based on payment status
+      let contractStatus = "UNPAID";
+      if (totalJobCost > 0) {
+        if (remainingBalance <= 0) {
+          contractStatus = "PAID";
+        } else if (totalPaid > 0) {
+          contractStatus = "PARTIAL";
+        }
+      }
+
       form.setFieldsValue({
         scopeOfWork: job.description || "",
-        totalPrice: job.jobPrice || 0,
+        totalPrice: totalJobCost || jobPrice || 0,
+        status: contractStatus,
       });
 
       if (job.customer) {
@@ -108,7 +139,7 @@ const ContractForm = ({ form, onValuesChange, setSelectedCustomer, setSelectedJo
       onValuesChange={onValuesChange}
       initialValues={{
         documentType: "contract",
-        status: "unpaid",
+        status: "UNPAID",
         date: dayjs(),
         warranty: "2 years on workmanship",
         depositPercent: 50,
@@ -221,9 +252,9 @@ const ContractForm = ({ form, onValuesChange, setSelectedCustomer, setSelectedJo
 
       <Form.Item label="Status" name="status">
         <Select size="large">
-          <Option value="unpaid">Unpaid</Option>
-          <Option value="paid">Paid</Option>
-          <Option value="partial">Partial Payment</Option>
+          <Option value="UNPAID">Unpaid</Option>
+          <Option value="PAID">Paid</Option>
+          <Option value="PARTIAL">Partial Payment</Option>
         </Select>
       </Form.Item>
 
