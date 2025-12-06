@@ -44,6 +44,9 @@ public class JwtUtil {
 
     public Long getUserIdFromToken(String token) {
         try {
+            if (token == null || token.trim().isEmpty()) {
+                return null;
+            }
             Claims claims = parseToken(token);
             Object userIdObj = claims.get("userId");
             if (userIdObj instanceof Integer) {
@@ -55,6 +58,9 @@ public class JwtUtil {
             }
             return null;
         } catch (Exception e) {
+            // Log the exception for debugging
+            System.err.println("Error extracting userId from token: " + e.getMessage());
+            e.printStackTrace();
             return null;
         }
     }

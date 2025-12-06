@@ -40,9 +40,11 @@ const Navigation = ({ sidebarCollapsed, setSidebarCollapsed }) => {
     enabled: !!token, // Only fetch when we have a token
   });
 
-  // Show Google account name first, then account settings company name, then email
-  // This ensures each user sees their own name initially
-  const companyName = authName || accountSettings?.companyName || authEmail || "Rewixx Cloud";
+  // Show company name from account settings first, then fall back to email from account settings
+  // Company name should be set by user in settings, defaulting to Google name on first sign-in
+  // Email should always come from account settings (which is synced with authenticated user's email)
+  const displayEmail = accountSettings?.email || authEmail;
+  const companyName = accountSettings?.companyName || displayEmail || "Rewixx Cloud";
 
   // Only use persisted logoUrl from account settings (do not fall back to avatar here)
   const rawLogoUrl = accountSettings?.logoUrl || null;
@@ -53,10 +55,13 @@ const Navigation = ({ sidebarCollapsed, setSidebarCollapsed }) => {
       ? `${config.SPRING_API_BASE}${rawLogoUrl}`
       : null;
 
+  // Always use email from account settings (which is synced with authenticated user's email)
+  const settingsEmail = accountSettings?.email || authEmail || "";
+  
   const mergedSettings = {
     ...(accountSettings || {}),
-    companyName: accountSettings?.companyName || authName || authEmail || "",
-    email: accountSettings?.email || authEmail || "",
+    companyName: accountSettings?.companyName || settingsEmail || "",
+    email: settingsEmail, // Always use synced email from account settings
     logoUrl: rawLogoUrl,
   };
 
@@ -254,7 +259,7 @@ const Navigation = ({ sidebarCollapsed, setSidebarCollapsed }) => {
                 >
                   {companyName}
                 </div>
-                {authEmail && (
+                {(displayEmail || authEmail) && (
                   <div
                     style={{
                       fontSize: "11px",
@@ -264,7 +269,7 @@ const Navigation = ({ sidebarCollapsed, setSidebarCollapsed }) => {
                       textOverflow: "ellipsis",
                     }}
                   >
-                    {authEmail}
+                    {displayEmail || authEmail}
                   </div>
                 )}
               </div>

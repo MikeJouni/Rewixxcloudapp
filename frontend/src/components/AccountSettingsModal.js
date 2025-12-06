@@ -125,8 +125,16 @@ const AccountSettingsModal = ({ open, onClose, currentSettings }) => {
           name="email"
           rules={[{ type: "email", message: "Please enter a valid email" }]}
         >
-          <Input size="large" placeholder="Enter email address" />
+          <Input 
+            size="large" 
+            placeholder="Enter email address" 
+            disabled 
+            style={{ backgroundColor: "#f5f5f5", cursor: "not-allowed" }}
+          />
         </Form.Item>
+        <div style={{ fontSize: "12px", color: "#8c8c8c", marginTop: "-16px", marginBottom: "16px" }}>
+          Email is automatically synced with your account and cannot be changed here
+        </div>
 
         <Form.Item label="Phone" name="phone">
           <Input size="large" placeholder="Enter phone number" />

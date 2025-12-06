@@ -187,8 +187,6 @@ public class ReportService {
     // Business Insights Report
     public Map<String, Object> generateBusinessInsightsReport(LocalDate startDate, LocalDate endDate, Long userId) {
         List<Job> jobs = jobRepository.findByDateRangeAndUserId(startDate, endDate, userId);
-        // Note: customers should also be filtered by userId, but for now using all (needs repository update)
-        List<Customer> customers = customerRepository.findAll();
         
         // Key metrics
         int totalJobs = jobs.size();
@@ -201,13 +199,15 @@ public class ReportService {
             .map(this::calculateJobRevenue)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
         
-        // Customer metrics
+        // Customer metrics - get unique customers from jobs (already filtered by userId through jobs)
         Map<Long, Long> customerJobCounts = jobs.stream()
             .filter(j -> j.getCustomer() != null)
             .collect(Collectors.groupingBy(j -> j.getCustomer().getId(), Collectors.counting()));
         
         int activeCustomers = customerJobCounts.size();
-        int totalCustomers = customers.size();
+        // Total customers is the count of unique customers in the jobs for this user
+        // This ensures data isolation - only customers associated with this user's jobs are counted
+        int totalCustomers = activeCustomers;
         
         // Efficiency metrics
         int totalEstimatedHours = jobs.stream()

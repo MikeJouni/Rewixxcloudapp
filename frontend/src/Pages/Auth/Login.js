@@ -132,6 +132,8 @@ const Login = () => {
     script.defer = true;
     document.body.appendChild(script);
 
+    let hasRendered = false; // Flag to prevent multiple renders
+
     script.onload = () => {
       if (window.google && window.google.accounts && window.google.accounts.id) {
         // Always use popup mode - it works better cross-platform and doesn't require redirect URI registration
@@ -142,61 +144,87 @@ const Login = () => {
         });
 
         const buttonDiv = document.getElementById("googleSignInDiv");
-        if (buttonDiv) {
+        if (buttonDiv && !hasRendered) {
           // Clear any existing content
           buttonDiv.innerHTML = "";
           
           // Wait for DOM to be ready and measure container
           const renderButton = () => {
-            // Get the actual container width
-            const cardBody = buttonDiv.closest('.ant-card-body');
-            const wrapper = buttonDiv.parentElement;
-            let containerWidth = 400;
+            // Prevent multiple renders
+            if (hasRendered) return;
             
-            if (cardBody) {
-              containerWidth = cardBody.offsetWidth - 48;
-            } else if (wrapper) {
-              containerWidth = wrapper.offsetWidth - 32;
-            }
-            
-            // Set container width explicitly
-            buttonDiv.style.width = '100%';
-            buttonDiv.style.maxWidth = '100%';
-            buttonDiv.style.display = 'block';
-            
-            // Render button - use percentage width for better responsiveness
-            try {
-              window.google.accounts.id.renderButton(buttonDiv, {
-                type: "standard",
-                theme: "outline",
-                text: "continue_with",
-                shape: "rectangular",
-                size: "large",
-                width: containerWidth,
-                locale: "en",
-              });
-              
-              // After rendering, adjust iframe to ensure full width
-              setTimeout(() => {
-                const iframe = buttonDiv.querySelector('iframe');
-                if (iframe) {
-                  iframe.style.width = '100%';
-                  iframe.style.maxWidth = '100%';
+            // Wait for next frame to ensure layout is complete
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => {
+                if (hasRendered) return;
+                
+                // Get the actual container width after layout is stable
+                const cardBody = buttonDiv.closest('.ant-card-body');
+                const wrapper = buttonDiv.parentElement;
+                let containerWidth = 400;
+                
+                if (cardBody && cardBody.offsetWidth > 0) {
+                  containerWidth = cardBody.offsetWidth - 48;
+                } else if (wrapper && wrapper.offsetWidth > 0) {
+                  containerWidth = wrapper.offsetWidth - 32;
                 }
-                setGoogleButtonReady(true);
-              }, 100);
-            } catch (error) {
-              console.error("Error rendering Google button:", error);
-              setGoogleButtonReady(true);
-            }
+                
+                // Set container width explicitly to prevent layout shift
+                buttonDiv.style.width = '100%';
+                buttonDiv.style.maxWidth = '100%';
+                buttonDiv.style.display = 'block';
+                buttonDiv.style.textAlign = 'center';
+                buttonDiv.style.margin = '0 auto';
+                
+                // Render button with calculated width
+                try {
+                  window.google.accounts.id.renderButton(buttonDiv, {
+                    type: "standard",
+                    theme: "outline",
+                    text: "continue_with",
+                    shape: "rectangular",
+                    size: "large",
+                    width: containerWidth,
+                    locale: "en",
+                  });
+                  
+                  hasRendered = true;
+                  
+                  // After rendering, ensure iframe maintains proper width and centering
+                  setTimeout(() => {
+                    const iframe = buttonDiv.querySelector('iframe');
+                    const innerDiv = buttonDiv.querySelector('div');
+                    if (innerDiv) {
+                      innerDiv.style.margin = '0 auto';
+                      innerDiv.style.display = 'inline-block';
+                    }
+                    if (iframe) {
+                      iframe.style.width = `${containerWidth}px`;
+                      iframe.style.maxWidth = '100%';
+                      iframe.style.margin = '0 auto';
+                      iframe.style.display = 'block';
+                    }
+                    setGoogleButtonReady(true);
+                  }, 50);
+                } catch (error) {
+                  console.error("Error rendering Google button:", error);
+                  hasRendered = true;
+                  setGoogleButtonReady(true);
+                }
+              });
+            });
           };
           
-          // Wait a bit for container to be measured
+          // Wait for page to be fully loaded and layout to be stable
           if (document.readyState === 'complete') {
-            setTimeout(renderButton, 100);
+            // Use requestAnimationFrame to ensure layout is complete
+            setTimeout(renderButton, 200);
           } else {
-            window.addEventListener('load', () => setTimeout(renderButton, 100));
-            setTimeout(renderButton, 300); // Fallback timeout
+            // Only use load event, remove fallback to prevent double render
+            const handleLoad = () => {
+              setTimeout(renderButton, 200);
+            };
+            window.addEventListener('load', handleLoad, { once: true });
           }
         }
       }
@@ -250,19 +278,14 @@ const Login = () => {
         </div>
 
         {/* Google Sign-In Button will be rendered into this div by Google Identity Services */}
-        <div className="w-full mb-4" style={{ display: 'flex', justifyContent: 'center' }}>
+        <div className="w-full mb-4 flex justify-center items-center">
           <div 
             id="googleSignInDiv" 
             className="google-signin-container"
-            style={{ 
-              width: '100%', 
-              maxWidth: '100%',
-              display: 'block',
-            }}
           />
         </div>
         
-        {/* Add CSS to ensure button is full width and centered */}
+        {/* Add CSS to ensure button is centered */}
         <style>{`
           .google-signin-container {
             width: 100% !important;
@@ -270,19 +293,18 @@ const Login = () => {
             margin: 0 auto !important;
             padding: 0 !important;
             display: block !important;
+            text-align: center !important;
             box-sizing: border-box !important;
+            min-height: 40px !important;
           }
           .google-signin-container > div {
-            width: 100% !important;
-            max-width: 100% !important;
             margin: 0 auto !important;
-            display: block !important;
+            display: inline-block !important;
             box-sizing: border-box !important;
+            text-align: left !important;
           }
           .google-signin-container iframe,
           #googleSignInDiv iframe {
-            width: 100% !important;
-            max-width: 100% !important;
             margin: 0 auto !important;
             display: block !important;
             box-sizing: border-box !important;
