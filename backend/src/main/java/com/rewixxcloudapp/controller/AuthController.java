@@ -51,7 +51,11 @@ public class AuthController {
     // Allowed email addresses for sign-in
     private static final java.util.Set<String> ALLOWED_EMAILS = java.util.Set.of(
         "imadkassem44@gmail.com",
-        "zainsbeihh@gmail.com"
+        "zainsbeihh@gmail.com",
+        "moe@pitaway.com",
+        "mjjouni@umich.edu",
+        "jouni.inc@gmail.com",
+        "beefmaniacllc@gmail.com"
     );
     
     private boolean isEmailAllowed(String email) {
