@@ -45,28 +45,41 @@ public class JobController {
             
             if (dto.getTitle() == null || dto.getTitle().trim().isEmpty()) {
                 logger.warn("Job creation failed: Title is required");
-                return ResponseEntity.badRequest().body("Title is required");
+                return ResponseEntity.badRequest().body(Map.of("message", "Title is required", "error", "VALIDATION_ERROR"));
             }
             
             if (dto.getCustomerId() == null) {
                 logger.warn("Job creation failed: Customer ID is required");
-                return ResponseEntity.badRequest().body("Customer ID is required");
+                return ResponseEntity.badRequest().body(Map.of("message", "Customer ID is required", "error", "VALIDATION_ERROR"));
             }
             
             Long userId = getUserIdFromRequest(request);
             if (userId == null) {
-                return ResponseEntity.status(401).body(Map.of("message", "Unauthorized"));
+                logger.warn("Job creation failed: Unauthorized - no userId found");
+                return ResponseEntity.status(401).body(Map.of("message", "Unauthorized", "error", "AUTH_ERROR"));
             }
+            
             logger.info("Creating job with title: '{}' and customerId: {} for user {}", dto.getTitle(), dto.getCustomerId(), userId);
             Job job = jobService.createJob(dto, userId);
             logger.info("Job created successfully with ID: {}", job.getId());
             return ResponseEntity.ok(job);
         } catch (IllegalArgumentException e) {
-            logger.error("Job creation failed with IllegalArgumentException: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(e.getMessage());
+            logger.error("Job creation failed with IllegalArgumentException: {}", e.getMessage(), e);
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage(), "error", "VALIDATION_ERROR"));
+        } catch (javax.persistence.PersistenceException e) {
+            logger.error("Database error creating job: {}", e.getMessage(), e);
+            String errorMsg = "Database error: " + e.getMessage();
+            if (e.getCause() != null) {
+                errorMsg += " - " + e.getCause().getMessage();
+            }
+            return ResponseEntity.status(500).body(Map.of("message", errorMsg, "error", "DATABASE_ERROR"));
         } catch (Exception e) {
             logger.error("Error creating job", e);
-            return ResponseEntity.internalServerError().body("Error creating job: " + e.getMessage());
+            String errorMsg = "Error creating job: " + e.getMessage();
+            if (e.getCause() != null) {
+                errorMsg += " - " + e.getCause().getMessage();
+            }
+            return ResponseEntity.status(500).body(Map.of("message", errorMsg, "error", "INTERNAL_ERROR"));
         }
     }
 

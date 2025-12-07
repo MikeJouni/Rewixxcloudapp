@@ -18,8 +18,10 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import * as accountSettingsService from "../services/accountSettingsService";
 import AccountSettingsModal from "./AccountSettingsModal";
+import ChangePasswordModal from "./ChangePasswordModal";
 import { useAuth } from "../AuthContext";
 import config from "../config";
+import Backend from "../Backend";
 
 const { Header, Sider } = Layout;
 const { useBreakpoint } = Grid;
@@ -29,15 +31,52 @@ const Navigation = ({ sidebarCollapsed, setSidebarCollapsed }) => {
   const location = useLocation();
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+  const [isGoogleUser, setIsGoogleUser] = useState(false);
   const screens = useBreakpoint();
 
   const { email: authEmail, name: authName, logout, token } = useAuth();
+
+  // Fetch user info to check if Google OAuth user
+  const { data: userInfo } = useQuery({
+    queryKey: ["userInfo", token],
+    queryFn: async () => {
+      const response = await Backend.get("api/auth/user-info");
+      return response;
+    },
+    enabled: !!token,
+    staleTime: 10 * 60 * 1000, // Consider data fresh for 10 minutes
+    gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
+  });
+
+  // Update isGoogleUser state when userInfo changes
+  useEffect(() => {
+    if (userInfo) {
+      setIsGoogleUser(userInfo?.hasGoogleAccount || false);
+    }
+  }, [userInfo]);
 
   // Fetch account settings - include token in query key to ensure per-user caching
   const { data: accountSettings } = useQuery({
     queryKey: ["accountSettings", token],
     queryFn: () => accountSettingsService.getAccountSettings(),
     enabled: !!token, // Only fetch when we have a token
+    retry: (failureCount, error) => {
+      // Don't retry on 401 errors (user not found - needs re-login)
+      if (error?.response?.status === 401) {
+        return false;
+      }
+      return failureCount < 2; // Retry other errors up to 2 times
+    },
+    retryDelay: 1000, // Wait 1 second between retries
+    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+    onError: (error) => {
+      // If user not found (401), the Backend.js interceptor will handle logout
+      if (error?.response?.status === 401 && error?.response?.data?.requiresReauth) {
+        console.warn("User not found in database - please log in again");
+      }
+    },
   });
 
   // Show company name from account settings first, then fall back to email from account settings
@@ -558,6 +597,15 @@ const Navigation = ({ sidebarCollapsed, setSidebarCollapsed }) => {
         open={settingsModalOpen}
         onClose={() => setSettingsModalOpen(false)}
         currentSettings={mergedSettings}
+        onPasswordChangeClick={() => {
+          setSettingsModalOpen(false);
+          setPasswordModalOpen(true);
+        }}
+      />
+      <ChangePasswordModal
+        open={passwordModalOpen}
+        onClose={() => setPasswordModalOpen(false)}
+        isGoogleUser={userInfo?.hasGoogleAccount || false}
       />
     </>
   );

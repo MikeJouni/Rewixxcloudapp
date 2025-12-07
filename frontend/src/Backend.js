@@ -1,13 +1,61 @@
 import axios from "axios";
 import config from "./config";
 
+// Validate and ensure API base URL is absolute
+let apiBaseUrl = config.SPRING_API_BASE;
+if (!apiBaseUrl) {
+  console.error("SPRING_API_BASE is not configured!");
+  apiBaseUrl = "https://rewixx-backend.wittygrass-81d5c888.eastus2.azurecontainerapps.io";
+}
+
+// Ensure baseURL is absolute (starts with http:// or https://)
+if (!apiBaseUrl.startsWith('http://') && !apiBaseUrl.startsWith('https://')) {
+  console.warn("API base URL is relative, converting to absolute:", apiBaseUrl);
+  apiBaseUrl = window.location.origin + (apiBaseUrl.startsWith('/') ? '' : '/') + apiBaseUrl;
+}
+
+// Warn if baseURL matches current origin (would cause relative URL issues)
+if (apiBaseUrl === window.location.origin || apiBaseUrl.startsWith(window.location.origin + '/')) {
+  console.error("API base URL matches current origin - this will cause relative URL issues!");
+  console.error("API Base URL:", apiBaseUrl);
+  console.error("Current Origin:", window.location.origin);
+}
+
 // Create axios instance with default configuration
 const api = axios.create({
-  baseURL: config.SPRING_API_BASE,
+  baseURL: apiBaseUrl,
   headers: {
     "Content-Type": "application/json",
   },
 });
+
+// Add request interceptor to validate URLs and log for debugging
+api.interceptors.request.use(
+  (request) => {
+    // Ensure the final URL is absolute
+    const fullUrl = request.baseURL 
+      ? (request.baseURL.endsWith('/') ? request.baseURL.slice(0, -1) : request.baseURL) + 
+        (request.url.startsWith('/') ? request.url : '/' + request.url)
+      : request.url;
+    
+    // Check if URL is relative (doesn't start with http)
+    if (!fullUrl.startsWith('http://') && !fullUrl.startsWith('https://')) {
+      console.error("Relative URL detected in API request!", {
+        baseURL: request.baseURL,
+        url: request.url,
+        fullUrl: fullUrl
+      });
+    }
+    
+    // Warn if request is going to static site instead of API
+    if (fullUrl.includes(window.location.origin) && !fullUrl.includes('/api/')) {
+      console.warn("API request appears to be going to static site:", fullUrl);
+    }
+    
+    return request;
+  },
+  (error) => Promise.reject(error)
+);
 
 // Attach JWT token from localStorage if available
 api.interceptors.request.use(
@@ -53,7 +101,10 @@ class Backend {
    * Helper method to build URL with query parameters
    */
   static buildUrl(path, params = null) {
+    // Ensure path doesn't start with / to avoid relative URL issues
+    // Services already provide paths like "api/users/customers/list"
     let url = path.replace(/^\//, "");
+    
     if (params) {
       const queryString = new URLSearchParams(params).toString();
       url += `?${queryString}`;

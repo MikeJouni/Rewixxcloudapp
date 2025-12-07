@@ -20,12 +20,18 @@ const useJobs = () => {
   const { data, isLoading, error } = useQuery({
     queryKey: ["jobs", { searchTerm: "", page: 0, pageSize: 10, statusFilter: "All" }],
     queryFn: () => jobService.getJobsList({ searchTerm: "", page: 0, pageSize: 10, statusFilter: "All" }),
+    staleTime: 2 * 60 * 1000, // Consider data fresh for 2 minutes
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    retry: 1, // Retry failed requests once
   });
 
   // Fetch products data
   const { data: products, isLoading: productsLoading, error: productsError } = useQuery({
     queryKey: ["products"],
     queryFn: () => productService.getProducts(),
+    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+    retry: 1, // Retry failed requests once
   });
 
   const jobs = data?.jobs || [];

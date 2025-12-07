@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { Card, Empty, Tag, Row, Col, Button, Dropdown, message } from "antd";
-import { FileTextOutlined, CalendarOutlined, UserOutlined, DollarOutlined, EyeOutlined, EditOutlined, DownloadOutlined, MoreOutlined } from "@ant-design/icons";
+import { Card, Empty, Tag, Row, Col, Button, message } from "antd";
+import { FileTextOutlined, CalendarOutlined, UserOutlined, DollarOutlined, EyeOutlined, EditOutlined, DownloadOutlined } from "@ant-design/icons";
 
 const ContractList = ({ contracts = [], onEdit, onView, onDownload }) => {
   const [selectedContract, setSelectedContract] = useState(null);
@@ -29,26 +29,6 @@ const ContractList = ({ contracts = [], onEdit, onView, onDownload }) => {
     }
   };
 
-  const getMenuItems = (contract) => [
-    {
-      key: "view",
-      icon: <EyeOutlined />,
-      label: "View",
-      onClick: () => handleView(contract),
-    },
-    {
-      key: "edit",
-      icon: <EditOutlined />,
-      label: "Edit",
-      onClick: () => handleEdit(contract),
-    },
-    {
-      key: "download",
-      icon: <DownloadOutlined />,
-      label: "Download PDF",
-      onClick: () => handleDownload(contract),
-    },
-  ];
 
   if (contracts.length === 0) {
     return (
@@ -92,31 +72,17 @@ const ContractList = ({ contracts = [], onEdit, onView, onDownload }) => {
                   >
                     {contract.documentType?.toUpperCase() || "CONTRACT"}
                   </Tag>
-                  <div className="flex items-center gap-2">
-                    <Tag
-                      color={
-                        contract.status === "PAID"
-                          ? "success"
-                          : contract.status === "PARTIAL"
-                          ? "warning"
-                          : "default"
-                      }
-                    >
-                      {contract.status || "UNPAID"}
-                    </Tag>
-                    <Dropdown
-                      menu={{ items: getMenuItems(contract) }}
-                      trigger={["click"]}
-                      placement="bottomRight"
-                    >
-                      <Button
-                        type="text"
-                        size="small"
-                        icon={<MoreOutlined />}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    </Dropdown>
-                  </div>
+                  <Tag
+                    color={
+                      contract.status === "PAID"
+                        ? "success"
+                        : contract.status === "PARTIAL"
+                        ? "warning"
+                        : "default"
+                    }
+                  >
+                    {contract.status || "UNPAID"}
+                  </Tag>
                 </div>
 
                 {/* Customer Info */}

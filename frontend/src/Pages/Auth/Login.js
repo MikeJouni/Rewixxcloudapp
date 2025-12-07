@@ -4,6 +4,7 @@ import { GoogleOutlined, LockOutlined, MailOutlined } from "@ant-design/icons";
 import { useAuth } from "../../AuthContext";
 import config from "../../config";
 import Backend from "../../Backend";
+import { Link, useNavigate } from "react-router-dom";
 
 const { Title, Text } = Typography;
 
@@ -16,6 +17,7 @@ const isMobile = () => {
 
 const Login = () => {
   const { login } = useAuth();
+  const navigate = useNavigate();
   const [loadingGoogle, setLoadingGoogle] = useState(false);
   const [loadingEmail, setLoadingEmail] = useState(false);
   const [googleButtonReady, setGoogleButtonReady] = useState(false);
@@ -68,6 +70,11 @@ const Login = () => {
         } else {
           message.success("Signed in with Google.");
         }
+        // Redirect to customers page after successful login
+        // Use setTimeout to ensure state update completes before navigation
+        setTimeout(() => {
+          navigate("/customers", { replace: true });
+        }, 100);
       } else {
         message.error("Failed to sign in with Google.");
       }
@@ -197,6 +204,11 @@ const Login = () => {
         // For email login we only know email at this point
         login(token, values.email, values.remember, null, null);
         message.success("Signed in successfully.");
+        // Redirect to customers page after successful login
+        // Use setTimeout to ensure state update completes before navigation
+        setTimeout(() => {
+          navigate("/customers", { replace: true });
+        }, 100);
       } else {
         message.error("Login failed.");
       }
@@ -287,9 +299,16 @@ const Login = () => {
           </Form.Item>
         </Form>
 
-        <div className="mt-2 text-xs text-gray-500">
-          First time with Google? We'll create your account and show you a default password you
-          can save for email login later.
+        <div className="mt-4">
+          <Button
+            type="default"
+            block
+            size="large"
+            onClick={() => navigate("/register")}
+            style={{ borderColor: "#d9d9d9" }}
+          >
+            Create New Account
+          </Button>
         </div>
       </Card>
     </div>

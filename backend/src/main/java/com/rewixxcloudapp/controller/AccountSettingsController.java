@@ -53,9 +53,16 @@ public class AccountSettingsController {
             logger.info("  - email: {}", settings.getEmail());
             logger.info("=== END GET ACCOUNT SETTINGS ===");
             return ResponseEntity.ok(settings);
+        } catch (IllegalArgumentException e) {
+            // User not found - return 401 to trigger re-login
+            logger.error("✗ User not found: {}", e.getMessage());
+            return ResponseEntity.status(401).body(Map.of("message", e.getMessage(), "error", "USER_NOT_FOUND", "requiresReauth", true));
+        } catch (RuntimeException e) {
+            logger.error("✗ Error fetching account settings: {}", e.getMessage(), e);
+            return ResponseEntity.status(500).body(Map.of("message", e.getMessage(), "error", "Failed to fetch account settings"));
         } catch (Exception e) {
-            logger.error("✗ Error fetching account settings", e);
-            return ResponseEntity.internalServerError().build();
+            logger.error("✗ Unexpected error fetching account settings", e);
+            return ResponseEntity.status(500).body(Map.of("message", "Internal server error", "error", e.getClass().getSimpleName()));
         }
     }
 
