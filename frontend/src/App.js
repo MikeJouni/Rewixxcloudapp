@@ -4,6 +4,8 @@ import {
   Routes,
   Route,
   Navigate,
+  useLocation,
+  useNavigate,
 } from "react-router-dom";
 import { Grid } from "antd";
 import "./index.css";
@@ -21,6 +23,7 @@ import ReportsPage from "./Pages/Reports";
 import Footer from "./components/Footer";
 import { AuthProvider, useAuth } from "./AuthContext";
 import Login from "./Pages/Auth/Login";
+import Register from "./Pages/Auth/Register";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const queryClient = new QueryClient({
@@ -54,17 +57,29 @@ function App() {
 
 function AppContent() {
   const { token } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const screens = useBreakpoint();
+  const [previousToken, setPreviousToken] = useState(token);
   
-  // Clear all cached queries when token changes (user logs in/out)
+  // Clear all cached queries ONLY when token actually changes (user logs in/out)
+  // This prevents unnecessary cache clearing when navigating between pages
   useEffect(() => {
-    if (window.queryClient) {
-      // Always clear cache when token changes - this ensures fresh data for each user
-      window.queryClient.clear();
-      window.queryClient.removeQueries();
+    if (window.queryClient && token !== previousToken) {
+      // Only clear cache when token actually changes (login/logout)
+      if (previousToken === null && token !== null) {
+        // User just logged in - clear cache for fresh data
+        window.queryClient.clear();
+        window.queryClient.removeQueries();
+      } else if (previousToken !== null && token === null) {
+        // User just logged out - clear cache
+        window.queryClient.clear();
+        window.queryClient.removeQueries();
+      }
+      setPreviousToken(token);
     }
-  }, [token]);
+  }, [token, previousToken]);
 
   // Breakpoints: mobile (< md), tablet (md to lg), desktop (>= lg)
   const isMobile = !screens.md;
@@ -89,9 +104,23 @@ function AppContent() {
     }
   }, [isTablet]);
 
-  // If not authenticated, show login screen only
+  // Redirect authenticated users away from login/register pages
+  useEffect(() => {
+    if (token && (location.pathname === "/login" || location.pathname === "/register")) {
+      // Redirect to customers page if authenticated user tries to access login/register
+      navigate("/customers", { replace: true });
+    }
+  }, [token, location.pathname, navigate]);
+
+  // If not authenticated, show login/register screens
   if (!token) {
-    return <Login />;
+    return (
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
   }
 
   return (

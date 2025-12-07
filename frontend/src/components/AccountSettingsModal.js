@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Modal, Form, Input, Button, message, Upload } from "antd";
-import { UploadOutlined, DeleteOutlined } from "@ant-design/icons";
+import { Modal, Form, Input, Button, message, Upload, Divider } from "antd";
+import { UploadOutlined, DeleteOutlined, LockOutlined } from "@ant-design/icons";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import * as accountSettingsService from "../services/accountSettingsService";
 import config from "../config";
 
-const AccountSettingsModal = ({ open, onClose, currentSettings }) => {
+const AccountSettingsModal = ({ open, onClose, currentSettings, onPasswordChangeClick }) => {
   const [form] = Form.useForm();
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
@@ -202,6 +202,22 @@ const AccountSettingsModal = ({ open, onClose, currentSettings }) => {
             <div style={{ marginTop: 8, fontSize: 12, color: "#8c8c8c" }}>
               Recommended: PNG or JPG, max 5MB. Will be used on invoices and contracts.
             </div>
+          </div>
+        </Form.Item>
+
+        <Divider />
+
+        <Form.Item label="Password">
+          <Button
+            icon={<LockOutlined />}
+            onClick={onPasswordChangeClick}
+            block
+            size="large"
+          >
+            Change Password
+          </Button>
+          <div style={{ marginTop: 8, fontSize: 12, color: "#8c8c8c" }}>
+            Update your password for email/password login
           </div>
         </Form.Item>
       </Form>

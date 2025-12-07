@@ -11,8 +11,10 @@ import dayjs from "dayjs";
 const { TextArea } = Input;
 const { Option } = Select;
 
-const ContractForm = ({ form, onValuesChange, setSelectedCustomer, setSelectedJob, isOpen }) => {
+const ContractForm = ({ form, onValuesChange, setSelectedCustomer, setSelectedJob, isOpen, selectedCustomer: propSelectedCustomer, selectedJob: propSelectedJob }) => {
   const [selectedCustomerId, setSelectedCustomerId] = React.useState(null);
+  const selectedCustomer = propSelectedCustomer;
+  const selectedJob = propSelectedJob;
 
   // Reset internal state when drawer closes/reopens
   useEffect(() => {
@@ -209,16 +211,18 @@ const ContractForm = ({ form, onValuesChange, setSelectedCustomer, setSelectedJo
         label="Customer Name"
         name="customerName"
         rules={[{ required: true, message: "Customer name is required" }]}
+        hidden={!selectedCustomer && !selectedJob}
       >
-        <Input size="large" placeholder="Enter customer name" />
+        <Input size="large" placeholder="Enter customer name" disabled={!!selectedCustomer || !!selectedJob} />
       </Form.Item>
 
       <Form.Item
         label="Customer Address"
         name="customerAddress"
         rules={[{ required: true, message: "Customer address is required" }]}
+        hidden={!selectedCustomer && !selectedJob}
       >
-        <Input size="large" placeholder="Enter customer address" />
+        <Input size="large" placeholder="Enter customer address" disabled={!!selectedCustomer || !!selectedJob} />
       </Form.Item>
 
       <Divider orientation="left" style={{ margin: "16px 0" }}>Job Details</Divider>
@@ -250,14 +254,6 @@ const ContractForm = ({ form, onValuesChange, setSelectedCustomer, setSelectedJo
         <DatePicker size="large" style={{ width: "100%" }} />
       </Form.Item>
 
-      <Form.Item label="Status" name="status">
-        <Select size="large">
-          <Option value="UNPAID">Unpaid</Option>
-          <Option value="PAID">Paid</Option>
-          <Option value="PARTIAL">Partial Payment</Option>
-        </Select>
-      </Form.Item>
-
       <Form.Item
         label="Scope of Work"
         name="scopeOfWork"
@@ -269,20 +265,35 @@ const ContractForm = ({ form, onValuesChange, setSelectedCustomer, setSelectedJo
         />
       </Form.Item>
 
-      <Form.Item
-        label="Total Price (Labor & Materials)"
-        name="totalPrice"
-        rules={[{ required: true, message: "Total price is required" }]}
-      >
-        <InputNumber
-          size="large"
-          style={{ width: "100%" }}
-          prefix="$"
-          min={0}
-          step={0.01}
-          precision={2}
-        />
-      </Form.Item>
+      {selectedJob && (
+        <>
+          <Form.Item 
+            label="Status (from Job)" 
+            name="status"
+          >
+            <Select size="large" disabled>
+              <Option value="UNPAID">Unpaid</Option>
+              <Option value="PAID">Paid</Option>
+              <Option value="PARTIAL">Partial Payment</Option>
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            label="Total Price (from Job)"
+            name="totalPrice"
+          >
+            <InputNumber
+              size="large"
+              style={{ width: "100%" }}
+              prefix="$"
+              min={0}
+              step={0.01}
+              precision={2}
+              disabled
+            />
+          </Form.Item>
+        </>
+      )}
 
       <Form.Item label="Warranty" name="warranty">
         <Input size="large" placeholder="2 years on workmanship" />

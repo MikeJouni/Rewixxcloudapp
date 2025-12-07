@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Rewixx Cloud</title>
+    <script>
+      // Redirect to index.html for SPA routing
+      sessionStorage.redirect = location.href;
+      location.replace(location.pathname.split('/').slice(0, -1).join('/') + '/index.html');
+    </script>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+    <script>
+      // Fallback if JavaScript redirect doesn't work
+      window.location.href = '/index.html';
+    </script>
+  </body>
+</html>
+

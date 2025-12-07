@@ -30,8 +30,8 @@ public class AccountSettingsService {
         // First, get the authenticated user's email to ensure sync
         Optional<AuthUser> authUserOpt = authUserRepository.findById(userId);
         if (authUserOpt.isEmpty()) {
-            logger.error("User {} not found in auth_users table", userId);
-            throw new RuntimeException("User not found");
+            logger.error("User {} not found in auth_users table - user may have been deleted or database was reset", userId);
+            throw new IllegalArgumentException("User not found. Please log in again.");
         }
         AuthUser authUser = authUserOpt.get();
         String userEmail = authUser.getEmail();

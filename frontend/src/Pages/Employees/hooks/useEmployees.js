@@ -14,12 +14,18 @@ const useEmployees = () => {
       // Handle both old format (array) and new format (object with employees property)
       return Array.isArray(response) ? response : (response?.employees || []);
     },
+    staleTime: 2 * 60 * 1000, // Consider data fresh for 2 minutes
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    retry: 1, // Retry failed requests once
   });
 
   // Fetch active employees only
   const { data: activeEmployees } = useQuery({
     queryKey: ["employees", "active"],
     queryFn: () => employeeService.getActiveEmployees(),
+    staleTime: 2 * 60 * 1000, // Consider data fresh for 2 minutes
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    retry: 1, // Retry failed requests once
   });
 
   // Create employee mutation

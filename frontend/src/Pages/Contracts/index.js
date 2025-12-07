@@ -4,6 +4,8 @@ import { FileTextOutlined, PlusCircleOutlined, EyeOutlined, DownloadOutlined, Cl
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as accountSettingsService from "../../services/accountSettingsService";
 import * as contractService from "./services/contractService";
+import * as jobService from "../Jobs/services/jobService";
+import * as customerService from "../Customers/services/customerService";
 import { useAuth } from "../../AuthContext";
 import ContractForm from "./components/ContractForm";
 import ContractPreview from "./components/ContractPreview";
@@ -36,6 +38,9 @@ const ContractsPage = () => {
     queryKey: ["contracts", token],
     queryFn: () => contractService.getContractsList({ pageSize: 100 }),
     enabled: !!token,
+    staleTime: 2 * 60 * 1000, // Consider data fresh for 2 minutes
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    retry: 1, // Retry failed requests once
   });
 
   const contracts = contractsData?.contracts || [];
@@ -92,9 +97,37 @@ const ContractsPage = () => {
   };
 
   // Handle editing a contract
-  const handleEditContract = (contract) => {
+  const handleEditContract = async (contract) => {
     setEditingContract(contract);
     setDrawerVisible(true);
+
+    // If contract has a job, fetch and set it
+    if (contract.jobId || contract.job?.id) {
+      const jobId = contract.jobId || contract.job?.id;
+      try {
+        const jobs = await jobService.getJobsList({ pageSize: 1000 });
+        const job = jobs.jobs?.find(j => j.id === jobId);
+        if (job) {
+          setSelectedJob(job);
+        }
+      } catch (error) {
+        console.error("Error fetching job for contract:", error);
+      }
+    }
+
+    // If contract has a customer, set it
+    if (contract.customerId || contract.customer?.id) {
+      const customerId = contract.customerId || contract.customer?.id;
+      try {
+        const customersResponse = await customerService.getCustomersList({ pageSize: 1000 });
+        const customer = customersResponse.customers?.find(c => c.id === customerId);
+        if (customer) {
+          setSelectedCustomer(customer);
+        }
+      } catch (error) {
+        console.error("Error fetching customer for contract:", error);
+      }
+    }
 
     // Pre-fill the form with contract data
     setTimeout(() => {
@@ -298,6 +331,8 @@ const ContractsPage = () => {
                 setSelectedCustomer={setSelectedCustomer}
                 setSelectedJob={setSelectedJob}
                 isOpen={drawerVisible}
+                selectedCustomer={selectedCustomer}
+                selectedJob={selectedJob}
               />
             </Card>
           </div>

@@ -47,23 +47,6 @@ public class AuthController {
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final SecureRandom secureRandom = new SecureRandom();
-    
-    // Allowed email addresses for sign-in
-    private static final java.util.Set<String> ALLOWED_EMAILS = java.util.Set.of(
-        "imadkassem44@gmail.com",
-        "zainsbeihh@gmail.com",
-        "moe@pitaway.com",
-        "mjjouni@umich.edu",
-        "jouni.inc@gmail.com",
-        "beefmaniacllc@gmail.com"
-    );
-    
-    private boolean isEmailAllowed(String email) {
-        if (email == null) {
-            return false;
-        }
-        return ALLOWED_EMAILS.contains(email.toLowerCase().trim());
-    }
 
     static class GoogleAuthRequest {
         @JsonProperty("idToken")
@@ -78,6 +61,17 @@ public class AuthController {
 
     static class ResetPasswordRequest {
         public String email;
+    }
+
+    static class RegisterRequest {
+        public String email;
+        public String password;
+        public String name; // Optional name for account settings
+    }
+
+    static class ChangePasswordRequest {
+        public String newPassword;
+        public String oldPassword; // Optional - not required for Google OAuth users
     }
 
     @PostMapping("/google")
@@ -103,13 +97,6 @@ public class AuthController {
             if (!googleClientId.equals(audience)) {
                 logger.warn("Google token audience mismatch. Expected {}, got {}", googleClientId, audience);
                 return ResponseEntity.badRequest().body(Map.of("error", "Invalid Google token audience"));
-            }
-            
-            // Check if email is allowed
-            if (!isEmailAllowed(email)) {
-                logger.warn("Access denied for email: {}", email);
-                return ResponseEntity.status(403).body(Map.of("error", 
-                    "Access denied. This application is restricted to authorized users only."));
             }
 
             boolean isNewUser = false;
@@ -264,13 +251,6 @@ public class AuthController {
             }
             
             String email = request.email.trim().toLowerCase();
-            
-            // Check if email is allowed
-            if (!isEmailAllowed(email)) {
-                logger.warn("Access denied for email: {}", email);
-                return ResponseEntity.status(403).body(Map.of("error", 
-                    "Access denied. This application is restricted to authorized users only."));
-            }
 
             Optional<AuthUser> userOpt = authUserRepository.findByEmail(email);
             if (userOpt.isEmpty()) {
@@ -329,10 +309,216 @@ public class AuthController {
         }
     }
 
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
+        try {
+            if (request == null || request.email == null || request.password == null) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Email and password are required"));
+            }
+
+            String email = request.email.trim().toLowerCase();
+            String password = request.password;
+
+            // Validate password strength (minimum 6 characters)
+            if (password.length() < 6) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Password must be at least 6 characters long"));
+            }
+
+            // Check if email already exists (for non-Google accounts, email should be unique)
+            Optional<AuthUser> existingOpt = authUserRepository.findByEmail(email);
+            if (existingOpt.isPresent()) {
+                AuthUser existing = existingOpt.get();
+                // If user exists with Google OAuth, they should use Google sign-in
+                if (existing.getGoogleSub() != null && !existing.getGoogleSub().trim().isEmpty()) {
+                    return ResponseEntity.badRequest().body(Map.of("error", 
+                        "An account with this email already exists. Please sign in with Google or use a different email."));
+                }
+                return ResponseEntity.badRequest().body(Map.of("error", "An account with this email already exists"));
+            }
+
+            // Create new user
+            AuthUser user = new AuthUser();
+            user.setEmail(email);
+            user.setPasswordHash(passwordEncoder.encode(password));
+            // googleSub is null for email/password accounts
+
+            try {
+                user = authUserRepository.save(user);
+                logger.info("✓ Created new user via registration:");
+                logger.info("  - userId: {}", user.getId());
+                logger.info("  - email: {}", user.getEmail());
+
+                // Create account settings
+                String companyName = (request.name != null && !request.name.trim().isEmpty()) 
+                    ? request.name.trim() 
+                    : email.split("@")[0]; // Use email prefix as default company name
+                
+                AccountSettings accountSettings = new AccountSettings(companyName);
+                accountSettings.setUserId(user.getId());
+                accountSettings.setEmail(email);
+                accountSettingsRepository.save(accountSettings);
+                logger.info("Created account settings for new user {} with company name: {}", user.getId(), companyName);
+
+                // Generate JWT token
+                String jwt = jwtUtil.generateToken(user.getId(), user.getEmail());
+
+                Map<String, Object> response = new HashMap<>();
+                response.put("token", jwt);
+                response.put("message", "Account created successfully");
+
+                return ResponseEntity.ok(response);
+            } catch (Exception e) {
+                logger.error("Failed to create new user: {}", e.getMessage(), e);
+                String errorMsg = e.getMessage();
+                if (errorMsg != null && (errorMsg.contains("email") || errorMsg.contains("unique") || errorMsg.contains("constraint"))) {
+                    return ResponseEntity.badRequest().body(Map.of("error", 
+                        "An account with this email already exists."));
+                }
+                return ResponseEntity.badRequest().body(Map.of("error", 
+                    "Failed to create account. Please try again."));
+            }
+        } catch (Exception e) {
+            logger.error("Error during registration", e);
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("error", "Error during registration: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<?> changePassword(@RequestBody ChangePasswordRequest request, HttpServletRequest httpRequest) {
+        try {
+            if (request == null || request.newPassword == null || request.newPassword.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "New password is required"));
+            }
+
+            String newPassword = request.newPassword;
+
+            // Validate password strength
+            if (newPassword.length() < 6) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Password must be at least 6 characters long"));
+            }
+
+            // Get user from JWT token
+            String authHeader = httpRequest.getHeader("Authorization");
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
+            }
+
+            String token = authHeader.substring(7);
+            Long userId = jwtUtil.getUserIdFromToken(token);
+            if (userId == null) {
+                return ResponseEntity.status(401).body(Map.of("error", "Invalid token"));
+            }
+
+            Optional<AuthUser> userOpt = authUserRepository.findById(userId);
+            if (userOpt.isEmpty()) {
+                return ResponseEntity.status(404).body(Map.of("error", "User not found"));
+            }
+
+            AuthUser user = userOpt.get();
+            
+            // Check if user has Google OAuth (googleSub is set)
+            boolean isGoogleUser = user.getGoogleSub() != null && !user.getGoogleSub().trim().isEmpty();
+            
+            if (isGoogleUser) {
+                // Google OAuth users can change password without providing old password
+                logger.info("Changing password for Google OAuth user {} (email: {})", userId, user.getEmail());
+                user.setPasswordHash(passwordEncoder.encode(newPassword));
+                authUserRepository.save(user);
+                
+                return ResponseEntity.ok(Map.of("message", "Password changed successfully"));
+            } else {
+                // Regular email/password users must provide old password
+                if (request.oldPassword == null || request.oldPassword.trim().isEmpty()) {
+                    return ResponseEntity.badRequest().body(Map.of("error", "Old password is required"));
+                }
+
+                if (!passwordEncoder.matches(request.oldPassword, user.getPasswordHash())) {
+                    return ResponseEntity.status(401).body(Map.of("error", "Old password is incorrect"));
+                }
+
+                logger.info("Changing password for email/password user {} (email: {})", userId, user.getEmail());
+                user.setPasswordHash(passwordEncoder.encode(newPassword));
+                authUserRepository.save(user);
+                
+                return ResponseEntity.ok(Map.of("message", "Password changed successfully"));
+            }
+        } catch (Exception e) {
+            logger.error("Error changing password", e);
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("error", "Error changing password: " + e.getMessage()));
+        }
+    }
+
     private String generateDefaultPassword() {
         byte[] bytes = new byte[12];
         secureRandom.nextBytes(bytes);
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    }
+
+    @GetMapping("/user-info")
+    public ResponseEntity<?> getUserInfo(HttpServletRequest request) {
+        try {
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
+            }
+
+            String token = authHeader.substring(7);
+            Long userId = jwtUtil.getUserIdFromToken(token);
+            if (userId == null) {
+                return ResponseEntity.status(401).body(Map.of("error", "Invalid token"));
+            }
+
+            Optional<AuthUser> userOpt = authUserRepository.findById(userId);
+            if (userOpt.isEmpty()) {
+                return ResponseEntity.status(404).body(Map.of("error", "User not found"));
+            }
+
+            AuthUser user = userOpt.get();
+            Map<String, Object> info = new HashMap<>();
+            info.put("userId", user.getId());
+            info.put("email", user.getEmail());
+            info.put("hasGoogleAccount", user.getGoogleSub() != null && !user.getGoogleSub().trim().isEmpty());
+
+            return ResponseEntity.ok(info);
+        } catch (Exception e) {
+            logger.error("Error getting user info", e);
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/check-email")
+    public ResponseEntity<?> checkEmail(@RequestParam String email) {
+        try {
+            if (email == null || email.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Email is required"));
+            }
+
+            String emailLower = email.trim().toLowerCase();
+            Optional<AuthUser> existingOpt = authUserRepository.findByEmail(emailLower);
+            
+            Map<String, Object> response = new HashMap<>();
+            if (existingOpt.isPresent()) {
+                AuthUser existing = existingOpt.get();
+                boolean isGoogleAccount = existing.getGoogleSub() != null && !existing.getGoogleSub().trim().isEmpty();
+                response.put("exists", true);
+                response.put("isGoogleAccount", isGoogleAccount);
+                if (isGoogleAccount) {
+                    response.put("message", "An account with this email already exists. Please sign in with Google.");
+                } else {
+                    response.put("message", "An account with this email already exists.");
+                }
+            } else {
+                response.put("exists", false);
+                response.put("available", true);
+            }
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Error checking email", e);
+            return ResponseEntity.internalServerError().body(Map.of("error", "Error checking email availability"));
+        }
     }
 
     /**
