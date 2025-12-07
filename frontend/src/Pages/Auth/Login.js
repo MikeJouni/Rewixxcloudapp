@@ -126,51 +126,59 @@ const Login = () => {
     }
 
     // Load Google Identity Services script and render the official button
-    const script = document.createElement("script");
-    script.src = "https://accounts.google.com/gsi/client";
-    script.async = true;
-    script.defer = true;
-    document.body.appendChild(script);
-
-    script.onload = () => {
+    const scriptId = 'google-identity';
+    if (document.getElementById(scriptId)) {
+      // Script already loaded, just initialize
       if (window.google && window.google.accounts && window.google.accounts.id) {
-        // Always use popup mode - it works better cross-platform and doesn't require redirect URI registration
         window.google.accounts.id.initialize({
           client_id: config.GOOGLE_CLIENT_ID,
           callback: handleGoogleCallback,
-          ux_mode: "popup",
+        });
+        const buttonDiv = document.getElementById("googleSignInDiv");
+        if (buttonDiv) {
+          buttonDiv.innerHTML = '';
+          window.google.accounts.id.renderButton(buttonDiv, {
+            theme: 'outline',
+            size: 'large',
+            text: 'continue_with',
+            width: 350
+          });
+        }
+      }
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.id = scriptId;
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    
+    script.onload = () => {
+      if (window.google && window.google.accounts && window.google.accounts.id) {
+        window.google.accounts.id.initialize({
+          client_id: config.GOOGLE_CLIENT_ID,
+          callback: handleGoogleCallback,
         });
 
         const buttonDiv = document.getElementById("googleSignInDiv");
         if (buttonDiv) {
-          // Clear any existing content
-          buttonDiv.innerHTML = "";
-
-          // Render button with fixed width for consistency across dev/prod
-          // The CSS flexbox will center it properly
-          try {
-            window.google.accounts.id.renderButton(buttonDiv, {
-              type: "standard",
-              theme: "outline",
-              text: "continue_with",
-              shape: "rectangular",
-              size: "large",
-              width: 352, // Fixed width that works well in the card
-              locale: "en",
-            });
-            setGoogleButtonReady(true);
-          } catch (error) {
-            console.error("Error rendering Google button:", error);
-            setGoogleButtonReady(true);
-          }
+          buttonDiv.innerHTML = '';
+          window.google.accounts.id.renderButton(buttonDiv, {
+            theme: 'outline',
+            size: 'large',
+            text: 'continue_with',
+            width: 350
+          });
+          setGoogleButtonReady(true);
         }
       }
     };
-
+    
+    document.body.appendChild(script);
+    
     return () => {
-      if (document.body.contains(script)) {
-        document.body.removeChild(script);
-      }
+      // Cleanup not strictly necessary for this SDK
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -204,7 +212,16 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-      <Card className="w-full max-w-md shadow-lg">
+      <Card 
+        className="w-full max-w-md shadow-lg"
+        bodyStyle={{
+          padding: "24px",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "stretch", // Keep stretch so form fields are full width
+          textAlign: "center",
+        }}
+      >
         <div className="text-center mb-6">
           <Title level={3} style={{ marginBottom: 8 }}>
             Welcome to Rewixx Cloud
@@ -215,32 +232,9 @@ const Login = () => {
         </div>
 
         {/* Google Sign-In Button will be rendered into this div by Google Identity Services */}
-        <div
-          id="googleSignInDiv"
-          className="google-signin-container"
-        />
-
-        {/* Add CSS to ensure button is full width and centered */}
-        <style>{`
-          .google-signin-container {
-            width: 100% !important;
-            display: flex !important;
-            justify-content: center !important;
-            align-items: center !important;
-            box-sizing: border-box !important;
-            margin-bottom: 16px !important;
-          }
-          .google-signin-container > div {
-            width: 100% !important;
-            display: flex !important;
-            justify-content: center !important;
-          }
-          .google-signin-container > div > div {
-            width: 100% !important;
-            display: flex !important;
-            justify-content: center !important;
-          }
-        `}</style>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+          <div id="googleSignInDiv" />
+        </div>
 
         <div className="flex items-center my-4">
           <div className="flex-1 h-px bg-gray-200" />
