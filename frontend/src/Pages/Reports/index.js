@@ -1,174 +1,442 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import dayjs from 'dayjs';
-import { 
-  Button, 
-  Card, 
-  DatePicker, 
-  Space, 
-  Typography, 
-  Alert, 
-  Spin, 
-  Tabs, 
-  Row, 
-  Col, 
-  Statistic,
-  Table,
-  Progress,
-  Tag,
-  Divider,
-  Tooltip
+import {
+  Card,
+  Spin,
+  Tabs,
+  Typography,
+  Button,
+  Modal,
+  Select,
+  DatePicker,
+  Row,
+  Col,
+  Checkbox,
+  message,
 } from "antd";
-import { 
-  DownloadOutlined, 
-  FileTextOutlined, 
-  UserOutlined, 
-  DollarOutlined,
-  ClockCircleOutlined,
-  ShoppingCartOutlined,
-  BarChartOutlined,
-  RiseOutlined,
+import {
+  FileTextOutlined,
+  UserOutlined,
   TeamOutlined,
-  CheckCircleOutlined,
-  ExclamationCircleOutlined,
-  WarningOutlined
+  DollarOutlined,
+  DownloadOutlined,
 } from "@ant-design/icons";
+import dayjs from "dayjs";
+import * as XLSX from "xlsx";
 import * as customerService from "../Customers/services/customerService";
 import * as jobService from "../Jobs/services/jobService";
-import * as reportService from "./services/reportService";
-import * as exportService from "./services/exportService";
+import * as employeeService from "../Employees/services/employeeService";
+import * as expenseService from "../Expenses/services/expenseService";
+import * as contractService from "../Contracts/services/contractService";
 import * as accountSettingsService from "../../services/accountSettingsService";
 import { useAuth } from "../../AuthContext";
 import config from "../../config";
+import JobsView from "./components/views/JobsView";
+import CustomersView from "./components/views/CustomersView";
+import EmployeesView from "./components/views/EmployeesView";
+import ExpensesView from "./components/views/ExpensesView";
 import "./reports.css";
-// Logo will be loaded from public directory
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
-const { TabPane } = Tabs;
+const { Option } = Select;
 
 const Reports = () => {
-  const [dateRange, setDateRange] = useState([]);
-  const [selectedReportType, setSelectedReportType] = useState("overview");
-  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [activeTab, setActiveTab] = useState("jobs");
+  const [exportModalVisible, setExportModalVisible] = useState(false);
+  const [selectedExportTypes, setSelectedExportTypes] = useState(["jobs"]);
+  const [exportDateRange, setExportDateRange] = useState([
+    dayjs().subtract(30, "day"),
+    dayjs(),
+  ]);
+  const { token } = useAuth();
 
-  // Set default date range to last 30 days
-  useEffect(() => {
-    const endDate = dayjs();
-    const startDate = dayjs().subtract(30, 'day');
-    setDateRange([startDate, endDate]);
-  }, []);
-
+  // Fetch customers
   const { data: customersData, isLoading: customersLoading } = useQuery({
     queryKey: ["customers"],
     queryFn: () => customerService.getCustomersList({ pageSize: 10000 }),
   });
 
+  // Fetch jobs
   const { data: jobsData, isLoading: jobsLoading } = useQuery({
     queryKey: ["jobs"],
-    queryFn: () => jobService.getJobsList({ searchTerm: "", page: 0, pageSize: 10000, statusFilter: "All" }),
+    queryFn: () =>
+      jobService.getJobsList({
+        searchTerm: "",
+        page: 0,
+        pageSize: 10000,
+        statusFilter: "All",
+      }),
+  });
+
+  // Fetch employees
+  const { data: employeesData, isLoading: employeesLoading } = useQuery({
+    queryKey: ["employees"],
+    queryFn: () => employeeService.getAllEmployees(),
+  });
+
+  // Fetch expenses
+  const { data: expensesData, isLoading: expensesLoading } = useQuery({
+    queryKey: ["expenses"],
+    queryFn: () =>
+      expenseService.getExpensesList({
+        page: 0,
+        pageSize: 10000,
+        searchTerm: "",
+        typeFilter: "All",
+      }),
+  });
+
+  // Fetch contracts
+  const { data: contractsData, isLoading: contractsLoading } = useQuery({
+    queryKey: ["contracts"],
+    queryFn: () =>
+      contractService.getContractsList({
+        page: 0,
+        pageSize: 10000,
+        searchTerm: "",
+      }),
   });
 
   // Fetch account settings for company branding
-  const { token } = useAuth();
   const { data: accountSettings } = useQuery({
     queryKey: ["accountSettings", token],
     queryFn: () => accountSettingsService.getAccountSettings(),
     enabled: !!token,
   });
 
-  const companyName = accountSettings?.companyName || "Reports Dashboard";
+  const companyName = accountSettings?.companyName || "Report Center";
   const companyLogoUrl = accountSettings?.logoUrl
     ? `${config.SPRING_API_BASE}${accountSettings.logoUrl}`
     : null;
 
-  // Fetch comprehensive report data
-  const { data: reportData, isLoading: reportLoading, refetch: refetchReport } = useQuery({
-    queryKey: ["comprehensive-report", dateRange],
-    queryFn: () => {
-      if (dateRange.length === 2) {
-        const startDate = dateRange[0].format('YYYY-MM-DD');
-        const endDate = dateRange[1].format('YYYY-MM-DD');
-        return reportService.reportService.getComprehensiveReport(startDate, endDate);
-      }
-      return null;
-    },
-    enabled: dateRange.length === 2,
-  });
-
+  // Extract data from responses
   const customers = customersData?.customers || [];
-  const jobs = useMemo(() => jobsData?.jobs || [], [jobsData?.jobs]);
+  const jobs = jobsData?.jobs || [];
+  const employees = employeesData?.employees || [];
+  const expenses = expensesData?.expenses || [];
+  const contracts = contractsData?.contracts || [];
 
-  // Calculate basic metrics from existing data
-  const basicMetrics = useMemo(() => {
-    const totalJobs = jobs.length;
-    const completedJobs = jobs.filter(j => j.status === 'COMPLETED').length;
-    const inProgressJobs = jobs.filter(j => j.status === 'IN_PROGRESS').length;
-    const pendingJobs = jobs.filter(j => j.status === 'PENDING').length;
-    const urgentJobs = jobs.filter(j => j.priority === 'URGENT').length;
-    const highPriorityJobs = jobs.filter(j => j.priority === 'HIGH').length;
-    
-    return {
-      totalJobs,
-      completedJobs,
-      inProgressJobs,
-      pendingJobs,
-      urgentJobs,
-      highPriorityJobs,
-      completionRate: totalJobs > 0 ? Math.round((completedJobs / totalJobs) * 100) : 0
-    };
-  }, [jobs]);
-
-  // Export functions
-  const exportToPDF = async () => {
-    setIsGeneratingReport(true);
+  // Export function with summary calculations
+  const handleExport = () => {
     try {
-      if (reportData) {
-        const filename = `rewixx-report-${dateRange[0]?.format('YYYY-MM-DD') || 'start'}-${dateRange[1]?.format('YYYY-MM-DD') || 'end'}.pdf`;
-        await exportService.exportToPDF(reportData, filename);
-      } else {
-        console.warn("No report data available for export");
+      if (selectedExportTypes.length === 0) {
+        message.error("Please select at least one data type to export");
+        return;
       }
+
+      const startDate = exportDateRange?.[0];
+      const endDate = exportDateRange?.[1];
+
+      const filterByDate = (date) => {
+        if (!startDate || !endDate) return true;
+        if (!date) return false;
+        const itemDate = dayjs(date);
+        return (
+          (itemDate.isAfter(startDate) || itemDate.isSame(startDate, "day")) &&
+          (itemDate.isBefore(endDate) || itemDate.isSame(endDate, "day"))
+        );
+      };
+
+      const workbook = XLSX.utils.book_new();
+      const summaryData = [];
+      let totalSheets = 0;
+
+      // Jobs Summary & Data
+      if (selectedExportTypes.includes("jobs")) {
+        const filteredJobs = jobs.filter((job) => filterByDate(job.startDate));
+        const jobsByStatus = {};
+        let totalJobPrice = 0;
+        let totalBillingMaterialCost = 0;
+        let totalInternalMaterialCost = 0;
+        let totalTaxAmount = 0;
+        let totalPaidAmount = 0;
+
+        filteredJobs.forEach((job) => {
+          const status = job.status || "Unknown";
+          jobsByStatus[status] = (jobsByStatus[status] || 0) + 1;
+
+          const jobPrice = parseFloat(job.jobPrice) || 0;
+          const billingMaterialCost = parseFloat(job.customMaterialCost) || 0;
+
+          // Calculate internal material cost from job.sales (materials added to job)
+          let internalMaterialCost = 0;
+          if (job.sales && Array.isArray(job.sales)) {
+            job.sales.forEach((sale) => {
+              if (sale.saleItems && Array.isArray(sale.saleItems)) {
+                sale.saleItems.forEach((saleItem) => {
+                  const unitPrice = parseFloat(saleItem.unitPrice || saleItem.product?.unitPrice || 0);
+                  const quantity = parseInt(saleItem.quantity) || 1;
+                  internalMaterialCost += unitPrice * quantity;
+                });
+              }
+            });
+          }
+
+          const subtotal = jobPrice + billingMaterialCost;
+          const taxAmount = job.includeTax ? subtotal * 0.06 : 0;
+
+          totalJobPrice += jobPrice;
+          totalBillingMaterialCost += billingMaterialCost;
+          totalInternalMaterialCost += internalMaterialCost;
+          totalTaxAmount += taxAmount;
+
+          // Calculate payments
+          if (job.payments && Array.isArray(job.payments)) {
+            job.payments.forEach((payment) => {
+              totalPaidAmount += parseFloat(payment.amount) || 0;
+            });
+          }
+        });
+
+        const totalRevenue = totalJobPrice + totalBillingMaterialCost + totalTaxAmount;
+        const totalOutstanding = totalRevenue - totalPaidAmount;
+        const grossProfit = totalRevenue - totalInternalMaterialCost;
+
+        summaryData.push(
+          { Category: "JOBS SUMMARY", Metric: "", Value: "" },
+          { Category: "", Metric: "Total Jobs", Value: filteredJobs.length },
+          ...Object.entries(jobsByStatus).map(([status, count]) => ({
+            Category: "",
+            Metric: `Jobs - ${status}`,
+            Value: count,
+          })),
+          { Category: "", Metric: "", Value: "" },
+          { Category: "REVENUE BREAKDOWN", Metric: "", Value: "" },
+          { Category: "", Metric: "Total Job Price", Value: `$${totalJobPrice.toFixed(2)}` },
+          { Category: "", Metric: "Total Material Cost (Billing)", Value: `$${totalBillingMaterialCost.toFixed(2)}` },
+          { Category: "", Metric: "Total Tax (6%)", Value: `$${totalTaxAmount.toFixed(2)}` },
+          { Category: "", Metric: "TOTAL REVENUE", Value: `$${totalRevenue.toFixed(2)}` },
+          { Category: "", Metric: "", Value: "" },
+          { Category: "COSTS & PROFIT", Metric: "", Value: "" },
+          { Category: "", Metric: "Total Internal Material Cost", Value: `$${totalInternalMaterialCost.toFixed(2)}` },
+          { Category: "", Metric: "Gross Profit (Revenue - Internal Costs)", Value: `$${grossProfit.toFixed(2)}` },
+          { Category: "", Metric: "", Value: "" },
+          { Category: "PAYMENT STATUS", Metric: "", Value: "" },
+          { Category: "", Metric: "Total Paid", Value: `$${totalPaidAmount.toFixed(2)}` },
+          { Category: "", Metric: "Total Outstanding", Value: `$${totalOutstanding.toFixed(2)}` },
+          { Category: "", Metric: "", Value: "" },
+          { Category: "AVERAGES", Metric: "", Value: "" },
+          { Category: "", Metric: "Average Job Price", Value: filteredJobs.length > 0 ? `$${(totalJobPrice / filteredJobs.length).toFixed(2)}` : "$0.00" },
+          { Category: "", Metric: "Average Revenue per Job", Value: filteredJobs.length > 0 ? `$${(totalRevenue / filteredJobs.length).toFixed(2)}` : "$0.00" },
+          { Category: "", Metric: "", Value: "" }
+        );
+
+        // Add detailed jobs sheet with comprehensive breakdown
+        const jobsExportData = filteredJobs.map((job) => {
+          const jobPrice = parseFloat(job.jobPrice) || 0;
+          const billingMaterialCost = parseFloat(job.customMaterialCost) || 0;
+
+          // Calculate internal material cost from job.sales
+          let internalMaterialCost = 0;
+          if (job.sales && Array.isArray(job.sales)) {
+            job.sales.forEach((sale) => {
+              if (sale.saleItems && Array.isArray(sale.saleItems)) {
+                sale.saleItems.forEach((saleItem) => {
+                  const unitPrice = parseFloat(saleItem.unitPrice || saleItem.product?.unitPrice || 0);
+                  const quantity = parseInt(saleItem.quantity) || 1;
+                  internalMaterialCost += unitPrice * quantity;
+                });
+              }
+            });
+          }
+
+          const subtotal = jobPrice + billingMaterialCost;
+          const taxAmount = job.includeTax ? subtotal * 0.06 : 0;
+          const totalCost = subtotal + taxAmount;
+          const paidAmount = job.payments?.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0) || 0;
+          const outstanding = totalCost - paidAmount;
+
+          return {
+            "Job ID": job.id,
+            Title: job.title,
+            Customer: job.customer?.name || "",
+            Status: job.status,
+            "Payment Status": paidAmount >= totalCost ? "PAID" : paidAmount > 0 ? "PARTIAL" : "UNPAID",
+            "Start Date": job.startDate ? dayjs(job.startDate).format("YYYY-MM-DD") : "",
+            "End Date": job.endDate ? dayjs(job.endDate).format("YYYY-MM-DD") : "",
+            "Work Site": job.workSiteAddress || "",
+            "Job Price": jobPrice,
+            "Material Cost (Billing)": billingMaterialCost,
+            "Internal Material Cost": internalMaterialCost,
+            "Tax Included": job.includeTax ? "Yes" : "No",
+            "Tax Amount": taxAmount,
+            "Total Cost": totalCost,
+            "Amount Paid": paidAmount,
+            "Outstanding": outstanding,
+          };
+        });
+        if (jobsExportData.length > 0) {
+          const jobsSheet = XLSX.utils.json_to_sheet(jobsExportData);
+          XLSX.utils.book_append_sheet(workbook, jobsSheet, "Jobs Detail");
+          totalSheets++;
+        }
+      }
+
+      // Customers Summary & Data
+      if (selectedExportTypes.includes("customers")) {
+        const filteredCustomers = customers.filter((c) => filterByDate(c.createdAt));
+
+        summaryData.push(
+          { Category: "CUSTOMERS SUMMARY", Metric: "", Value: "" },
+          { Category: "", Metric: "Total Customers", Value: filteredCustomers.length },
+          { Category: "", Metric: "New Customers (Period)", Value: filteredCustomers.length },
+          { Category: "", Metric: "", Value: "" }
+        );
+
+        const customersData = filteredCustomers.map((customer) => ({
+          "Customer ID": customer.id,
+          Name: customer.name,
+          Email: customer.email || "",
+          Phone: customer.phone || "",
+          Address: customer.addressLine1 || "",
+          City: customer.city || "",
+          State: customer.state || "",
+        }));
+        if (customersData.length > 0) {
+          const customersSheet = XLSX.utils.json_to_sheet(customersData);
+          XLSX.utils.book_append_sheet(workbook, customersSheet, "Customers Detail");
+          totalSheets++;
+        }
+      }
+
+      // Employees Summary & Data
+      if (selectedExportTypes.includes("employees")) {
+        const laborExpenses = expenses.filter(
+          (e) => e.type === "LABOR" && filterByDate(e.expenseDate)
+        );
+
+        let totalHours = 0;
+        let totalLaborCost = 0;
+        const employeeStats = employees.map((employee) => {
+          const employeeLabor = laborExpenses.filter(
+            (e) => e.employeeName === employee.name
+          );
+          const hours = employeeLabor.reduce(
+            (sum, e) => sum + (parseFloat(e.hoursWorked) || 0),
+            0
+          );
+          const earnings = employeeLabor.reduce(
+            (sum, e) => sum + (parseFloat(e.amount) || 0),
+            0
+          );
+          totalHours += hours;
+          totalLaborCost += earnings;
+          return {
+            "Employee ID": employee.id,
+            Name: employee.name,
+            Email: employee.email || "",
+            Phone: employee.phone || "",
+            "Total Hours": hours,
+            "Total Earnings": earnings,
+          };
+        });
+
+        summaryData.push(
+          { Category: "EMPLOYEES SUMMARY", Metric: "", Value: "" },
+          { Category: "", Metric: "Total Employees", Value: employees.length },
+          { Category: "", Metric: "Total Hours Worked", Value: totalHours.toFixed(2) },
+          { Category: "", Metric: "Total Labor Cost", Value: `$${totalLaborCost.toFixed(2)}` },
+          { Category: "", Metric: "Average Hours/Employee", Value: employees.length > 0 ? (totalHours / employees.length).toFixed(2) : "0" },
+          { Category: "", Metric: "", Value: "" }
+        );
+
+        if (employeeStats.length > 0) {
+          const employeesSheet = XLSX.utils.json_to_sheet(employeeStats);
+          XLSX.utils.book_append_sheet(workbook, employeesSheet, "Employees Detail");
+          totalSheets++;
+        }
+      }
+
+      // Expenses Summary & Data
+      if (selectedExportTypes.includes("expenses")) {
+        const filteredExpenses = expenses.filter((e) => filterByDate(e.expenseDate));
+        const expensesByType = {};
+        let totalExpenseAmount = 0;
+
+        filteredExpenses.forEach((expense) => {
+          const type = expense.type || "OTHER";
+          expensesByType[type] = (expensesByType[type] || 0) + (parseFloat(expense.amount) || 0);
+          totalExpenseAmount += parseFloat(expense.amount) || 0;
+        });
+
+        summaryData.push(
+          { Category: "EXPENSES SUMMARY", Metric: "", Value: "" },
+          { Category: "", Metric: "Total Expenses", Value: filteredExpenses.length },
+          { Category: "", Metric: "Total Amount", Value: `$${totalExpenseAmount.toFixed(2)}` },
+          ...Object.entries(expensesByType).map(([type, amount]) => ({
+            Category: "",
+            Metric: `${type}`,
+            Value: `$${amount.toFixed(2)}`,
+          })),
+          { Category: "", Metric: "", Value: "" }
+        );
+
+        const expensesData = filteredExpenses.map((expense) => ({
+          "Expense ID": expense.id,
+          Date: expense.expenseDate ? dayjs(expense.expenseDate).format("YYYY-MM-DD") : "",
+          Type: expense.type,
+          Description: expense.description || "",
+          Vendor: expense.vendor || "",
+          Amount: parseFloat(expense.amount) || 0,
+          Employee: expense.employeeName || "",
+          Job: expense.jobTitle || "",
+        }));
+        if (expensesData.length > 0) {
+          const expensesSheet = XLSX.utils.json_to_sheet(expensesData);
+          XLSX.utils.book_append_sheet(workbook, expensesSheet, "Expenses Detail");
+          totalSheets++;
+        }
+      }
+
+      // Add summary sheet at the beginning
+      if (summaryData.length > 0) {
+        // Add header info
+        const headerData = [
+          { Category: "BUSINESS REPORT", Metric: "", Value: "" },
+          { Category: "Company", Metric: companyName, Value: "" },
+          { Category: "Period", Metric: `${startDate?.format("MMM D, YYYY")} - ${endDate?.format("MMM D, YYYY")}`, Value: "" },
+          { Category: "Generated", Metric: dayjs().format("MMM D, YYYY h:mm A"), Value: "" },
+          { Category: "", Metric: "", Value: "" },
+        ];
+        const summarySheet = XLSX.utils.json_to_sheet([...headerData, ...summaryData]);
+        XLSX.utils.book_append_sheet(workbook, summarySheet, "Summary");
+
+        // Move summary to first position
+        const sheetOrder = workbook.SheetNames;
+        const summaryIndex = sheetOrder.indexOf("Summary");
+        if (summaryIndex > 0) {
+          sheetOrder.splice(summaryIndex, 1);
+          sheetOrder.unshift("Summary");
+          workbook.SheetNames = sheetOrder;
+        }
+      }
+
+      if (totalSheets === 0 && summaryData.length === 0) {
+        message.warning("No data found for the selected date range");
+        return;
+      }
+
+      const filename = `business-report-${startDate?.format("YYYY-MM-DD")}-to-${endDate?.format("YYYY-MM-DD")}.xlsx`;
+      XLSX.writeFile(workbook, filename);
+
+      message.success(`Report exported successfully with ${selectedExportTypes.length} section(s)`);
+      setExportModalVisible(false);
     } catch (error) {
-      console.error("Error exporting to PDF:", error);
-    } finally {
-      setIsGeneratingReport(false);
+      console.error("Error exporting:", error);
+      message.error("Failed to export data");
     }
   };
 
-  const exportToExcel = async () => {
-    setIsGeneratingReport(true);
-    try {
-      if (reportData) {
-        const filename = `rewixx-report-${dateRange[0]?.format('YYYY-MM-DD') || 'start'}-${dateRange[1]?.format('YYYY-MM-DD') || 'end'}.xlsx`;
-        await exportService.exportToExcel(reportData, filename);
-      } else {
-        console.warn("No report data available for export");
-      }
-    } catch (error) {
-      console.error("Error exporting to Excel:", error);
-    } finally {
-      setIsGeneratingReport(false);
-    }
-  };
+  // Loading state
+  const isLoading =
+    customersLoading ||
+    jobsLoading ||
+    employeesLoading ||
+    expensesLoading ||
+    contractsLoading;
 
-  const exportToCSV = async () => {
-    setIsGeneratingReport(true);
-    try {
-      if (reportData) {
-        const filename = `rewixx-report-${dateRange[0]?.format('YYYY-MM-DD') || 'start'}-${dateRange[1]?.format('YYYY-MM-DD') || 'end'}.csv`;
-        await exportService.exportToCSV(reportData, filename);
-      } else {
-        console.warn("No report data available for export");
-      }
-    } catch (error) {
-      console.error("Error exporting to CSV:", error);
-    } finally {
-      setIsGeneratingReport(false);
-    }
-  };
-
-  if (customersLoading || jobsLoading) {
+  if (isLoading) {
     return (
       <div className="w-full">
         <div className="text-center py-12">
@@ -179,512 +447,200 @@ const Reports = () => {
     );
   }
 
-  return (
-    <div className="w-full">
-      {/* Header with Logo and Company Branding */}
-      <Card className="mb-6 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-        <div className="flex flex-col sm:flex-row items-center justify-between mb-6">
-          <div className="flex items-center space-x-4 mb-4 sm:mb-0">
-            {companyLogoUrl && (
-              <img
-                src={companyLogoUrl}
-                alt="Company Logo"
-                className="h-12 w-12 object-contain"
-              />
-            )}
-            <div>
-              <Title
-                level={1}
-                className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-0"
-              >
-                {companyName}
-              </Title>
-              <Text className="text-gray-600 text-sm">
-                Comprehensive Business Intelligence & Analytics
-              </Text>
-            </div>
-          </div>
+  // Tab items
+  const tabItems = [
+    {
+      key: "jobs",
+      label: (
+        <span className="flex items-center gap-2">
+          <FileTextOutlined />
+          Jobs
+        </span>
+      ),
+      children: (
+        <JobsView
+          jobs={jobs}
+          customers={customers}
+          contracts={contracts}
+          accountSettings={accountSettings}
+          isLoading={jobsLoading}
+        />
+      ),
+    },
+    {
+      key: "customers",
+      label: (
+        <span className="flex items-center gap-2">
+          <UserOutlined />
+          Customers
+        </span>
+      ),
+      children: (
+        <CustomersView
+          customers={customers}
+          jobs={jobs}
+          accountSettings={accountSettings}
+          isLoading={customersLoading}
+        />
+      ),
+    },
+    {
+      key: "employees",
+      label: (
+        <span className="flex items-center gap-2">
+          <TeamOutlined />
+          Employees
+        </span>
+      ),
+      children: (
+        <EmployeesView
+          employees={employees}
+          expenses={expenses}
+          isLoading={employeesLoading}
+        />
+      ),
+    },
+    {
+      key: "expenses",
+      label: (
+        <span className="flex items-center gap-2">
+          <DollarOutlined />
+          Expenses
+        </span>
+      ),
+      children: (
+        <ExpensesView
+          expenses={expenses}
+          isLoading={expensesLoading}
+        />
+      ),
+    },
+  ];
 
-          <div className="flex flex-col sm:flex-row gap-3">
-            <RangePicker
-              value={dateRange}
-              onChange={setDateRange}
-              size="large"
-              className="w-full sm:w-auto"
+  return (
+    <div className="w-full" style={{ padding: '16px' }}>
+      {/* Header */}
+      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {companyLogoUrl && (
+            <img
+              src={companyLogoUrl}
+              alt="Company Logo"
+              style={{ height: 40, width: 40, objectFit: 'contain' }}
             />
-            <Button
-              type="primary"
-              size="large"
-              icon={<DownloadOutlined />}
-              loading={isGeneratingReport}
-              onClick={exportToPDF}
-              style={{
-                background: "linear-gradient(135deg, #1f2937 0%, #111827 100%)",
-                border: "none",
-              }}
-            >
-              Export Report
-            </Button>
+          )}
+          <div>
+            <Title level={3} style={{ margin: 0 }}>
+              {companyName}
+            </Title>
+            <Text type="secondary" style={{ fontSize: 13 }}>
+              Reports
+            </Text>
           </div>
         </div>
+        <Button
+          type="primary"
+          size="large"
+          icon={<DownloadOutlined />}
+          onClick={() => setExportModalVisible(true)}
+        >
+          Export Report
+        </Button>
+      </div>
 
-          {/* Quick Stats Overview */}
-          <Row gutter={[16, 16]} className="mb-6">
-            <Col xs={24} sm={12} md={6}>
-              <Card className="text-center border-l-4 border-l-blue-500 bg-gradient-to-r from-blue-50 to-blue-100">
-                <Statistic
-                  title="Total Jobs"
-                  value={basicMetrics.totalJobs}
-                  prefix={<FileTextOutlined className="text-blue-600" />}
-                  valueStyle={{ color: '#1890ff' }}
-                />
-                <Text className="text-xs text-gray-500">
-                  {basicMetrics.inProgressJobs} in progress
-                </Text>
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} md={6}>
-              <Card className="text-center border-l-4 border-l-green-500 bg-gradient-to-r from-green-50 to-green-100">
-                <Statistic
-                  title="Completed"
-                  value={basicMetrics.completedJobs}
-                  prefix={<CheckCircleOutlined className="text-green-600" />}
-                  valueStyle={{ color: '#52c41a' }}
-                />
-                <Text className="text-xs text-gray-500">
-                  {basicMetrics.completionRate}% completion rate
-                </Text>
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} md={6}>
-              <Card className="text-center border-l-4 border-l-orange-500 bg-gradient-to-r from-orange-50 to-orange-100">
-                <Statistic
-                  title="High Priority"
-                  value={basicMetrics.highPriorityJobs}
-                  prefix={<ExclamationCircleOutlined className="text-orange-600" />}
-                  valueStyle={{ color: '#fa8c16' }}
-                />
-                <Text className="text-xs text-gray-500">
-                  {basicMetrics.urgentJobs} urgent
-                </Text>
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} md={6}>
-              <Card className="text-center border-l-4 border-l-purple-500 bg-gradient-to-r from-purple-50 to-purple-100">
-                <Statistic
-                  title="Customers"
-                  value={customers.length}
-                  prefix={<TeamOutlined className="text-purple-600" />}
-                  valueStyle={{ color: '#722ed1' }}
-                />
-                <Text className="text-xs text-gray-500">
-                  Active clients
-                </Text>
-              </Card>
-            </Col>
-          </Row>
-        </Card>
+      {/* Main Tabs */}
+      <Card size="small">
+        <Tabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          items={tabItems}
+        />
+      </Card>
 
-        {/* Main Reports Content */}
-        <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-          <Tabs 
-            activeKey={selectedReportType} 
-            onChange={setSelectedReportType}
-            className="reports-tabs"
-            items={[
-              {
-                key: "overview",
-                label: (
-                  <span>
-                    <BarChartOutlined />
-                    Overview
-                  </span>
-                ),
-                children: (
-                  <div className="space-y-6">
-                    {/* Revenue Overview */}
-                    <Card title="💰 Revenue Analysis" className="bg-gradient-to-r from-green-50 to-emerald-50">
-                      {reportData?.revenue ? (
-                        <Row gutter={[16, 16]}>
-                          <Col xs={24} sm={12} md={6}>
-                            <Statistic
-                              title="Total Revenue"
-                              value={reportData.revenue.summary?.totalRevenue || 0}
-                              prefix="$"
-                              precision={2}
-                              valueStyle={{ color: '#52c41a' }}
-                            />
-                          </Col>
-                          <Col xs={24} sm={12} md={6}>
-                            <Statistic
-                              title="Materials Cost"
-                              value={reportData.revenue.summary?.totalMaterials || 0}
-                              prefix="$"
-                              precision={2}
-                              valueStyle={{ color: '#1890ff' }}
-                            />
-                          </Col>
-                          <Col xs={24} sm={12} md={6}>
-                            <Statistic
-                              title="Labor Cost"
-                              value={reportData.revenue.summary?.totalLabor || 0}
-                              prefix="$"
-                              precision={2}
-                              valueStyle={{ color: '#fa8c16' }}
-                            />
-                          </Col>
-                          <Col xs={24} sm={12} md={6}>
-                            <Statistic
-                              title="Net Profit"
-                              value={(reportData.revenue.summary?.totalRevenue || 0) - 
-                                    (reportData.revenue.summary?.totalMaterials || 0) - 
-                                    (reportData.revenue.summary?.totalLabor || 0)}
-                              prefix="$"
-                              precision={2}
-                              valueStyle={{ color: '#722ed1' }}
-                            />
-                          </Col>
-                        </Row>
-                      ) : (
-                        <div className="text-center py-8">
-                          <Spin />
-                          <p className="mt-4 text-gray-500">Loading revenue data...</p>
-                    </div>
-                      )}
-                    </Card>
+      {/* Export Modal */}
+      <Modal
+        title="Export Business Report"
+        open={exportModalVisible}
+        onCancel={() => setExportModalVisible(false)}
+        onOk={handleExport}
+        okText="Export"
+        okButtonProps={{ icon: <DownloadOutlined /> }}
+      >
+        <div style={{ marginBottom: 16 }}>
+          <Text strong style={{ display: 'block', marginBottom: 8 }}>
+            Select Data Types (Multiple)
+          </Text>
+          <Select
+            mode="multiple"
+            value={selectedExportTypes}
+            onChange={setSelectedExportTypes}
+            style={{ width: '100%' }}
+            size="large"
+            placeholder="Select one or more data types"
+            maxTagCount={2}
+            maxTagPlaceholder={(omittedValues) => `+${omittedValues.length} more`}
+          >
+            <Option value="jobs">
+              <FileTextOutlined style={{ marginRight: 8 }} />
+              Jobs
+            </Option>
+            <Option value="customers">
+              <UserOutlined style={{ marginRight: 8 }} />
+              Customers
+            </Option>
+            <Option value="employees">
+              <TeamOutlined style={{ marginRight: 8 }} />
+              Employees
+            </Option>
+            <Option value="expenses">
+              <DollarOutlined style={{ marginRight: 8 }} />
+              Expenses
+            </Option>
+          </Select>
+          <Text type="secondary" style={{ display: 'block', marginTop: 4, fontSize: 12 }}>
+            Each selected type will have its own detail sheet plus a combined summary
+          </Text>
+        </div>
 
-                    {/* Labor Analysis */}
-                    <Card title="⏰ Labor Analysis" className="bg-gradient-to-r from-blue-50 to-cyan-50">
-                      {reportData?.labor ? (
-                        <Row gutter={[16, 16]}>
-                          <Col xs={24} sm={12} md={6}>
-                            <Statistic
-                              title="Estimated Hours"
-                              value={reportData.labor.summary?.totalEstimatedHours || 0}
-                              suffix="hrs"
-                              valueStyle={{ color: '#1890ff' }}
-                            />
-                          </Col>
-                          <Col xs={24} sm={12} md={6}>
-                            <Statistic
-                              title="Actual Hours"
-                              value={reportData.labor.summary?.totalActualHours || 0}
-                              suffix="hrs"
-                              valueStyle={{ color: '#52c41a' }}
-                            />
-                          </Col>
-                          <Col xs={24} sm={12} md={6}>
-                            <Statistic
-                              title="Efficiency"
-                              value={reportData.labor.summary?.efficiency || 0}
-                              suffix="%"
-                              precision={1}
-                              valueStyle={{ color: '#fa8c16' }}
-                            />
-                          </Col>
-                          <Col xs={24} sm={12} md={6}>
-                            <Statistic
-                              title="Labor Cost"
-                              value={reportData.labor.summary?.totalLaborCost || 0}
-                              prefix="$"
-                              precision={2}
-                              valueStyle={{ color: '#722ed1' }}
-                            />
-                          </Col>
-                        </Row>
-                      ) : (
-                        <div className="text-center py-8">
-                          <Spin />
-                          <p className="mt-4 text-gray-500">Loading labor data...</p>
-                      </div>
-                      )}
-                    </Card>
-
-                    {/* Expenses Analysis */}
-                    <Card title="💳 Expenses Analysis" className="bg-gradient-to-r from-orange-50 to-red-50">
-                      {reportData?.expenses ? (
-                        <Row gutter={[16, 16]}>
-                          <Col xs={24} sm={12} md={6}>
-                            <Statistic
-                              title="Billable Expenses"
-                              value={reportData.expenses.summary?.totalBillableExpenses || 0}
-                              prefix="$"
-                              precision={2}
-                              valueStyle={{ color: '#52c41a' }}
-                            />
-                          </Col>
-                          <Col xs={24} sm={12} md={6}>
-                            <Statistic
-                              title="Non-Billable"
-                              value={reportData.expenses.summary?.totalNonBillableExpenses || 0}
-                              prefix="$"
-                              precision={2}
-                              valueStyle={{ color: '#fa8c16' }}
-                            />
-                          </Col>
-                          <Col xs={24} sm={12} md={6}>
-                            <Statistic
-                              title="Total Expenses"
-                              value={reportData.expenses.summary?.totalExpenses || 0}
-                              prefix="$"
-                              precision={2}
-                              valueStyle={{ color: '#1890ff' }}
-                            />
-                          </Col>
-                          <Col xs={24} sm={12} md={6}>
-                            <Statistic
-                              title="Billable Ratio"
-                              value={reportData.expenses.summary?.billableRatio || 0}
-                              suffix="%"
-                              precision={1}
-                              valueStyle={{ color: '#722ed1' }}
-                            />
-                          </Col>
-                        </Row>
-                      ) : (
-                        <div className="text-center py-8">
-                          <Spin />
-                          <p className="mt-4 text-gray-500">Loading expenses data...</p>
-                      </div>
-                      )}
-                    </Card>
-                  </div>
-                )
-              },
-              {
-                key: "detailed",
-                label: (
-                  <span>
-                    <FileTextOutlined />
-                    Detailed Reports
-                  </span>
-                ),
-                children: (
-                  <div className="space-y-6">
-                    <Row gutter={[16, 16]}>
-                      <Col xs={24} lg={12}>
-                        <Card 
-                          title="📊 Revenue by Customer" 
-                          className="h-full"
-                          extra={
-                            <Button type="link" size="small">
-                              <DownloadOutlined /> Export
-                            </Button>
-                          }
-                        >
-                          {reportData?.revenue?.revenueByCustomer ? (
-                            <Table
-                              dataSource={Object.entries(reportData.revenue.revenueByCustomer).map(([customer, revenue]) => ({
-                                key: customer,
-                                customer,
-                                revenue: `$${revenue.toFixed(2)}`
-                              }))}
-                              columns={[
-                                { title: 'Customer', dataIndex: 'customer', key: 'customer' },
-                                { title: 'Revenue', dataIndex: 'revenue', key: 'revenue' }
-                              ]}
-                              pagination={false}
-                              size="small"
-                            />
-                          ) : (
-                            <div className="text-center py-4">
-                              <Spin />
-                              <p className="mt-2 text-gray-500">Loading customer revenue data...</p>
-                  </div>
-                )}
-            </Card>
-                      </Col>
-                      <Col xs={24} lg={12}>
-                        <Card 
-                          title="📈 Job Status Distribution" 
-                          className="h-full"
-                          extra={
-                            <Button type="link" size="small">
-                              <DownloadOutlined /> Export
-                            </Button>
-                          }
-                        >
-                          {reportData?.revenue?.jobsByStatus ? (
-              <div className="space-y-3">
-                              {Object.entries(reportData.revenue.jobsByStatus).map(([status, count]) => (
-                                <div key={status} className="flex justify-between items-center">
-                                  <Tag color={
-                                    status === 'COMPLETED' ? 'green' :
-                                    status === 'IN_PROGRESS' ? 'blue' :
-                                    status === 'PENDING' ? 'orange' : 'default'
-                                  }>
-                                    {status}
-                                  </Tag>
-                                  <span className="font-medium">{count} jobs</span>
-                                </div>
-                              ))}
-                    </div>
-                          ) : (
-                            <div className="text-center py-4">
-                              <Spin />
-                              <p className="mt-2 text-gray-500">Loading job status data...</p>
-                  </div>
-                )}
-                        </Card>
-                      </Col>
-                    </Row>
-                  </div>
-                )
-              },
-              {
-                key: "insights",
-                label: (
-                  <span>
-                    <RiseOutlined />
-                    Business Insights
-                  </span>
-                ),
-                children: (
-                  <div className="space-y-6">
-                    {reportData?.insights ? (
-                      <>
-                        <Card title="🎯 Key Performance Indicators">
-                          <Row gutter={[16, 16]}>
-                            <Col xs={24} sm={12} md={6}>
-                              <Statistic
-                                title="Active Customers"
-                                value={reportData.insights.overview?.activeCustomers || 0}
-                                prefix={<TeamOutlined />}
-                                valueStyle={{ color: '#1890ff' }}
-                              />
-                            </Col>
-                            <Col xs={24} sm={12} md={6}>
-                              <Statistic
-                                title="Total Revenue"
-                                value={reportData.insights.overview?.totalRevenue || 0}
-                                prefix="$"
-                                precision={2}
-                                valueStyle={{ color: '#52c41a' }}
-                              />
-                            </Col>
-                            <Col xs={24} sm={12} md={6}>
-                              <Statistic
-                                title="Efficiency"
-                                value={reportData.insights.efficiency?.efficiency || 0}
-                                suffix="%"
-                                precision={1}
-                                valueStyle={{ color: '#fa8c16' }}
-                              />
-                            </Col>
-                            <Col xs={24} sm={12} md={6}>
-                              <Statistic
-                                title="Completion Rate"
-                                value={reportData.insights.overview?.totalJobs > 0 ? 
-                                  Math.round((reportData.insights.overview.completedJobs / reportData.insights.overview.totalJobs) * 100) : 0}
-                                suffix="%"
-                                valueStyle={{ color: '#722ed1' }}
-                              />
-                            </Col>
-                          </Row>
-                        </Card>
-
-                        <Card title="🏆 Top Customers by Revenue">
-                          {reportData.insights.topCustomers ? (
-                            <Table
-                              dataSource={Object.entries(reportData.insights.topCustomers).map(([customer, revenue], index) => ({
-                                key: customer,
-                                rank: index + 1,
-                                customer,
-                                revenue: `$${revenue.toFixed(2)}`
-                              }))}
-                              columns={[
-                                { title: 'Rank', dataIndex: 'rank', key: 'rank', width: 60 },
-                                { title: 'Customer', dataIndex: 'customer', key: 'customer' },
-                                { title: 'Revenue', dataIndex: 'revenue', key: 'revenue' }
-                              ]}
-                              pagination={false}
-                              size="small"
-                            />
-                          ) : (
-                            <div className="text-center py-4">
-                              <p className="text-gray-500">No customer data available</p>
-                  </div>
-                )}
-                        </Card>
-                      </>
-                    ) : (
-                      <div className="text-center py-8">
-                        <Spin />
-                        <p className="mt-4 text-gray-500">Loading business insights...</p>
-                  </div>
-                )}
-              </div>
-                )
-              }
-            ]}
+        <div style={{ marginBottom: 16 }}>
+          <Text strong style={{ display: 'block', marginBottom: 8 }}>
+            Date Range
+          </Text>
+          <RangePicker
+            value={exportDateRange}
+            onChange={setExportDateRange}
+            style={{ width: '100%' }}
+            size="large"
+            placeholder={["Start Date", "End Date"]}
           />
-          </Card>
+          <Text type="secondary" style={{ display: 'block', marginTop: 4, fontSize: 12 }}>
+            Data will be filtered based on: Jobs (start date), Customers (creation date), Employees (labor within period), Expenses (expense date)
+          </Text>
+        </div>
 
-        {/* Export Options */}
-        <Card className="mt-6 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-          <Title level={3} className="text-center mb-6">
-            📤 Export Options
-                </Title>
-          <Row gutter={[16, 16]} justify="center">
-            <Col xs={24} sm={8} md={6}>
-                <Button
-                type="primary"
-                size="large"
-                icon={<FileTextOutlined />}
-                onClick={exportToPDF}
-                loading={isGeneratingReport}
-                className="w-full h-16"
-                style={{ 
-                  background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)', 
-                  border: 'none',
-                }}
-              >
-                <div className="flex flex-col items-center">
-                  <span className="text-lg">PDF Report</span>
-                  <span className="text-xs opacity-80">Professional Format</span>
-                </div>
-              </Button>
-            </Col>
-            <Col xs={24} sm={8} md={6}>
-              <Button 
-                type="primary"
-                size="large" 
-                icon={<BarChartOutlined />}
-                onClick={exportToExcel}
-                loading={isGeneratingReport}
-                className="w-full h-16"
-                style={{ 
-                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', 
-                  border: 'none',
-                }}
-              >
-                <div className="flex flex-col items-center">
-                  <span className="text-lg">Excel Report</span>
-                  <span className="text-xs opacity-80">Spreadsheet Format</span>
-                </div>
-                </Button>
-            </Col>
-            <Col xs={24} sm={8} md={6}>
-                <Button
-                  type="primary"
-                  size="large"
-                  icon={<DownloadOutlined />}
-                onClick={exportToCSV}
-                loading={isGeneratingReport}
-                className="w-full h-16"
-                style={{ 
-                  background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', 
-                  border: 'none',
-                }}
-              >
-                <div className="flex flex-col items-center">
-                  <span className="text-lg">CSV Data</span>
-                  <span className="text-xs opacity-80">Raw Data Export</span>
-                </div>
-                </Button>
-            </Col>
-          </Row>
-            </Card>
+        {selectedExportTypes.length > 0 && (
+          <div style={{ background: '#f5f5f5', padding: 12, borderRadius: 6 }}>
+            <Text strong style={{ display: 'block', marginBottom: 8 }}>
+              Export will include:
+            </Text>
+            <ul style={{ margin: 0, paddingLeft: 20 }}>
+              <li>Summary sheet with totals and calculations</li>
+              {selectedExportTypes.includes("jobs") && (
+                <li>Jobs: Revenue breakdown, billing & internal material costs, tax, payments, profit analysis</li>
+              )}
+              {selectedExportTypes.includes("customers") && (
+                <li>Customers: Total count, contact details</li>
+              )}
+              {selectedExportTypes.includes("employees") && (
+                <li>Employees: Hours worked, earnings, labor costs</li>
+              )}
+              {selectedExportTypes.includes("expenses") && (
+                <li>Expenses: Breakdown by type, total amounts</li>
+              )}
+            </ul>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

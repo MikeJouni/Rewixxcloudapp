@@ -1,12 +1,30 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button, Input, Spin, Select, Modal } from "antd";
-import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
+import {
+  Button,
+  Input,
+  Spin,
+  Select,
+  Card,
+  Row,
+  Col,
+  Statistic,
+  Typography,
+  DatePicker,
+} from "antd";
+import {
+  PlusOutlined,
+  SearchOutlined,
+  FileTextOutlined,
+} from "@ant-design/icons";
+import dayjs from "dayjs";
 import ExpenseTable from "./tables/ExpenseTable";
 import useExpenses from "../hooks/useExpenses";
 import ConfirmModal from "../../../components/ConfirmModal";
 
+const { RangePicker } = DatePicker;
 const { Option } = Select;
+const { Text } = Typography;
 
 const EXPENSE_TYPE_OPTIONS = [
   { value: "All", label: "All Types" },
@@ -46,13 +64,15 @@ const ExpenseListView = () => {
 
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [expenseToDelete, setExpenseToDelete] = useState(null);
+  const [selectedTypes, setSelectedTypes] = useState([]);
+  const [dateRange, setDateRange] = useState(null);
 
   const handleEdit = (expense) => {
     navigate(`/expenses/edit/${expense.id}`, { state: { expense } });
   };
 
   const handleDelete = (expenseId) => {
-    const expense = expenses.find(e => e.id === expenseId);
+    const expense = expenses.find((e) => e.id === expenseId);
     setExpenseToDelete(expense);
     setDeleteModalVisible(true);
   };
@@ -63,141 +83,227 @@ const ExpenseListView = () => {
         onSuccess: () => {
           setDeleteModalVisible(false);
           setExpenseToDelete(null);
-        }
+        },
       });
     }
   };
 
-  // Calculate total for current page
-  const currentPageTotal = expenses.reduce((sum, exp) => sum + parseFloat(exp.amount || 0), 0);
+  // Handle multi-select type filter
+  const handleTypeFilterChange = (values) => {
+    setSelectedTypes(values);
+    // If no types selected or "All" behavior needed
+    if (values.length === 0) {
+      setTypeFilter("All");
+    } else if (values.length === 1) {
+      setTypeFilter(values[0]);
+    } else {
+      // For multiple selections, we'll pass "All" and filter client-side
+      // Or you could modify the backend to accept multiple types
+      setTypeFilter("All");
+    }
+  };
+
+  // Filter expenses based on selected types and date range (client-side)
+  const filteredExpenses = expenses.filter((exp) => {
+    // Type filter
+    const matchesType = selectedTypes.length === 0 || selectedTypes.includes(exp.type);
+
+    // Date range filter
+    let matchesDate = true;
+    if (dateRange && dateRange.length === 2 && dateRange[0] && dateRange[1]) {
+      const expenseDate = dayjs(exp.expenseDate);
+      matchesDate =
+        (expenseDate.isAfter(dateRange[0]) || expenseDate.isSame(dateRange[0], "day")) &&
+        (expenseDate.isBefore(dateRange[1]) || expenseDate.isSame(dateRange[1], "day"));
+    }
+
+    return matchesType && matchesDate;
+  });
+
+  // Calculate totals
+  const currentPageTotal = filteredExpenses.reduce(
+    (sum, exp) => sum + parseFloat(exp.amount || 0),
+    0
+  );
 
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full" style={{ padding: "16px" }}>
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3 sm:gap-4">
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          marginBottom: 24,
+          flexWrap: "wrap",
+          gap: 16,
+        }}
+      >
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
-            Expense Management
-          </h1>
-          <p className="text-sm text-gray-600 mt-1">
-            Track non-billable expenses and labor hours
-          </p>
+          <Typography.Title level={3} style={{ margin: 0 }}>
+            Business Expense Management
+          </Typography.Title>
+          <Text type="secondary">Track and manage company expenses</Text>
         </div>
         <Button
           type="primary"
           size="large"
           icon={<PlusOutlined />}
           onClick={() => navigate("/expenses/create")}
-          className="w-full sm:w-auto"
-          style={{
-            background: 'linear-gradient(135deg, #1f2937 0%, #111827 100%)',
-            border: 'none',
-          }}
         >
-          Add New Expense
+          Add Expense
         </Button>
       </div>
 
-      {/* Search and Filter */}
-      <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row gap-3">
-        <Input
-          size="large"
-          placeholder="Search expenses by description, employee, vendor..."
-          prefix={<SearchOutlined />}
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          style={{ borderRadius: '8px', flex: 1 }}
-        />
-        <Select
-          size="large"
-          value={typeFilter}
-          onChange={setTypeFilter}
-          style={{ width: 200 }}
-        >
-          {EXPENSE_TYPE_OPTIONS.map(opt => (
-            <Option key={opt.value} value={opt.value}>{opt.label}</Option>
-          ))}
-        </Select>
-      </div>
+      {/* Summary Statistics */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col xs={12} sm={12} md={12}>
+          <Card size="small">
+            <Statistic
+              title="Total Expenses"
+              value={totalExpenses}
+              prefix={<FileTextOutlined />}
+            />
+          </Card>
+        </Col>
+        <Col xs={12} sm={12} md={12}>
+          <Card size="small">
+            <Statistic
+              title="Page Total"
+              value={currentPageTotal}
+              prefix="$"
+              precision={2}
+            />
+          </Card>
+        </Col>
+      </Row>
 
-      {/* Summary Bar */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 mb-4">
-        <div className="flex flex-wrap gap-6">
-          <div>
-            <p className="text-sm text-gray-600">Total Expenses</p>
-            <p className="text-2xl font-bold text-gray-900">{totalExpenses}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-600">Current Page Total</p>
-            <p className="text-2xl font-bold text-blue-600">${currentPageTotal.toFixed(2)}</p>
-          </div>
-        </div>
-      </div>
+      {/* Filters */}
+      <Card size="small" style={{ marginBottom: 16 }}>
+        <Row gutter={[12, 12]} align="middle">
+          <Col xs={24} sm={24} md={8}>
+            <Input
+              size="large"
+              placeholder="Search by description, employee, vendor..."
+              prefix={<SearchOutlined />}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              allowClear
+            />
+          </Col>
+          <Col xs={24} sm={12} md={8}>
+            <Select
+              mode="multiple"
+              size="large"
+              placeholder="Filter by type"
+              value={selectedTypes}
+              onChange={handleTypeFilterChange}
+              style={{ width: "100%" }}
+              allowClear
+              maxTagCount={2}
+              maxTagPlaceholder={(omittedValues) =>
+                `+${omittedValues.length} more`
+              }
+            >
+              {EXPENSE_TYPE_OPTIONS.filter((opt) => opt.value !== "All").map(
+                (opt) => (
+                  <Option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </Option>
+                )
+              )}
+            </Select>
+          </Col>
+          <Col xs={24} sm={12} md={8}>
+            <RangePicker
+              size="large"
+              value={dateRange}
+              onChange={setDateRange}
+              style={{ width: "100%" }}
+              placeholder={["Start Date", "End Date"]}
+              allowClear
+            />
+          </Col>
+        </Row>
+      </Card>
 
       {/* Expenses Table */}
-      {isLoading ? (
-        <div className="text-center py-12">
-          <Spin size="large" />
-          <p className="mt-3 text-gray-600 text-lg">Loading expenses...</p>
-        </div>
-      ) : (
-        <div className="w-full overflow-x-auto bg-white rounded-lg shadow">
+      <Card size="small">
+        {isLoading ? (
+          <div style={{ textAlign: "center", padding: 48 }}>
+            <Spin size="large" />
+            <p style={{ marginTop: 16, color: "#666" }}>Loading expenses...</p>
+          </div>
+        ) : (
           <ExpenseTable
-            expenses={expenses}
+            expenses={filteredExpenses}
             onEdit={handleEdit}
             onDelete={handleDelete}
             isLoading={isLoading}
           />
-        </div>
-      )}
+        )}
 
-      {/* Pagination Controls */}
-      <div className="flex flex-col sm:flex-row items-center justify-between mt-4 gap-2">
-        <div className="flex items-center gap-2">
-          <Button
-            onClick={() => setPage(page - 1)}
-            disabled={!hasPrevious}
-            size="small"
-          >
-            Previous
-          </Button>
-          <span className="text-sm text-gray-600">
-            Page {page + 1} of {totalPages}
-          </span>
-          <Button
-            onClick={() => setPage(page + 1)}
-            disabled={!hasNext}
-            size="small"
-          >
-            Next
-          </Button>
+        {/* Pagination Controls */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginTop: 16,
+            paddingTop: 16,
+            borderTop: "1px solid #f0f0f0",
+            flexWrap: "wrap",
+            gap: 12,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Button
+              onClick={() => setPage(page - 1)}
+              disabled={!hasPrevious}
+              size="small"
+            >
+              Previous
+            </Button>
+            <Text type="secondary">
+              Page {page + 1} of {totalPages || 1}
+            </Text>
+            <Button
+              onClick={() => setPage(page + 1)}
+              disabled={!hasNext}
+              size="small"
+            >
+              Next
+            </Button>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Text type="secondary">Rows per page:</Text>
+            <Select
+              size="small"
+              value={pageSize}
+              onChange={(value) => {
+                setPage(0);
+                setPageSize(value);
+              }}
+              style={{ width: 70 }}
+            >
+              <Option value={5}>5</Option>
+              <Option value={10}>10</Option>
+              <Option value={25}>25</Option>
+              <Option value={50}>50</Option>
+            </Select>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <label htmlFor="pageSize" className="text-sm">
-            Rows per page:
-          </label>
-          <select
-            id="pageSize"
-            value={pageSize}
-            onChange={(e) => {
-              setPage(0);
-              setPageSize(Number(e.target.value));
-            }}
-            className="border border-gray-300 rounded px-2 py-1"
-          >
-            <option value={5}>5</option>
-            <option value={10}>10</option>
-            <option value={25}>25</option>
-            <option value={50}>50</option>
-          </select>
-        </div>
-      </div>
+      </Card>
 
       {/* Delete Confirmation Modal */}
       <ConfirmModal
         isOpen={deleteModalVisible}
         title="Delete Expense"
-        message={`Are you sure you want to delete this ${expenseToDelete?.type.toLowerCase()} expense${expenseToDelete?.employeeName ? ` for ${expenseToDelete.employeeName}` : ''}?`}
+        message={`Are you sure you want to delete this ${expenseToDelete?.type?.toLowerCase()} expense${
+          expenseToDelete?.employeeName
+            ? ` for ${expenseToDelete.employeeName}`
+            : ""
+        }?`}
         confirmLabel="Delete"
         cancelLabel="Cancel"
         onCancel={() => {

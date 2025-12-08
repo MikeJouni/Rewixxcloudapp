@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { Card, Button, Form, Drawer, Space, message, Grid } from "antd";
-import { FileTextOutlined, PlusCircleOutlined, EyeOutlined, DownloadOutlined, CloseOutlined } from "@ant-design/icons";
+import React, { useState, useMemo } from "react";
+import { Card, Button, Form, Drawer, message, Grid, Row, Col, Statistic, Input, Select, Typography } from "antd";
+import { FileTextOutlined, PlusOutlined, DownloadOutlined, CloseOutlined, SearchOutlined, CheckCircleOutlined, ClockCircleOutlined, DollarOutlined } from "@ant-design/icons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as accountSettingsService from "../../services/accountSettingsService";
 import * as contractService from "./services/contractService";
@@ -14,6 +14,8 @@ import { generateContractPDF } from "./utils/pdfGenerator";
 import dayjs from "dayjs";
 
 const { useBreakpoint } = Grid;
+const { Option } = Select;
+const { Text } = Typography;
 
 const ContractsPage = () => {
   const [form] = Form.useForm();
@@ -22,6 +24,8 @@ const ContractsPage = () => {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [selectedJob, setSelectedJob] = useState(null);
   const [editingContract, setEditingContract] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
   const screens = useBreakpoint();
   const queryClient = useQueryClient();
 
@@ -44,6 +48,33 @@ const ContractsPage = () => {
   });
 
   const contracts = contractsData?.contracts || [];
+
+  // Filter contracts based on search and status
+  const filteredContracts = useMemo(() => {
+    return contracts.filter((contract) => {
+      const matchesSearch =
+        !searchTerm ||
+        contract.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        contract.scopeOfWork?.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchesStatus =
+        statusFilter === "All" || contract.status === statusFilter;
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [contracts, searchTerm, statusFilter]);
+
+  // Calculate statistics
+  const stats = useMemo(() => {
+    const total = contracts.length;
+    const paid = contracts.filter((c) => c.status === "PAID").length;
+    const unpaid = contracts.filter((c) => c.status === "UNPAID").length;
+    const totalValue = contracts.reduce(
+      (sum, c) => sum + (parseFloat(c.totalPrice) || 0),
+      0
+    );
+    return { total, paid, unpaid, totalValue };
+  }, [contracts]);
 
   // Create contract mutation
   const createContractMutation = useMutation({
@@ -72,19 +103,24 @@ const ContractsPage = () => {
   });
 
   const handleValuesChange = () => {
-    // Update preview in real-time
+    // Update preview in real-time - no required fields needed
     const values = form.getFieldsValue();
-    if (values.customerName && values.scopeOfWork && values.totalPrice) {
-      setPreviewData({
-        ...values,
-        date: values.date ? values.date.format("YYYY-MM-DD") : dayjs().format("YYYY-MM-DD"),
-      });
-    }
+    setPreviewData({
+      ...values,
+      date: values.date ? values.date.format("YYYY-MM-DD") : dayjs().format("YYYY-MM-DD"),
+    });
   };
 
   const handleOpenDrawer = () => {
     setDrawerVisible(true);
-    setPreviewData(null);
+    // Initialize preview with default form values immediately
+    setTimeout(() => {
+      const values = form.getFieldsValue();
+      setPreviewData({
+        ...values,
+        date: values.date ? values.date.format("YYYY-MM-DD") : dayjs().format("YYYY-MM-DD"),
+      });
+    }, 100);
   };
 
   const handleCloseDrawer = () => {
@@ -216,75 +252,120 @@ const ContractsPage = () => {
   const isMobile = !screens.md;
 
   return (
-    <div className="w-full max-w-7xl mx-auto">
+    <div className="w-full h-full" style={{ padding: "16px" }}>
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          marginBottom: 24,
+          flexWrap: "wrap",
+          gap: 16,
+        }}
+      >
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 flex items-center gap-2">
-            <FileTextOutlined />
-            Contracts
-          </h1>
-          <p className="text-gray-600 mt-1">
-            Create and manage professional contracts
-          </p>
+          <Typography.Title level={3} style={{ margin: 0 }}>
+            Contract Management
+          </Typography.Title>
+          <Text type="secondary">Create and manage professional contracts</Text>
         </div>
+        <Button
+          type="primary"
+          size="large"
+          icon={<PlusOutlined />}
+          onClick={handleOpenDrawer}
+        >
+          Create Contract
+        </Button>
       </div>
 
-      {/* Create New Card - Always visible */}
-      <Card
-        className="mb-6"
-        style={{
-          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-          border: "none",
-          borderRadius: "12px",
-          boxShadow: "0 4px 12px rgba(102, 126, 234, 0.3)",
-        }}
-        bodyStyle={{ padding: "24px" }}
-      >
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h2 className="text-xl font-bold text-white mb-2">
-              Create New Document
-            </h2>
-          </div>
-          <Button
-            type="primary"
-            size="large"
-            icon={<PlusCircleOutlined />}
-            onClick={handleOpenDrawer}
-            style={{
-              background: "#fff",
-              color: "#000",
-              border: "none",
-              fontWeight: "600",
-              height: "48px",
-              padding: "0 32px",
-              borderRadius: "8px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-            }}
-          >
-            Create Contract
-          </Button>
-        </div>
+      {/* Summary Statistics */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col xs={12} sm={12} md={6}>
+          <Card size="small">
+            <Statistic
+              title="Total Contracts"
+              value={stats.total}
+              prefix={<FileTextOutlined />}
+            />
+          </Card>
+        </Col>
+        <Col xs={12} sm={12} md={6}>
+          <Card size="small">
+            <Statistic
+              title="Paid"
+              value={stats.paid}
+              prefix={<CheckCircleOutlined />}
+              valueStyle={{ color: "#3f8600" }}
+            />
+          </Card>
+        </Col>
+        <Col xs={12} sm={12} md={6}>
+          <Card size="small">
+            <Statistic
+              title="Unpaid"
+              value={stats.unpaid}
+              prefix={<ClockCircleOutlined />}
+              valueStyle={{ color: "#cf1322" }}
+            />
+          </Card>
+        </Col>
+        <Col xs={12} sm={12} md={6}>
+          <Card size="small">
+            <Statistic
+              title="Total Value"
+              value={stats.totalValue}
+              prefix="$"
+              precision={2}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Filters */}
+      <Card size="small" style={{ marginBottom: 16 }}>
+        <Row gutter={[12, 12]} align="middle">
+          <Col xs={24} sm={24} md={12}>
+            <Input
+              size="large"
+              placeholder="Search by customer name, scope of work..."
+              prefix={<SearchOutlined />}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              allowClear
+            />
+          </Col>
+          <Col xs={24} sm={24} md={12}>
+            <Select
+              size="large"
+              value={statusFilter}
+              onChange={setStatusFilter}
+              style={{ width: "100%" }}
+            >
+              <Option value="All">All Statuses</Option>
+              <Option value="PAID">Paid</Option>
+              <Option value="UNPAID">Unpaid</Option>
+            </Select>
+          </Col>
+        </Row>
       </Card>
 
       {/* Contracts List */}
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">
-          Recent Documents
-        </h2>
+      <Card size="small">
         <ContractList
-          contracts={contracts}
+          contracts={filteredContracts}
           onEdit={handleEditContract}
           onDownload={handleDownloadPDF}
+          isLoading={contractsLoading}
         />
-      </div>
+      </Card>
 
       {/* Creation Drawer */}
       <Drawer
         title={
-          <div className="flex items-center gap-2">
-            <FileTextOutlined style={{ fontSize: "20px", color: "#667eea" }} />
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <FileTextOutlined style={{ fontSize: "20px" }} />
             <span style={{ fontSize: "18px", fontWeight: "600" }}>
               {editingContract ? "Edit Contract" : "Create Contract"}
             </span>
@@ -313,13 +394,12 @@ const ContractsPage = () => {
               size="large"
               onClick={handleSave}
               loading={createContractMutation.isLoading || updateContractMutation.isLoading}
-              style={{ background: "#667eea", borderColor: "#667eea" }}
             >
               {editingContract ? "Update Document" : "Save Document"}
             </Button>
           </div>
         }
-        bodyStyle={{ padding: "24px" }}
+        styles={{ body: { padding: "24px" } }}
       >
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Form Section */}

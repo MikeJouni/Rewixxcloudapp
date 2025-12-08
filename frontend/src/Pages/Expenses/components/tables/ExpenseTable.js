@@ -97,18 +97,6 @@ const ExpenseTable = ({ expenses, onEdit, onDelete, isLoading }) => {
       sorter: (a, b) => parseFloat(a.amount) - parseFloat(b.amount),
     },
     {
-      title: "Billable",
-      dataIndex: "billable",
-      key: "billable",
-      width: 90,
-      align: "center",
-      render: (billable) => billable ? (
-        <Tag color="green">Yes</Tag>
-      ) : (
-        <Tag color="red">No</Tag>
-      ),
-    },
-    {
       title: "Actions",
       key: "actions",
       width: 130,
@@ -171,9 +159,6 @@ const ExpenseTable = ({ expenses, onEdit, onDelete, isLoading }) => {
                   <div className="text-lg font-bold text-gray-900">
                     ${parseFloat(expense.amount).toFixed(2)}
                   </div>
-                  <Tag color={expense.billable ? "green" : "red"} className="mt-1">
-                    {expense.billable ? "Billable" : "Non-Billable"}
-                  </Tag>
                 </div>
               </div>
 

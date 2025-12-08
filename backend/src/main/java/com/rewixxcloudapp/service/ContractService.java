@@ -224,4 +224,14 @@ public class ContractService {
         Optional<Contract> contract = contractRepository.findByIdAndUserId(id, userId);
         contract.ifPresent(contractRepository::delete);
     }
+
+    public Optional<Contract> getContractByJobId(Long jobId, Long userId) {
+        Optional<Contract> contractOpt = contractRepository.findByJobIdAndUserId(jobId, userId);
+        if (contractOpt.isPresent()) {
+            Contract contract = contractOpt.get();
+            syncContractWithJob(contract);
+            return Optional.of(contract);
+        }
+        return contractOpt;
+    }
 }
