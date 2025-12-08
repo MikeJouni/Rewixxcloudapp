@@ -23,3 +23,7 @@ export const updateContract = (id, contractData) => {
 export const deleteContract = (id) => {
   return Backend.delete(`api/contracts/${id}`);
 };
+
+export const getContractByJobId = (jobId) => {
+  return Backend.get(`api/contracts/by-job/${jobId}`);
+};

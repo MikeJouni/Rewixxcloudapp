@@ -144,4 +144,21 @@ public class ContractController {
             return ResponseEntity.internalServerError().build();
         }
     }
+
+    @GetMapping("/by-job/{jobId}")
+    public ResponseEntity<?> getContractByJobId(@PathVariable Long jobId, HttpServletRequest request) {
+        try {
+            Long userId = getUserIdFromRequest(request);
+            if (userId == null) {
+                return ResponseEntity.status(401).body(Map.of("message", "Unauthorized"));
+            }
+
+            Optional<Contract> contract = contractService.getContractByJobId(jobId, userId);
+            return contract.map(ResponseEntity::ok)
+                    .orElseGet(() -> ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            logger.error("Error getting contract by job id: {}", jobId, e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 }

@@ -8,14 +8,11 @@ const MaterialsSection = ({
   onScanBarcode,
   onProcessReceipt,
   onRemoveMaterial,
-  onUpdateMaterial,
   products,
   productsLoading,
   productsError
 }) => {
   const queryClient = useQueryClient();
-  const [editingMaterialId, setEditingMaterialId] = useState(null);
-  const [editingQuantity, setEditingQuantity] = useState("");
 
   // Inline add form state
   const [showAddForm, setShowAddForm] = useState(false);
@@ -58,42 +55,6 @@ const MaterialsSection = ({
     return dedupedProducts.filter(p => (p.name || "").toLowerCase().includes(term));
   }, [dedupedProducts, productSearchTerm]);
 
-  const handleStartEdit = (material) => {
-    setEditingMaterialId(material.id);
-    setEditingQuantity(material.quantity.toString());
-  };
-
-  const handleCancelEdit = () => {
-    setEditingMaterialId(null);
-    setEditingQuantity("");
-  };
-
-  const handleSaveEdit = async (material) => {
-    const newQuantity = parseInt(editingQuantity);
-    if (isNaN(newQuantity) || newQuantity <= 0) {
-      alert("Please enter a valid quantity greater than 0");
-      return;
-    }
-
-    if (!material.saleId) {
-      alert("Cannot update material: Sale ID not found");
-      return;
-    }
-
-    try {
-      await onUpdateMaterial({
-        jobId: job.id,
-        saleId: material.saleId,
-        quantity: newQuantity
-      });
-      setEditingMaterialId(null);
-      setEditingQuantity("");
-    } catch (error) {
-      console.error("Failed to update material:", error);
-      alert("Failed to update material quantity");
-    }
-  };
-
   const handleAddMaterialClick = () => {
     setShowAddForm(true);
   };
@@ -107,8 +68,6 @@ const MaterialsSection = ({
       customName: "",
     });
     setProductSearchTerm("");
-    setEditingMaterialId(null);
-    setEditingQuantity("");
   };
 
   const handleSubmitAdd = async (e) => {
@@ -389,44 +348,8 @@ const MaterialsSection = ({
                       <td className="px-3 py-2 text-gray-900 text-sm">
                         ${material.price?.toFixed(2) || "0.00"}
                       </td>
-                      <td className="px-3 py-2 text-sm">
-                        {editingMaterialId !== null && editingMaterialId === material.id ? (
-                          <div className="flex items-center gap-1">
-                            <input
-                              type="number"
-                              min="1"
-                              value={editingQuantity}
-                              onChange={(e) => setEditingQuantity(e.target.value)}
-                              className="w-16 px-2 py-1 border border-blue-500 rounded text-sm"
-                              autoFocus
-                            />
-                            <button
-                              onClick={() => handleSaveEdit(material)}
-                              className="px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600"
-                              title="Save"
-                            >
-                              ✓
-                            </button>
-                            <button
-                              onClick={handleCancelEdit}
-                              className="px-2 py-1 bg-gray-400 text-white rounded text-xs hover:bg-gray-500"
-                              title="Cancel"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <span className="text-gray-900">{material.quantity}</span>
-                            <button
-                              onClick={() => handleStartEdit(material)}
-                              className="text-blue-500 hover:text-blue-700 text-xs"
-                              title="Edit quantity"
-                            >
-                              ✏️
-                            </button>
-                          </div>
-                        )}
+                      <td className="px-3 py-2 text-sm text-gray-900">
+                        {material.quantity}
                       </td>
                       <td className="px-3 py-2 font-medium text-gray-900 text-sm">
                         ${(material.price * material.quantity).toFixed(2)}
@@ -470,41 +393,7 @@ const MaterialsSection = ({
                 <div className="flex justify-between items-center mt-2">
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-gray-600">Qty:</span>
-                    {editingMaterialId !== null && editingMaterialId === material.id ? (
-                      <div className="flex items-center gap-1">
-                        <input
-                          type="number"
-                          min="1"
-                          value={editingQuantity}
-                          onChange={(e) => setEditingQuantity(e.target.value)}
-                          className="w-14 px-2 py-1 border border-blue-500 rounded text-sm"
-                          autoFocus
-                        />
-                        <button
-                          onClick={() => handleSaveEdit(material)}
-                          className="px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600"
-                        >
-                          ✓
-                        </button>
-                        <button
-                          onClick={handleCancelEdit}
-                          className="px-2 py-1 bg-gray-400 text-white rounded text-xs hover:bg-gray-500"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-900">{material.quantity}</span>
-                        <button
-                          onClick={() => handleStartEdit(material)}
-                          className="text-blue-500 hover:text-blue-700 text-xs"
-                          title="Edit quantity"
-                        >
-                          ✏️
-                        </button>
-                      </div>
-                    )}
+                    <span className="text-sm font-medium text-gray-900">{material.quantity}</span>
                   </div>
                   <div className="text-right">
                     <div className="text-xs text-gray-600">Total</div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Button, Input, DatePicker, Select, InputNumber, Switch } from "antd";
+import { Button, Input, DatePicker, Select, InputNumber } from "antd";
 import dayjs from "dayjs";
 import { useQuery } from "@tanstack/react-query";
 import * as jobService from "../../../Jobs/services/jobService";
@@ -35,7 +35,6 @@ const ExpenseForm = ({ onSubmit, onCancel, initialData, isLoading }) => {
     jobId: initialData?.jobId || null,
     vendor: initialData?.vendor || "",
     receiptNumber: initialData?.receiptNumber || "",
-    billable: initialData?.billable || false,
   });
 
   const [errors, setErrors] = useState({});
@@ -328,17 +327,6 @@ const ExpenseForm = ({ onSubmit, onCancel, initialData, isLoading }) => {
           rows={3}
           size="large"
         />
-      </div>
-
-      {/* Billable */}
-      <div className="flex items-center gap-2">
-        <Switch
-          checked={formData.billable}
-          onChange={(checked) => handleInputChange("billable", checked)}
-        />
-        <label className="text-sm font-medium text-gray-700">
-          Billable to customer
-        </label>
       </div>
 
       {/* Buttons */}

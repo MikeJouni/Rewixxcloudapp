@@ -1,8 +1,10 @@
 import React, { useState } from "react";
-import { Card, Empty, Tag, Row, Col, Button, message } from "antd";
+import { Card, Empty, Tag, Row, Col, Button, message, Spin, Modal, Descriptions, Typography } from "antd";
 import { FileTextOutlined, CalendarOutlined, UserOutlined, DollarOutlined, EyeOutlined, EditOutlined, DownloadOutlined } from "@ant-design/icons";
 
-const ContractList = ({ contracts = [], onEdit, onView, onDownload }) => {
+const { Text } = Typography;
+
+const ContractList = ({ contracts = [], onEdit, onView, onDownload, isLoading }) => {
   const [selectedContract, setSelectedContract] = useState(null);
 
   const handleEdit = (contract) => {
@@ -30,21 +32,29 @@ const ContractList = ({ contracts = [], onEdit, onView, onDownload }) => {
   };
 
 
+  if (isLoading) {
+    return (
+      <div style={{ textAlign: "center", padding: 48 }}>
+        <Spin size="large" />
+        <p style={{ marginTop: 16, color: "#666" }}>Loading contracts...</p>
+      </div>
+    );
+  }
+
   if (contracts.length === 0) {
     return (
-      <Card>
-        <Empty
-          image={<FileTextOutlined style={{ fontSize: 64, color: "#d9d9d9" }} />}
-          description={
-            <div>
-              <p className="text-gray-600 text-base">No contracts yet</p>
-              <p className="text-sm text-gray-400 mt-2">
-                Create your first contract using the form above
-              </p>
-            </div>
-          }
-        />
-      </Card>
+      <Empty
+        image={<FileTextOutlined style={{ fontSize: 64, color: "#d9d9d9" }} />}
+        description={
+          <div>
+            <Text type="secondary">No contracts found</Text>
+            <br />
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              Create your first contract using the button above
+            </Text>
+          </div>
+        }
+      />
     );
   }
 
@@ -55,97 +65,92 @@ const ContractList = ({ contracts = [], onEdit, onView, onDownload }) => {
           <Col xs={24} sm={12} lg={8} xl={6} key={contract.id}>
             <Card
               hoverable
-              className="h-full cursor-pointer"
-              style={{
-                borderRadius: "8px",
-                transition: "all 0.3s ease",
-              }}
-              bodyStyle={{ padding: "16px" }}
+              size="small"
+              style={{ height: "100%" }}
+              styles={{ body: { padding: "16px", height: "100%", display: "flex", flexDirection: "column" } }}
               onClick={() => handleView(contract)}
             >
-              <div className="flex flex-col h-full">
-                {/* Header */}
-                <div className="flex justify-between items-start mb-3">
-                  <Tag
-                    color={contract.documentType === "invoice" ? "blue" : "green"}
-                    style={{ marginRight: 0, fontSize: "12px", fontWeight: "500" }}
-                  >
-                    {contract.documentType?.toUpperCase() || "CONTRACT"}
-                  </Tag>
-                  <Tag
-                    color={
-                      contract.status === "PAID"
-                        ? "success"
-                        : contract.status === "PARTIAL"
-                        ? "warning"
-                        : "default"
-                    }
-                  >
-                    {contract.status || "UNPAID"}
-                  </Tag>
-                </div>
+              {/* Header */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+                <Tag
+                  color={contract.documentType === "invoice" ? "blue" : "green"}
+                  style={{ marginRight: 0 }}
+                >
+                  {contract.documentType?.toUpperCase() || "CONTRACT"}
+                </Tag>
+                <Tag
+                  color={
+                    contract.status === "PAID"
+                      ? "success"
+                      : contract.status === "PARTIAL"
+                      ? "warning"
+                      : "default"
+                  }
+                >
+                  {contract.status || "UNPAID"}
+                </Tag>
+              </div>
 
-                {/* Customer Info */}
-                <div className="mb-3">
-                  <div className="flex items-center gap-2 mb-1">
-                    <UserOutlined style={{ color: "#8c8c8c", fontSize: "14px" }} />
-                    <span className="font-semibold text-sm">{contract.customerName}</span>
-                  </div>
-                  <div className="text-xs text-gray-500 ml-6">
-                    {contract.customerAddress}
-                  </div>
+              {/* Customer Info */}
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                  <UserOutlined style={{ color: "#8c8c8c", fontSize: 14 }} />
+                  <Text strong style={{ fontSize: 14 }}>{contract.customerName}</Text>
                 </div>
+                <Text type="secondary" style={{ fontSize: 12, marginLeft: 22 }}>
+                  {contract.customerAddress}
+                </Text>
+              </div>
 
-                {/* Date and Price */}
-                <div className="mt-auto">
-                  <div className="flex items-center gap-2 mb-2">
-                    <CalendarOutlined style={{ color: "#8c8c8c", fontSize: "12px" }} />
-                    <span className="text-xs text-gray-600">
-                      {contract.contractDate || contract.date}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <DollarOutlined style={{ color: "#52c41a", fontSize: "14px" }} />
-                    <span className="font-bold text-base" style={{ color: "#52c41a" }}>
-                      ${parseFloat(contract.totalPrice || 0).toLocaleString("en-US", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </span>
-                  </div>
+              {/* Date and Price */}
+              <div style={{ marginTop: "auto" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <CalendarOutlined style={{ color: "#8c8c8c", fontSize: 12 }} />
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    {contract.contractDate || contract.date}
+                  </Text>
                 </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <DollarOutlined style={{ color: "#3f8600", fontSize: 14 }} />
+                  <Text strong style={{ fontSize: 16, color: "#3f8600" }}>
+                    ${parseFloat(contract.totalPrice || 0).toLocaleString("en-US", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </Text>
+                </div>
+              </div>
 
-                {/* Quick Action Buttons */}
-                <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
-                  <Button
-                    size="small"
-                    icon={<EyeOutlined />}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleView(contract);
-                    }}
-                  >
-                    View
-                  </Button>
-                  <Button
-                    size="small"
-                    icon={<EditOutlined />}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEdit(contract);
-                    }}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    size="small"
-                    icon={<DownloadOutlined />}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDownload(contract);
-                    }}
-                  />
-                </div>
+              {/* Quick Action Buttons */}
+              <div style={{ display: "flex", gap: 8, marginTop: 12, paddingTop: 12, borderTop: "1px solid #f0f0f0" }}>
+                <Button
+                  size="small"
+                  icon={<EyeOutlined />}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleView(contract);
+                  }}
+                >
+                  View
+                </Button>
+                <Button
+                  size="small"
+                  icon={<EditOutlined />}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEdit(contract);
+                  }}
+                >
+                  Edit
+                </Button>
+                <Button
+                  size="small"
+                  icon={<DownloadOutlined />}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDownload(contract);
+                  }}
+                />
               </div>
             </Card>
           </Col>
@@ -153,120 +158,78 @@ const ContractList = ({ contracts = [], onEdit, onView, onDownload }) => {
       </Row>
 
       {/* View Contract Modal */}
-      {selectedContract && (
-        <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-          onClick={() => setSelectedContract(null)}
-        >
-          <div
-            className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
+      <Modal
+        title="Contract Details"
+        open={!!selectedContract}
+        onCancel={() => setSelectedContract(null)}
+        width={700}
+        footer={[
+          <Button key="close" onClick={() => setSelectedContract(null)}>
+            Close
+          </Button>,
+          <Button
+            key="download"
+            icon={<DownloadOutlined />}
+            onClick={() => handleDownload(selectedContract)}
           >
-            <div className="sticky top-0 bg-white border-b px-4 py-3 flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Contract Details</h3>
-              <button
-                onClick={() => setSelectedContract(null)}
-                className="text-gray-500 hover:text-gray-700 text-2xl"
-              >
-                &times;
-              </button>
-            </div>
-            <div className="p-4 space-y-4">
-              {/* Company Info */}
-              <div className="border-b pb-3">
-                <h4 className="font-semibold text-gray-700 mb-2">Company</h4>
-                <p className="font-medium">{selectedContract.companyName}</p>
-                <p className="text-sm text-gray-600">{selectedContract.companyAddress}</p>
-                <p className="text-sm text-gray-600">{selectedContract.companyPhone}</p>
-                <p className="text-sm text-gray-600">{selectedContract.companyEmail}</p>
-              </div>
+            Download PDF
+          </Button>,
+          <Button
+            key="edit"
+            type="primary"
+            icon={<EditOutlined />}
+            onClick={() => {
+              const contract = selectedContract;
+              setSelectedContract(null);
+              handleEdit(contract);
+            }}
+          >
+            Edit Contract
+          </Button>,
+        ]}
+      >
+        {selectedContract && (
+          <>
+            <Descriptions title="Company Information" bordered size="small" column={1} style={{ marginBottom: 16 }}>
+              <Descriptions.Item label="Company Name">{selectedContract.companyName || "-"}</Descriptions.Item>
+              <Descriptions.Item label="Address">{selectedContract.companyAddress || "-"}</Descriptions.Item>
+              <Descriptions.Item label="Phone">{selectedContract.companyPhone || "-"}</Descriptions.Item>
+              <Descriptions.Item label="Email">{selectedContract.companyEmail || "-"}</Descriptions.Item>
+            </Descriptions>
 
-              {/* Customer Info */}
-              <div className="border-b pb-3">
-                <h4 className="font-semibold text-gray-700 mb-2">Customer</h4>
-                <p className="font-medium">{selectedContract.customerName}</p>
-                <p className="text-sm text-gray-600">{selectedContract.customerAddress}</p>
-              </div>
+            <Descriptions title="Customer Information" bordered size="small" column={1} style={{ marginBottom: 16 }}>
+              <Descriptions.Item label="Customer Name">{selectedContract.customerName || "-"}</Descriptions.Item>
+              <Descriptions.Item label="Address">{selectedContract.customerAddress || "-"}</Descriptions.Item>
+            </Descriptions>
 
-              {/* Contract Details */}
-              <div className="border-b pb-3">
-                <h4 className="font-semibold text-gray-700 mb-2">Contract Details</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <span className="text-sm text-gray-500">Date:</span>
-                    <p className="font-medium">{selectedContract.contractDate || selectedContract.date}</p>
-                  </div>
-                  <div>
-                    <span className="text-sm text-gray-500">Status:</span>
-                    <p>
-                      <Tag color={selectedContract.status === "PAID" ? "success" : selectedContract.status === "PARTIAL" ? "warning" : "default"}>
-                        {selectedContract.status || "UNPAID"}
-                      </Tag>
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-sm text-gray-500">Total Price:</span>
-                    <p className="font-bold text-lg text-green-600">
-                      ${parseFloat(selectedContract.totalPrice || 0).toFixed(2)}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-sm text-gray-500">Deposit:</span>
-                    <p className="font-medium">{selectedContract.depositPercent || 0}%</p>
-                  </div>
-                </div>
-              </div>
+            <Descriptions title="Contract Details" bordered size="small" column={2} style={{ marginBottom: 16 }}>
+              <Descriptions.Item label="Date">{selectedContract.contractDate || selectedContract.date || "-"}</Descriptions.Item>
+              <Descriptions.Item label="Status">
+                <Tag color={selectedContract.status === "PAID" ? "success" : selectedContract.status === "PARTIAL" ? "warning" : "default"}>
+                  {selectedContract.status || "UNPAID"}
+                </Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="Total Price">
+                <Text strong style={{ color: "#3f8600", fontSize: 16 }}>
+                  ${parseFloat(selectedContract.totalPrice || 0).toFixed(2)}
+                </Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="Deposit">{selectedContract.depositPercent || 0}%</Descriptions.Item>
+            </Descriptions>
 
-              {/* Scope of Work */}
-              <div className="border-b pb-3">
-                <h4 className="font-semibold text-gray-700 mb-2">Scope of Work</h4>
-                <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedContract.scopeOfWork || "N/A"}</p>
-              </div>
+            <Descriptions title="Scope of Work" bordered size="small" column={1} style={{ marginBottom: 16 }}>
+              <Descriptions.Item>
+                <div style={{ whiteSpace: "pre-wrap" }}>{selectedContract.scopeOfWork || "N/A"}</div>
+              </Descriptions.Item>
+            </Descriptions>
 
-              {/* Warranty & Payment */}
-              <div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <h4 className="font-semibold text-gray-700 mb-2">Warranty</h4>
-                    <p className="text-sm text-gray-700">{selectedContract.warranty || "N/A"}</p>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-700 mb-2">Payment Methods</h4>
-                    <p className="text-sm text-gray-700">{selectedContract.paymentMethods || "N/A"}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-3 pt-4 border-t">
-                <Button
-                  type="primary"
-                  icon={<EditOutlined />}
-                  onClick={() => {
-                    const contract = selectedContract;
-                    setSelectedContract(null);
-                    handleEdit(contract);
-                  }}
-                >
-                  Edit Contract
-                </Button>
-                <Button
-                  icon={<DownloadOutlined />}
-                  onClick={() => {
-                    const contract = selectedContract;
-                    handleDownload(contract);
-                  }}
-                >
-                  Download PDF
-                </Button>
-                <Button onClick={() => setSelectedContract(null)}>
-                  Close
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+            <Descriptions title="Additional Details" bordered size="small" column={2}>
+              <Descriptions.Item label="Warranty">{selectedContract.warranty || "N/A"}</Descriptions.Item>
+              <Descriptions.Item label="Payment Methods">{selectedContract.paymentMethods || "N/A"}</Descriptions.Item>
+            </Descriptions>
+          </>
+        )}
+      </Modal>
     </>
   );
 };
