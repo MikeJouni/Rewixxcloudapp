@@ -14,6 +14,7 @@ import "./table-responsive.css";
 import "./sidebar-responsive.css";
 import Navigation from "./components/Navigation";
 import NotFound from "./components/NotFound";
+import DashboardPage from "./Pages/Dashboard";
 import CustomersPage from "./Pages/Customers";
 import JobsPage from "./Pages/Jobs";
 import EmployeesPage from "./Pages/Employees";
@@ -107,8 +108,8 @@ function AppContent() {
   // Redirect authenticated users away from login/register pages
   useEffect(() => {
     if (token && (location.pathname === "/login" || location.pathname === "/register")) {
-      // Redirect to customers page if authenticated user tries to access login/register
-      navigate("/customers", { replace: true });
+      // Redirect to dashboard if authenticated user tries to access login/register
+      navigate("/dashboard", { replace: true });
     }
   }, [token, location.pathname, navigate]);
 
@@ -144,7 +145,8 @@ function AppContent() {
       >
         <div className="w-full max-w-full">
           <Routes>
-            <Route path="/" element={<Navigate to="/customers" replace />} />
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/customers/*" element={<CustomersPage />} />
             <Route path="/jobs/*" element={<JobsPage />} />
             <Route path="/employees/*" element={<EmployeesPage />} />

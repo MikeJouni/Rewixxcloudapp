@@ -1,13 +1,86 @@
-import React, { useState } from "react";
-import { Table, Button, Input, Space } from "antd";
+import React, { useState, useMemo } from "react";
+import { Table, Button, Input, Space, Modal, Tag, Typography, Descriptions, Divider, Statistic, Row, Col, Empty } from "antd";
+import { EyeOutlined, CheckCircleOutlined, ClockCircleOutlined, FilePdfOutlined } from "@ant-design/icons";
+import { useQuery } from "@tanstack/react-query";
+import dayjs from "dayjs";
 import CustomerForm from "../forms/CustomerForm";
+import * as jobService from "../../../Jobs/services/jobService";
+import * as accountSettingsService from "../../../../services/accountSettingsService";
+import { generateInvoicePDF } from "../../../Reports/services/invoiceGenerator";
+import { useAuth } from "../../../../AuthContext";
+
+const { Text } = Typography;
 
 const CustomerTable = ({ customers, onDelete, onUpdate }) => {
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateError, setUpdateError] = useState(null);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [profileModalVisible, setProfileModalVisible] = useState(false);
 
+  const { token } = useAuth();
 
+  // Fetch jobs data for customer stats
+  const { data: jobsData } = useQuery({
+    queryKey: ["jobs"],
+    queryFn: () =>
+      jobService.getJobsList({
+        searchTerm: "",
+        page: 0,
+        pageSize: 10000,
+        statusFilter: "All",
+      }),
+  });
+
+  // Fetch account settings for invoice generation
+  const { data: accountSettings } = useQuery({
+    queryKey: ["accountSettings", token],
+    queryFn: () => accountSettingsService.getAccountSettings(),
+    enabled: !!token,
+  });
+
+  const jobs = jobsData?.jobs || [];
+
+  // Calculate total cost for a job
+  const computeTotalCost = (job) => {
+    if (!job) return 0;
+    const billingMaterialCost = job.customMaterialCost !== undefined && job.customMaterialCost !== null
+      ? Number(job.customMaterialCost)
+      : 0;
+    const jobPrice = Number(job.jobPrice) || 0;
+    const subtotal = billingMaterialCost + jobPrice;
+    const taxAmount = job.includeTax ? subtotal * 0.06 : 0;
+    return subtotal + taxAmount;
+  };
+
+  // Calculate customer stats
+  const getCustomerStats = (customerId) => {
+    const customerJobs = jobs.filter((j) => j.customer?.id === customerId);
+    const totalJobs = customerJobs.length;
+    const completedJobs = customerJobs.filter((j) => j.status === "COMPLETED").length;
+    const inProgressJobs = customerJobs.filter((j) => j.status === "IN_PROGRESS" || j.status === "PENDING").length;
+    const totalRevenue = customerJobs.reduce((sum, job) => sum + computeTotalCost(job), 0);
+    const totalPaid = customerJobs.reduce((sum, job) => {
+      const jobPayments = job.payments || [];
+      return sum + jobPayments.reduce((pSum, p) => pSum + (Number(p.amount) || 0), 0);
+    }, 0);
+    const outstandingBalance = totalRevenue - totalPaid;
+
+    return {
+      totalJobs,
+      completedJobs,
+      inProgressJobs,
+      totalRevenue,
+      totalPaid,
+      outstandingBalance,
+      customerJobs,
+    };
+  };
+
+  // Selected customer stats
+  const selectedCustomerStats = useMemo(() => {
+    return selectedCustomer ? getCustomerStats(selectedCustomer.id) : null;
+  }, [selectedCustomer, jobs]);
 
   const handleEdit = (customer) => {
     setEditingCustomer(customer);
@@ -33,6 +106,68 @@ const CustomerTable = ({ customers, onDelete, onUpdate }) => {
     }
   };
 
+  const handleViewProfile = (customer) => {
+    setSelectedCustomer(customer);
+    setProfileModalVisible(true);
+  };
+
+  const handleExportInvoice = async (job) => {
+    try {
+      await generateInvoicePDF(job, accountSettings);
+    } catch (error) {
+      console.error("Error generating invoice:", error);
+    }
+  };
+
+  // Jobs table columns for profile modal
+  const jobColumns = [
+    {
+      title: 'Job',
+      dataIndex: 'title',
+      key: 'title',
+      render: (text) => <Text strong>{text}</Text>,
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status) => (
+        <Tag color={status === 'COMPLETED' ? 'success' : 'processing'}>
+          {status === 'COMPLETED' ? 'Complete' : 'In Progress'}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Total Cost',
+      key: 'totalCost',
+      render: (_, record) => `$${computeTotalCost(record).toFixed(2)}`,
+    },
+    {
+      title: 'Date',
+      dataIndex: 'startDate',
+      key: 'startDate',
+      render: (date) => (date ? dayjs(date).format('MMM D, YYYY') : '-'),
+      responsive: ['md'],
+    },
+    {
+      title: '',
+      key: 'action',
+      width: 80,
+      render: (_, record) => (
+        <Button
+          type="link"
+          size="small"
+          icon={<FilePdfOutlined />}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleExportInvoice(record);
+          }}
+        >
+          Invoice
+        </Button>
+      ),
+    },
+  ];
 
   const columns = [
     {
@@ -61,12 +196,12 @@ const CustomerTable = ({ customers, onDelete, onUpdate }) => {
             style={{ width: 188, marginBottom: 8, display: 'block' }}
           />
           <Space>
-            <Button 
+            <Button
               onClick={() => {
                 clearFilters();
                 confirm();
-              }} 
-              size="small" 
+              }}
+              size="small"
               style={{ width: 90 }}
               disabled={!selectedKeys[0]}
             >
@@ -99,12 +234,12 @@ const CustomerTable = ({ customers, onDelete, onUpdate }) => {
             style={{ width: 188, marginBottom: 8, display: 'block' }}
           />
           <Space>
-            <Button 
+            <Button
               onClick={() => {
                 clearFilters();
                 confirm();
-              }} 
-              size="small" 
+              }}
+              size="small"
               style={{ width: 90 }}
               disabled={!selectedKeys[0]}
             >
@@ -143,9 +278,15 @@ const CustomerTable = ({ customers, onDelete, onUpdate }) => {
     {
       title: 'Actions',
       key: 'actions',
-      width: 150,
+      width: 200,
       render: (_, record) => (
         <div className="flex gap-2">
+          <button
+            className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
+            onClick={() => handleViewProfile(record)}
+          >
+            View
+          </button>
           <button
             className="px-3 py-1 bg-yellow-500 text-white rounded text-sm hover:bg-yellow-600"
             onClick={() => handleEdit(record)}
@@ -224,6 +365,12 @@ const CustomerTable = ({ customers, onDelete, onUpdate }) => {
               {/* Action Buttons */}
               <div className="flex gap-2 mt-4 pt-3 border-t border-gray-100">
                 <button
+                  onClick={() => handleViewProfile(customer)}
+                  className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-md text-sm font-medium hover:bg-blue-600 transition-colors"
+                >
+                  View
+                </button>
+                <button
                   onClick={() => handleEdit(customer)}
                   className="flex-1 px-4 py-2 bg-yellow-500 text-white rounded-md text-sm font-medium hover:bg-yellow-600 transition-colors"
                 >
@@ -266,6 +413,118 @@ const CustomerTable = ({ customers, onDelete, onUpdate }) => {
           </div>
         </div>
       )}
+
+      {/* Customer Profile Modal */}
+      <Modal
+        title="Customer Profile"
+        open={profileModalVisible}
+        onCancel={() => setProfileModalVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setProfileModalVisible(false)}>
+            Close
+          </Button>,
+        ]}
+        width={800}
+      >
+        {selectedCustomer && selectedCustomerStats && (
+          <div>
+            {/* Customer Info */}
+            <Descriptions size="small" column={{ xs: 1, sm: 2 }} bordered>
+              <Descriptions.Item label="Name" span={2}>
+                <Text strong>{selectedCustomer.name || 'Unknown'}</Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="Phone">
+                {selectedCustomer.phone || '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Email">
+                {selectedCustomer.username || '-'}
+              </Descriptions.Item>
+              {(selectedCustomer.addressLine1 || selectedCustomer.city) && (
+                <Descriptions.Item label="Address" span={2}>
+                  {[
+                    selectedCustomer.addressLine1,
+                    selectedCustomer.addressLine2,
+                    selectedCustomer.city,
+                    selectedCustomer.state,
+                    selectedCustomer.zip,
+                  ]
+                    .filter(Boolean)
+                    .join(", ")}
+                </Descriptions.Item>
+              )}
+            </Descriptions>
+
+            <Divider style={{ margin: '16px 0' }} />
+
+            {/* Stats */}
+            <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+              <Col xs={12} sm={6}>
+                <Statistic
+                  title="Total Jobs"
+                  value={selectedCustomerStats.totalJobs}
+                  size="small"
+                />
+              </Col>
+              <Col xs={12} sm={6}>
+                <Statistic
+                  title="Revenue"
+                  value={selectedCustomerStats.totalRevenue}
+                  prefix="$"
+                  precision={2}
+                  size="small"
+                />
+              </Col>
+              <Col xs={12} sm={6}>
+                <Statistic
+                  title="Paid"
+                  value={selectedCustomerStats.totalPaid}
+                  prefix="$"
+                  precision={2}
+                  size="small"
+                />
+              </Col>
+              <Col xs={12} sm={6}>
+                <Statistic
+                  title="Outstanding"
+                  value={selectedCustomerStats.outstandingBalance}
+                  prefix="$"
+                  precision={2}
+                  valueStyle={{
+                    color: selectedCustomerStats.outstandingBalance > 0 ? '#cf1322' : '#3f8600',
+                  }}
+                  size="small"
+                />
+              </Col>
+            </Row>
+
+            {/* Job Status Summary */}
+            <div style={{ marginBottom: 16 }}>
+              <Space>
+                <Tag color="success">
+                  <CheckCircleOutlined /> {selectedCustomerStats.completedJobs} Completed
+                </Tag>
+                <Tag color="processing">
+                  <ClockCircleOutlined /> {selectedCustomerStats.inProgressJobs} In Progress
+                </Tag>
+              </Space>
+            </div>
+
+            {/* Jobs Table */}
+            <Text strong style={{ display: 'block', marginBottom: 8 }}>Jobs History</Text>
+            {selectedCustomerStats.customerJobs.length > 0 ? (
+              <Table
+                columns={jobColumns}
+                dataSource={selectedCustomerStats.customerJobs}
+                rowKey="id"
+                size="small"
+                pagination={{ pageSize: 5, size: 'small' }}
+              />
+            ) : (
+              <Empty description="No jobs assigned to this customer" />
+            )}
+          </div>
+        )}
+      </Modal>
     </>
   );
 };
