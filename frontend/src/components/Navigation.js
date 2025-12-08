@@ -14,6 +14,7 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   LogoutOutlined,
+  DashboardOutlined,
 } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import * as accountSettingsService from "../services/accountSettingsService";
@@ -106,13 +107,14 @@ const Navigation = ({ sidebarCollapsed, setSidebarCollapsed }) => {
 
   const getActiveTab = () => {
     const path = location.pathname;
-    if (path.startsWith("/customers") || path === "/") return "customers";
+    if (path.startsWith("/dashboard") || path === "/") return "dashboard";
+    if (path.startsWith("/customers")) return "customers";
     if (path.startsWith("/jobs")) return "jobs";
     if (path.startsWith("/employees")) return "employees";
     if (path.startsWith("/expenses")) return "expenses";
     if (path.startsWith("/contracts")) return "contracts";
     if (path.startsWith("/reports")) return "reports";
-    return "customers";
+    return "dashboard";
   };
 
   const activeTab = getActiveTab();
@@ -123,6 +125,11 @@ const Navigation = ({ sidebarCollapsed, setSidebarCollapsed }) => {
   };
 
   const menuItems = [
+    {
+      key: "dashboard",
+      icon: <DashboardOutlined />,
+      label: "Dashboard",
+    },
     {
       key: "customers",
       icon: <UserOutlined />,
@@ -241,7 +248,7 @@ const Navigation = ({ sidebarCollapsed, setSidebarCollapsed }) => {
               cursor: "pointer",
               transition: "transform 0.2s ease",
             }}
-            onClick={() => navigate("/customers")}
+            onClick={() => navigate("/dashboard")}
             onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
             onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
           >
