@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Table, Tag } from "antd";
-import { EyeOutlined, EditOutlined, EnvironmentOutlined, DeleteOutlined } from "@ant-design/icons";
+import { EyeOutlined, EditOutlined, EnvironmentOutlined, DeleteOutlined, FileDoneOutlined } from "@ant-design/icons";
 import * as customerService from "../../../../Customers/services/customerService";
 import JobTableColumns from "./JobTableColumns";
 import JobEditModal from "./JobEditModal";
@@ -11,6 +11,7 @@ const JobTable = ({
   onViewDetails,
   onEdit,
   onDelete,
+  onCreateInvoice,
 }) => {
   const [editingId, setEditingId] = useState(null);
   const [editFormData, setEditFormData] = useState({});
@@ -99,7 +100,8 @@ const JobTable = ({
     onEdit: handleEdit,
     onDelete: setJobToDelete,
     onSaveEdit: handleSaveEdit,
-    onCancelEdit: handleCancelEdit
+    onCancelEdit: handleCancelEdit,
+    onCreateInvoice
   });
 
   // Helper functions for mobile view
@@ -243,7 +245,7 @@ const JobTable = ({
                 </div>
 
                 {/* Action Buttons */}
-                <div className="grid grid-cols-4 gap-2 mt-4 pt-3 border-t border-gray-100">
+                <div className="grid grid-cols-5 gap-2 mt-4 pt-3 border-t border-gray-100">
                   <button
                     onClick={() => onViewDetails(job)}
                     className="flex flex-col items-center justify-center py-2 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition-colors"
@@ -257,6 +259,13 @@ const JobTable = ({
                   >
                     <EditOutlined className="text-xl mb-1" />
                     <span className="text-xs font-medium">Edit</span>
+                  </button>
+                  <button
+                    onClick={() => onCreateInvoice(job)}
+                    className="flex flex-col items-center justify-center py-2 bg-purple-50 text-purple-600 rounded-md hover:bg-purple-100 transition-colors"
+                  >
+                    <FileDoneOutlined className="text-xl mb-1" />
+                    <span className="text-xs font-medium">Invoice</span>
                   </button>
                   {job.workSiteAddress && (
                     <button

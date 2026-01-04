@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Form, Input, Select, DatePicker, InputNumber, Divider } from "antd";
+import { Form, Input, Select, DatePicker, InputNumber, Divider, Switch } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import * as customerService from "../../Customers/services/customerService";
@@ -11,7 +11,7 @@ import dayjs from "dayjs";
 const { TextArea } = Input;
 const { Option } = Select;
 
-const ContractForm = ({ form, onValuesChange, setSelectedCustomer, setSelectedJob, isOpen, selectedCustomer: propSelectedCustomer, selectedJob: propSelectedJob }) => {
+const ContractForm = ({ form, onValuesChange, setSelectedCustomer, setSelectedJob, isOpen, selectedCustomer: propSelectedCustomer, selectedJob: propSelectedJob, isMobile = false }) => {
   const [selectedCustomerId, setSelectedCustomerId] = React.useState(null);
   const selectedCustomer = propSelectedCustomer;
   const selectedJob = propSelectedJob;
@@ -146,6 +146,8 @@ const ContractForm = ({ form, onValuesChange, setSelectedCustomer, setSelectedJo
         warranty: "2 years on workmanship",
         depositPercent: 50,
         paymentMethods: "Zelle, Cash App, Check, Credit Card (3% fee), or Cash",
+        showCostBreakdown: false,
+        showMaterialsList: false,
       }}
     >
       <Divider orientation="left" style={{ margin: "16px 0" }}>Company Information</Divider>
@@ -158,12 +160,12 @@ const ContractForm = ({ form, onValuesChange, setSelectedCustomer, setSelectedJo
         <Input size="large" />
       </Form.Item>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} gap-4`}>
         <Form.Item label="Phone" name="companyPhone">
-          <Input size="large" />
+          <Input size={isMobile ? "middle" : "large"} />
         </Form.Item>
         <Form.Item label="Email" name="companyEmail">
-          <Input size="large" />
+          <Input size={isMobile ? "middle" : "large"} />
         </Form.Item>
       </div>
 
@@ -225,7 +227,15 @@ const ContractForm = ({ form, onValuesChange, setSelectedCustomer, setSelectedJo
         <Input size="large" placeholder="Enter customer address" disabled={!!selectedCustomer || !!selectedJob} />
       </Form.Item>
 
-      <Divider orientation="left" style={{ margin: "16px 0" }}>Job Details</Divider>
+      <Divider orientation="left" style={{ margin: "16px 0" }}>Contract Details</Divider>
+
+      <Form.Item
+        label="Contract Number"
+        name="contractNumber"
+        extra="Leave blank to auto-generate"
+      >
+        <Input size="large" placeholder="CTR-2026-0001 (auto-generated if empty)" />
+      </Form.Item>
 
       <Form.Item label="Search Job">
         <Select
@@ -260,7 +270,7 @@ const ContractForm = ({ form, onValuesChange, setSelectedCustomer, setSelectedJo
         rules={[{ required: true, message: "Scope of work is required" }]}
       >
         <TextArea
-          rows={6}
+          rows={isMobile ? 4 : 6}
           placeholder="- Installing and running new wires&#10;- Making the garage wall rough to final&#10;- etc."
         />
       </Form.Item>
@@ -295,8 +305,42 @@ const ContractForm = ({ form, onValuesChange, setSelectedCustomer, setSelectedJo
         </>
       )}
 
+      <Divider orientation="left" style={{ margin: "16px 0" }}>Display Options</Divider>
+
+      <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} gap-4`}>
+        <Form.Item
+          label="Show Cost Breakdown"
+          name="showCostBreakdown"
+          valuePropName="checked"
+          extra="Show 'Labor & Materials' line instead of just total"
+        >
+          <Switch />
+        </Form.Item>
+
+        {selectedJob && (
+          <Form.Item
+            label="Show Materials List"
+            name="showMaterialsList"
+            valuePropName="checked"
+            extra="Display materials from linked job"
+          >
+            <Switch />
+          </Form.Item>
+        )}
+      </div>
+
       <Form.Item label="Warranty" name="warranty">
         <Input size="large" placeholder="2 years on workmanship" />
+      </Form.Item>
+
+      <Form.Item
+        label="Terms and Conditions"
+        name="termsAndConditions"
+      >
+        <TextArea
+          rows={isMobile ? 4 : 8}
+          placeholder="Enter terms and conditions..."
+        />
       </Form.Item>
 
       <Divider orientation="left" style={{ margin: "16px 0" }}>Payment Terms</Divider>

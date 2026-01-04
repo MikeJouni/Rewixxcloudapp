@@ -22,6 +22,8 @@ public class Job {
 
     private String title;
 
+    @Lob
+    @Column(columnDefinition = "TEXT")
     private String description;
 
     @Enumerated(EnumType.STRING)
@@ -41,6 +43,8 @@ public class Job {
 
     private Boolean includeTax;
 
+    @Lob
+    @Column(columnDefinition = "TEXT")
     private String workSiteAddress;
 
     @ManyToOne

@@ -22,8 +22,10 @@ public class ContractDto {
     private Long jobId;
 
     // Contract Details
+    private String contractNumber;
     private String date;
     private String scopeOfWork;
+    private String termsAndConditions;
     private BigDecimal totalPrice;
     private String warranty;
 

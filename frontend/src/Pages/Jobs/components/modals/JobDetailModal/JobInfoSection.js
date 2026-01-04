@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from "react";
 
+const DESCRIPTION_TRUNCATE_LENGTH = 300;
+
 const JobInfoSection = forwardRef(({ job, totalCost, actualMaterialCost, onCompleteJob, onUpdateJob, onLiveCostUpdate }, ref) => {
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [notes, setNotes] = useState(job.description || "");
   const [isSavingNotes, setIsSavingNotes] = useState(false);
-  
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+
   const [isEditingAddress, setIsEditingAddress] = useState(false);
   const [workSiteAddress, setWorkSiteAddress] = useState(job.workSiteAddress || "");
   const [isSavingAddress, setIsSavingAddress] = useState(false);
@@ -430,9 +433,29 @@ const JobInfoSection = forwardRef(({ job, totalCost, actualMaterialCost, onCompl
             </div>
           </div>
         ) : (
-          <p className="text-sm text-gray-800 break-words whitespace-pre-wrap">
-            {job.description || "No job description added yet"}
-          </p>
+          <div>
+            <p className="text-sm text-gray-800 break-words whitespace-pre-wrap">
+              {job.description ? (
+                job.description.length > DESCRIPTION_TRUNCATE_LENGTH && !isDescriptionExpanded ? (
+                  <>
+                    {job.description.substring(0, DESCRIPTION_TRUNCATE_LENGTH)}...
+                  </>
+                ) : (
+                  job.description
+                )
+              ) : (
+                "No job description added yet"
+              )}
+            </p>
+            {job.description && job.description.length > DESCRIPTION_TRUNCATE_LENGTH && (
+              <button
+                onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                className="text-blue-500 hover:text-blue-700 text-xs mt-1 font-medium"
+              >
+                {isDescriptionExpanded ? "Show less" : "Show more"}
+              </button>
+            )}
+          </div>
         )}
       </div>
 

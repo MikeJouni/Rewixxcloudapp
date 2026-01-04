@@ -6,9 +6,8 @@ export const validateForm = (formData) => {
     errors.name = "Name is required.";
   }
 
-  if (!formData.username || formData.username.trim() === "") {
-    errors.username = "Email is required.";
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.username)) {
+  // Email is optional, but if provided, must be valid format
+  if (formData.username && formData.username.trim() !== "" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.username)) {
     errors.username = "Please enter a valid email address.";
   }
 

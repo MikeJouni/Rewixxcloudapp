@@ -13,6 +13,7 @@ import {
   Empty,
   DatePicker,
   Select,
+  Button,
 } from "antd";
 import {
   DollarOutlined,
@@ -23,6 +24,7 @@ import {
   ClockCircleOutlined,
   ToolOutlined,
   CalendarOutlined,
+  PlusOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
@@ -460,6 +462,44 @@ const Dashboard = () => {
           {getDateRangeLabel()}
         </Tag>
       </div>
+
+      {/* Quick Actions */}
+      <Card size="small" style={{ marginBottom: 24 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => navigate("/jobs/create")}
+            style={{ background: "#1f2937" }}
+          >
+            New Job
+          </Button>
+          <Button
+            icon={<PlusOutlined />}
+            onClick={() => navigate("/customers")}
+          >
+            New Customer
+          </Button>
+          <Button
+            icon={<FileTextOutlined />}
+            onClick={() => navigate("/contracts")}
+          >
+            Create Contract
+          </Button>
+          <Button
+            icon={<DollarOutlined />}
+            onClick={() => navigate("/expenses")}
+          >
+            Add Expense
+          </Button>
+          <Button
+            icon={<TeamOutlined />}
+            onClick={() => navigate("/employees")}
+          >
+            Manage Employees
+          </Button>
+        </div>
+      </Card>
 
       {/* Stats Row */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>

@@ -2,6 +2,7 @@ package com.rewixxcloudapp.service;
 
 import com.rewixxcloudapp.entity.Job;
 import com.rewixxcloudapp.entity.Customer;
+import com.rewixxcloudapp.entity.Contract;
 import com.rewixxcloudapp.entity.JobStatus;
 import com.rewixxcloudapp.entity.Sale;
 import com.rewixxcloudapp.entity.SaleItem;
@@ -9,6 +10,7 @@ import com.rewixxcloudapp.entity.Product;
 import com.rewixxcloudapp.repository.JobRepository;
 import com.rewixxcloudapp.repository.CustomerRepository;
 import com.rewixxcloudapp.repository.ProductRepository;
+import com.rewixxcloudapp.repository.ContractRepository;
 import com.rewixxcloudapp.dto.JobDto;
 import com.rewixxcloudapp.dto.MaterialDto;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +33,9 @@ public class JobService {
 
     @Autowired
     private ProductRepository productRepository;
+
+    @Autowired
+    private ContractRepository contractRepository;
 
     public Optional<Job> getJobById(Long id, Long userId) {
         return jobRepository.findByIdAndUserId(id, userId);
@@ -130,6 +135,15 @@ public class JobService {
         if (dto.getDescription() != null) {
             logger.info("Setting description to: {}", dto.getDescription());
             job.setDescription(dto.getDescription());
+
+            // Sync description with contract scope of work if a contract exists for this job
+            Optional<Contract> contractOpt = contractRepository.findByJobIdAndUserId(job.getId(), job.getUserId());
+            if (contractOpt.isPresent()) {
+                Contract contract = contractOpt.get();
+                logger.info("Syncing job description to contract {} scope of work", contract.getId());
+                contract.setScopeOfWork(dto.getDescription());
+                contractRepository.save(contract);
+            }
         }
         if (dto.getWorkSiteAddress() != null) {
             logger.info("Setting work site address to: {}", dto.getWorkSiteAddress());

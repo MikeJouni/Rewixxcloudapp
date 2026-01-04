@@ -66,6 +66,13 @@ public class ContractService {
         }
 
         // Contract details
+        if (dto.getContractNumber() != null && !dto.getContractNumber().isEmpty()) {
+            contract.setContractNumber(dto.getContractNumber());
+        } else {
+            // Auto-generate contract number if not provided
+            contract.setContractNumber(generateContractNumber(userId));
+        }
+
         if (dto.getDate() != null && !dto.getDate().isEmpty()) {
             contract.setContractDate(LocalDate.parse(dto.getDate(), DateTimeFormatter.ISO_DATE));
         } else {
@@ -73,15 +80,23 @@ public class ContractService {
         }
 
         contract.setScopeOfWork(dto.getScopeOfWork());
+        contract.setTermsAndConditions(dto.getTermsAndConditions());
         contract.setWarranty(dto.getWarranty());
 
         // Payment terms
         contract.setDepositPercent(dto.getDepositPercent());
         contract.setPaymentMethods(dto.getPaymentMethods());
 
-        // If job is connected, sync price and status from job
+        // If job is connected, sync price and status from job, and sync scope of work
         if (contract.getJob() != null) {
             syncContractWithJob(contract);
+
+            // Sync scope of work with job description if provided
+            if (dto.getScopeOfWork() != null && !dto.getScopeOfWork().isEmpty()) {
+                Job job = contract.getJob();
+                job.setDescription(dto.getScopeOfWork());
+                jobRepository.save(job);
+            }
         } else {
             // Only use DTO values if no job is connected
             contract.setTotalPrice(dto.getTotalPrice());
@@ -191,7 +206,18 @@ public class ContractService {
         if (dto.getIdNumber() != null) contract.setIdNumber(dto.getIdNumber());
         if (dto.getCustomerName() != null) contract.setCustomerName(dto.getCustomerName());
         if (dto.getCustomerAddress() != null) contract.setCustomerAddress(dto.getCustomerAddress());
-        if (dto.getScopeOfWork() != null) contract.setScopeOfWork(dto.getScopeOfWork());
+        if (dto.getContractNumber() != null) contract.setContractNumber(dto.getContractNumber());
+        if (dto.getScopeOfWork() != null) {
+            contract.setScopeOfWork(dto.getScopeOfWork());
+
+            // Sync scope of work with job description if a job is connected
+            if (contract.getJob() != null) {
+                Job job = contract.getJob();
+                job.setDescription(dto.getScopeOfWork());
+                jobRepository.save(job);
+            }
+        }
+        if (dto.getTermsAndConditions() != null) contract.setTermsAndConditions(dto.getTermsAndConditions());
         if (dto.getWarranty() != null) contract.setWarranty(dto.getWarranty());
         if (dto.getDepositPercent() != null) contract.setDepositPercent(dto.getDepositPercent());
         if (dto.getPaymentMethods() != null) contract.setPaymentMethods(dto.getPaymentMethods());
@@ -233,5 +259,12 @@ public class ContractService {
             return Optional.of(contract);
         }
         return contractOpt;
+    }
+
+    private String generateContractNumber(Long userId) {
+        // Format: CTR-YYYY-XXXX where XXXX is sequential per user
+        int year = LocalDate.now().getYear();
+        long count = contractRepository.countByUserId(userId) + 1;
+        return String.format("CTR-%d-%04d", year, count);
     }
 }

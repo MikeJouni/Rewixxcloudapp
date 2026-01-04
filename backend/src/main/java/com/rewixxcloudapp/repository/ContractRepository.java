@@ -21,4 +21,6 @@ public interface ContractRepository extends JpaRepository<Contract, Long> {
     Page<Contract> findByUserIdAndCustomerNameContainingIgnoreCase(Long userId, String customerName, Pageable pageable);
 
     Optional<Contract> findByJobIdAndUserId(Long jobId, Long userId);
+
+    long countByUserId(Long userId);
 }

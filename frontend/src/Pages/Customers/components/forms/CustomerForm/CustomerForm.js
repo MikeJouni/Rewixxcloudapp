@@ -52,11 +52,11 @@ const CustomerForm = ({ onSubmit, onCancel, initialData = null, isLoading = fals
     // Live validation for email and phone
     const newErrors = { ...errors };
     if (name === "username") {
-      // Clear error when user starts typing
+      // Clear error when user starts typing or clears field
       if (newErrors[name]) {
         delete newErrors[name];
       }
-      // Validate email format in real-time
+      // Email is optional - only validate format if value is provided
       if (value && value.trim() !== "") {
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
           newErrors.username = "Please enter a valid email address.";
@@ -119,15 +119,14 @@ const CustomerForm = ({ onSubmit, onCancel, initialData = null, isLoading = fals
           disabled={isLoading}
         />
 
-        {/* Email */}
+        {/* Email (optional) */}
         <FormField
-          label="Email"
+          label="Email (optional)"
           name="username"
           type="email"
           value={formData.username}
           onChange={handleInputChange}
           error={errors.username}
-          required
           disabled={isLoading}
         />
 
