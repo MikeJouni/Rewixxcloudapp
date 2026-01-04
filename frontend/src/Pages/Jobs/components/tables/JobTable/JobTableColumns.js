@@ -1,5 +1,5 @@
 import React from "react";
-import { EyeOutlined, EditOutlined, EnvironmentOutlined, DeleteOutlined } from '@ant-design/icons';
+import { EyeOutlined, EditOutlined, EnvironmentOutlined, DeleteOutlined, FileDoneOutlined } from '@ant-design/icons';
 
 // Helper function to open map with native app selection
 const openMapNavigation = (address) => {
@@ -28,13 +28,14 @@ const openMapNavigation = (address) => {
   document.body.removeChild(link);
 };
 
-const JobTableColumns = ({ 
-  editingId, 
-  onViewDetails, 
-  onEdit, 
-  onDelete, 
-  onSaveEdit, 
-  onCancelEdit 
+const JobTableColumns = ({
+  editingId,
+  onViewDetails,
+  onEdit,
+  onDelete,
+  onSaveEdit,
+  onCancelEdit,
+  onCreateInvoice
 }) => {
   const getStatusStyle = (status) => {
     if (status === "IN_PROGRESS") {
@@ -239,7 +240,7 @@ const JobTableColumns = ({
     {
       title: 'Actions',
       key: 'actions',
-      width: 280,
+      width: 320,
       render: (_, record) => (
         <div className="flex items-center gap-4">
           <div className="flex flex-col items-center gap-1 cursor-pointer hover:opacity-70 transition-opacity"
@@ -256,6 +257,14 @@ const JobTableColumns = ({
               <EditOutlined className="text-yellow-600 text-2xl" />
             </div>
             <span className="text-xs text-gray-600 font-medium">Edit</span>
+          </div>
+
+          <div className="flex flex-col items-center gap-1 cursor-pointer hover:opacity-70 transition-opacity"
+               onClick={() => onCreateInvoice(record)}>
+            <div className="w-12 h-12 flex items-center justify-center">
+              <FileDoneOutlined className="text-purple-600 text-2xl" />
+            </div>
+            <span className="text-xs text-gray-600 font-medium">Invoice</span>
           </div>
 
           {record.workSiteAddress && (

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
-import { Card, Button, Form, Drawer, message, Grid, Row, Col, Statistic, Input, Select, Typography } from "antd";
-import { FileTextOutlined, PlusOutlined, DownloadOutlined, CloseOutlined, SearchOutlined, CheckCircleOutlined, ClockCircleOutlined, DollarOutlined } from "@ant-design/icons";
+import { Card, Button, Form, Drawer, message, Grid, Row, Col, Statistic, Input, Select, Typography, Segmented } from "antd";
+import { FileTextOutlined, PlusOutlined, DownloadOutlined, CloseOutlined, SearchOutlined, CheckCircleOutlined, ClockCircleOutlined, DollarOutlined, FormOutlined, EyeOutlined } from "@ant-design/icons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as accountSettingsService from "../../services/accountSettingsService";
 import * as contractService from "./services/contractService";
@@ -26,6 +26,7 @@ const ContractsPage = () => {
   const [editingContract, setEditingContract] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
+  const [mobileTab, setMobileTab] = useState("form");
   const screens = useBreakpoint();
   const queryClient = useQueryClient();
 
@@ -48,6 +49,27 @@ const ContractsPage = () => {
   });
 
   const contracts = contractsData?.contracts || [];
+
+  // Extract materials from selected job
+  const jobMaterials = useMemo(() => {
+    if (!selectedJob || !selectedJob.sales) return [];
+
+    const allMaterials = [];
+    selectedJob.sales.forEach((sale) => {
+      if (sale.saleItems) {
+        sale.saleItems.forEach((saleItem) => {
+          if (saleItem.product) {
+            allMaterials.push({
+              id: saleItem.id,
+              name: saleItem.product.name,
+              quantity: saleItem.quantity || 1,
+            });
+          }
+        });
+      }
+    });
+    return allMaterials;
+  }, [selectedJob]);
 
   // Filter contracts based on search and status
   const filteredContracts = useMemo(() => {
@@ -130,6 +152,7 @@ const ContractsPage = () => {
     setSelectedCustomer(null);
     setSelectedJob(null);
     setEditingContract(null);
+    setMobileTab("form");
   };
 
   // Handle editing a contract
@@ -176,8 +199,10 @@ const ContractsPage = () => {
         idNumber: contract.idNumber,
         customerName: contract.customerName,
         customerAddress: contract.customerAddress,
+        contractNumber: contract.contractNumber,
         date: contract.contractDate ? dayjs(contract.contractDate) : dayjs(),
         scopeOfWork: contract.scopeOfWork,
+        termsAndConditions: contract.termsAndConditions,
         totalPrice: contract.totalPrice,
         warranty: contract.warranty,
         depositPercent: contract.depositPercent,
@@ -221,8 +246,10 @@ const ContractsPage = () => {
         customerAddress: values.customerAddress,
         customerId: selectedCustomer?.id || editingContract?.customerId,
         jobId: selectedJob?.id || editingContract?.jobId,
+        contractNumber: values.contractNumber || null,
         date: values.date ? values.date.format("YYYY-MM-DD") : dayjs().format("YYYY-MM-DD"),
         scopeOfWork: values.scopeOfWork,
+        termsAndConditions: values.termsAndConditions,
         totalPrice: values.totalPrice,
         warranty: values.warranty,
         depositPercent: values.depositPercent,
@@ -399,12 +426,34 @@ const ContractsPage = () => {
             </Button>
           </div>
         }
-        styles={{ body: { padding: "24px" } }}
+        styles={{ body: { padding: isMobile ? "16px" : "24px" } }}
       >
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Mobile Tab Toggle */}
+        {isMobile && (
+          <div className="mb-4">
+            <Segmented
+              block
+              value={mobileTab}
+              onChange={setMobileTab}
+              options={[
+                { label: <span><FormOutlined /> Form</span>, value: "form" },
+                { label: <span><EyeOutlined /> Preview</span>, value: "preview" },
+              ]}
+              style={{ marginBottom: 8 }}
+            />
+          </div>
+        )}
+
+        <div className={isMobile ? "" : "grid grid-cols-1 lg:grid-cols-2 gap-6"}>
           {/* Form Section */}
-          <div className="overflow-y-auto" style={{ maxHeight: "calc(100vh - 180px)" }}>
-            <Card title="Document Details" className="mb-4">
+          <div
+            className="overflow-y-auto"
+            style={{
+              maxHeight: isMobile ? "calc(100vh - 240px)" : "calc(100vh - 180px)",
+              display: isMobile && mobileTab !== "form" ? "none" : "block"
+            }}
+          >
+            <Card title="Document Details" className="mb-4" size={isMobile ? "small" : "default"}>
               <ContractForm
                 form={form}
                 onValuesChange={handleValuesChange}
@@ -413,16 +462,25 @@ const ContractsPage = () => {
                 isOpen={drawerVisible}
                 selectedCustomer={selectedCustomer}
                 selectedJob={selectedJob}
+                isMobile={isMobile}
               />
             </Card>
           </div>
 
           {/* Preview Section */}
-          <div className="overflow-y-auto" style={{ maxHeight: "calc(100vh - 180px)" }}>
-            <div className="sticky top-0">
+          <div
+            className="overflow-y-auto"
+            style={{
+              maxHeight: isMobile ? "calc(100vh - 240px)" : "calc(100vh - 180px)",
+              display: isMobile && mobileTab !== "preview" ? "none" : "block"
+            }}
+          >
+            <div className={isMobile ? "" : "sticky top-0"}>
               <ContractPreview
                 data={previewData}
                 accountSettings={accountSettings}
+                isMobile={isMobile}
+                materials={jobMaterials}
               />
             </div>
           </div>

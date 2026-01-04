@@ -20,6 +20,7 @@ import JobsPage from "./Pages/Jobs";
 import EmployeesPage from "./Pages/Employees";
 import ExpensesPage from "./Pages/Expenses";
 import ContractsPage from "./Pages/Contracts";
+import InvoicesPage from "./Pages/Invoices";
 import ReportsPage from "./Pages/Reports";
 import Footer from "./components/Footer";
 import { AuthProvider, useAuth } from "./AuthContext";
@@ -152,6 +153,7 @@ function AppContent() {
             <Route path="/employees/*" element={<EmployeesPage />} />
             <Route path="/expenses/*" element={<ExpensesPage />} />
             <Route path="/contracts" element={<ContractsPage />} />
+            <Route path="/invoices" element={<InvoicesPage />} />
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

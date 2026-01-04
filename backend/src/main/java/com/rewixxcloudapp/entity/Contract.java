@@ -38,10 +38,14 @@ public class Contract {
     private Job job;
 
     // Contract Details
+    private String contractNumber;
     private LocalDate contractDate;
 
     @Column(columnDefinition = "TEXT")
     private String scopeOfWork;
+
+    @Column(columnDefinition = "TEXT")
+    private String termsAndConditions;
 
     private BigDecimal totalPrice;
     private String warranty;
@@ -207,5 +211,21 @@ public class Contract {
 
     public void setStatus(ContractStatus status) {
         this.status = status;
+    }
+
+    public String getContractNumber() {
+        return contractNumber;
+    }
+
+    public void setContractNumber(String contractNumber) {
+        this.contractNumber = contractNumber;
+    }
+
+    public String getTermsAndConditions() {
+        return termsAndConditions;
+    }
+
+    public void setTermsAndConditions(String termsAndConditions) {
+        this.termsAndConditions = termsAndConditions;
     }
 }
