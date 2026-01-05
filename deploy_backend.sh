@@ -55,3 +55,4 @@ az containerapp show \
   --query "{Name:name, Status:properties.provisioningState, Image:properties.template.containers[0].image}" \
   -o table
 
+

@@ -302,12 +302,15 @@ public class JobService {
             }
             
             if (saleToRemove != null) {
+                // Set the sale's job reference to null to break the relationship
+                // This helps Hibernate understand the removal with orphanRemoval
+                saleToRemove.setJob(null);
                 job.getSales().remove(saleToRemove);
-                logger.info("Removed sale with ID: {}", saleToRemove.getId());
+                logger.info("Removed sale with ID: {} from job collection", saleToRemove.getId());
                 
-                // Save the updated job
+                // Save the updated job (orphanRemoval=true will delete the sale)
                 jobRepository.save(job);
-                logger.info("Job updated successfully, new sales count: {}", job.getSales().size());
+                logger.info("Job updated successfully, new sales count: {}", job.getSales() != null ? job.getSales().size() : 0);
             } else {
                 logger.warn("Sale with ID {} not found in job {}", saleId, jobId);
                 throw new IllegalArgumentException("Sale not found in this job");

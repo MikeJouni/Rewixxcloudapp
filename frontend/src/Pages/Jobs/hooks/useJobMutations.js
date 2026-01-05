@@ -123,8 +123,30 @@ export const useJobMutations = (selectedJobForDetails, setSelectedJobForDetails,
           console.log("Material removed, updated sales count:", updatedSales.length);
         }
 
-        // Do not invalidate the whole jobs list to avoid losing context
-        // Selected job is already refreshed above when applicable
+        // Invalidate jobs queries to ensure fresh data is fetched when job is viewed again
+        queryClient.invalidateQueries({ queryKey: ["jobs"] });
+        
+        // Also update the jobs cache if it exists to reflect the deletion
+        try {
+          const currentJobsData = queryClient.getQueryData(["jobs", { searchTerm: searchTerm, page, pageSize, statusFilter }]);
+          if (currentJobsData && currentJobsData.jobs) {
+            const updatedJobs = currentJobsData.jobs.map(job => {
+              if (job.id === variables.jobId) {
+                const currentSales = Array.isArray(job.sales) ? job.sales : [];
+                const updatedSales = currentSales.filter(sale => sale.id !== variables.materialId);
+                return { ...job, sales: updatedSales };
+              }
+              return job;
+            });
+            
+            queryClient.setQueryData(
+              ["jobs", { searchTerm: searchTerm, page, pageSize, statusFilter }], 
+              { ...currentJobsData, jobs: updatedJobs }
+            );
+          }
+        } catch (error) {
+          console.error("Failed to update jobs cache:", error);
+        }
 
       } catch (error) {
         console.error("Failed to handle material removal success:", error);
