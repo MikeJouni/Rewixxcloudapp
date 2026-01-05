@@ -91,11 +91,15 @@ public class ContractService {
         if (contract.getJob() != null) {
             syncContractWithJob(contract);
 
-            // Sync scope of work with job description if provided
+            // Sync scope of work with job description (bidirectional)
+            Job job = contract.getJob();
             if (dto.getScopeOfWork() != null && !dto.getScopeOfWork().isEmpty()) {
-                Job job = contract.getJob();
+                // If scope of work is provided, sync it to job description
                 job.setDescription(dto.getScopeOfWork());
                 jobRepository.save(job);
+            } else if (job.getDescription() != null && !job.getDescription().isEmpty()) {
+                // If scope of work is not provided but job has description, sync job description to contract scope of work
+                contract.setScopeOfWork(job.getDescription());
             }
         } else {
             // Only use DTO values if no job is connected
@@ -207,15 +211,9 @@ public class ContractService {
         if (dto.getCustomerName() != null) contract.setCustomerName(dto.getCustomerName());
         if (dto.getCustomerAddress() != null) contract.setCustomerAddress(dto.getCustomerAddress());
         if (dto.getContractNumber() != null) contract.setContractNumber(dto.getContractNumber());
+        // Update scope of work if provided (will sync to job after job connection is determined)
         if (dto.getScopeOfWork() != null) {
             contract.setScopeOfWork(dto.getScopeOfWork());
-
-            // Sync scope of work with job description if a job is connected
-            if (contract.getJob() != null) {
-                Job job = contract.getJob();
-                job.setDescription(dto.getScopeOfWork());
-                jobRepository.save(job);
-            }
         }
         if (dto.getTermsAndConditions() != null) contract.setTermsAndConditions(dto.getTermsAndConditions());
         if (dto.getWarranty() != null) contract.setWarranty(dto.getWarranty());
@@ -227,14 +225,36 @@ public class ContractService {
         }
 
         // Update job connection if provided
+        boolean jobConnectionChanged = false;
         if (dto.getJobId() != null) {
             Optional<Job> job = jobRepository.findByIdAndUserId(dto.getJobId(), userId);
-            job.ifPresent(contract::setJob);
+            if (job.isPresent()) {
+                Job newJob = job.get();
+                if (contract.getJob() == null || !contract.getJob().getId().equals(newJob.getId())) {
+                    jobConnectionChanged = true;
+                }
+                contract.setJob(newJob);
+            }
         }
 
         // If job is connected, sync price and status from job (don't allow manual override)
         if (contract.getJob() != null) {
             syncContractWithJob(contract);
+            
+            // Sync scope of work with job description (bidirectional)
+            Job job = contract.getJob();
+            if (dto.getScopeOfWork() != null) {
+                // If scope of work was updated, sync it to job description
+                job.setDescription(dto.getScopeOfWork());
+                jobRepository.save(job);
+            } else if (jobConnectionChanged && job.getDescription() != null && !job.getDescription().isEmpty()) {
+                // If job was just connected and has description, sync job description to contract scope of work
+                contract.setScopeOfWork(job.getDescription());
+            } else if ((contract.getScopeOfWork() == null || contract.getScopeOfWork().isEmpty()) 
+                       && job.getDescription() != null && !job.getDescription().isEmpty()) {
+                // If contract scope of work is empty but job has description, sync job description to contract
+                contract.setScopeOfWork(job.getDescription());
+            }
         } else {
             // Only use DTO values if no job is connected
             if (dto.getTotalPrice() != null) contract.setTotalPrice(dto.getTotalPrice());
