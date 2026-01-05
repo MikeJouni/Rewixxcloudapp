@@ -22,8 +22,7 @@ public class Job {
 
     private String title;
 
-    @Lob
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT", length = Integer.MAX_VALUE)
     private String description;
 
     @Enumerated(EnumType.STRING)
@@ -43,14 +42,13 @@ public class Job {
 
     private Boolean includeTax;
 
-    @Lob
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT", length = Integer.MAX_VALUE)
     private String workSiteAddress;
 
     @ManyToOne
     private Customer customer;
 
-    @OneToMany(mappedBy = "job", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "job", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference("job-sales")
     private List<Sale> sales;
 
