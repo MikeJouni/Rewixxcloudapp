@@ -12,7 +12,9 @@ const useCustomers = () => {
     queryKey: ["customers", { searchTerm, page, pageSize }],
     queryFn: () =>
       customerService.getCustomersList({ searchTerm, page, pageSize }),
-    keepPreviousData: true,
+    staleTime: 2 * 60 * 1000, // Consider data fresh for 2 minutes
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    retry: 1, // Retry failed requests once
   });
 
   const customers = data?.customers || [];

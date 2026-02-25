@@ -1,52 +1,620 @@
-import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Layout, Drawer, Button, Grid, Tooltip } from "antd";
+import {
+  UserOutlined,
+  ToolOutlined,
+  TeamOutlined,
+  DollarOutlined,
+  BarChartOutlined,
+  FileTextOutlined,
+  MenuOutlined,
+  CloseOutlined,
+  SettingOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
+  LogoutOutlined,
+  DashboardOutlined,
+} from "@ant-design/icons";
+import { useQuery } from "@tanstack/react-query";
+import * as accountSettingsService from "../services/accountSettingsService";
+import AccountSettingsModal from "./AccountSettingsModal";
+import ChangePasswordModal from "./ChangePasswordModal";
+import { useAuth } from "../AuthContext";
+import config from "../config";
+import Backend from "../Backend";
 
-const Navigation = () => {
+const { Header, Sider } = Layout;
+const { useBreakpoint } = Grid;
+
+const Navigation = ({ sidebarCollapsed, setSidebarCollapsed }) => {
+  const navigate = useNavigate();
   const location = useLocation();
+  const [drawerVisible, setDrawerVisible] = useState(false);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+  const [isGoogleUser, setIsGoogleUser] = useState(false);
+  const screens = useBreakpoint();
+
+  const { email: authEmail, name: authName, logout, token } = useAuth();
+
+  // Fetch user info to check if Google OAuth user
+  const { data: userInfo } = useQuery({
+    queryKey: ["userInfo", token],
+    queryFn: async () => {
+      const response = await Backend.get("api/auth/user-info");
+      return response;
+    },
+    enabled: !!token,
+    staleTime: 10 * 60 * 1000, // Consider data fresh for 10 minutes
+    gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
+  });
+
+  // Update isGoogleUser state when userInfo changes
+  useEffect(() => {
+    if (userInfo) {
+      setIsGoogleUser(userInfo?.hasGoogleAccount || false);
+    }
+  }, [userInfo]);
+
+  // Fetch account settings - include token in query key to ensure per-user caching
+  const { data: accountSettings } = useQuery({
+    queryKey: ["accountSettings", token],
+    queryFn: () => accountSettingsService.getAccountSettings(),
+    enabled: !!token, // Only fetch when we have a token
+    retry: (failureCount, error) => {
+      // Don't retry on 401 errors (user not found - needs re-login)
+      if (error?.response?.status === 401) {
+        return false;
+      }
+      return failureCount < 2; // Retry other errors up to 2 times
+    },
+    retryDelay: 1000, // Wait 1 second between retries
+    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+    onError: (error) => {
+      // If user not found (401), the Backend.js interceptor will handle logout
+      if (error?.response?.status === 401 && error?.response?.data?.requiresReauth) {
+        console.warn("User not found in database - please log in again");
+      }
+    },
+  });
+
+  // Show company name from account settings first, then fall back to email from account settings
+  // Company name should be set by user in settings, defaulting to Google name on first sign-in
+  // Email should always come from account settings (which is synced with authenticated user's email)
+  const displayEmail = accountSettings?.email || authEmail;
+  const companyName = accountSettings?.companyName || displayEmail || "Rewixx Cloud";
+
+  // Only use persisted logoUrl from account settings (do not fall back to avatar here)
+  const rawLogoUrl = accountSettings?.logoUrl || null;
+  const logoSrc =
+    rawLogoUrl && rawLogoUrl.startsWith("http")
+      ? rawLogoUrl
+      : rawLogoUrl
+      ? `${config.SPRING_API_BASE}${rawLogoUrl}`
+      : null;
+
+  // Always use email from account settings (which is synced with authenticated user's email)
+  const settingsEmail = accountSettings?.email || authEmail || "";
+  
+  const mergedSettings = {
+    ...(accountSettings || {}),
+    companyName: accountSettings?.companyName || settingsEmail || "",
+    email: settingsEmail, // Always use synced email from account settings
+    logoUrl: rawLogoUrl,
+  };
 
   const getActiveTab = () => {
     const path = location.pathname;
-    if (path === "/customers" || path === "/") return "customers";
-    if (path === "/jobs") return "jobs";
-    if (path === "/reports") return "reports";
-    return "customers";
+    if (path.startsWith("/dashboard") || path === "/") return "dashboard";
+    if (path.startsWith("/customers")) return "customers";
+    if (path.startsWith("/jobs")) return "jobs";
+    if (path.startsWith("/employees")) return "employees";
+    if (path.startsWith("/expenses")) return "expenses";
+    if (path.startsWith("/contracts")) return "contracts";
+    if (path.startsWith("/reports")) return "reports";
+    return "dashboard";
   };
 
   const activeTab = getActiveTab();
 
+  const handleMenuClick = (key) => {
+    navigate(`/${key}`);
+    setDrawerVisible(false);
+  };
+
+  const menuItems = [
+    {
+      key: "dashboard",
+      icon: <DashboardOutlined />,
+      label: "Dashboard",
+    },
+    {
+      key: "customers",
+      icon: <UserOutlined />,
+      label: "Customers",
+    },
+    {
+      key: "jobs",
+      icon: <ToolOutlined />,
+      label: "Jobs",
+    },
+    {
+      key: "employees",
+      icon: <TeamOutlined />,
+      label: "Employees",
+    },
+    {
+      key: "expenses",
+      icon: <DollarOutlined />,
+      label: "Expenses",
+    },
+    {
+      key: "contracts",
+      icon: <FileTextOutlined />,
+      label: "Contracts",
+    },
+    {
+      key: "reports",
+      icon: <BarChartOutlined />,
+      label: "Reports",
+    },
+  ];
+
+  // Breakpoints: mobile (< md), tablet (md to lg), desktop (>= lg)
+  const isMobile = !screens.md;
+  const isTablet = screens.md && !screens.lg;
+  const isDesktop = screens.lg;
+
+  // Calculate sidebar state based on screen size
+  const getSidebarState = () => {
+    if (isMobile) return { width: 64, collapsed: true, transform: 'translateX(-100%)' };
+    if (isTablet) return { width: 64, collapsed: true, transform: 'translateX(0)' };
+    return {
+      width: sidebarCollapsed ? 64 : 200,
+      collapsed: sidebarCollapsed,
+      transform: 'translateX(0)'
+    };
+  };
+
+  const sidebarState = getSidebarState();
+
+  // Auto-close drawer when switching from mobile to tablet/desktop
+  useEffect(() => {
+    if (!isMobile && drawerVisible) {
+      setDrawerVisible(false);
+    }
+  }, [isMobile, drawerVisible]);
+
   return (
-    <nav className="flex gap-2 sm:gap-4 w-full">
-      <Link
-        to="/customers"
-        className={`flex-1 text-center px-2 sm:px-4 md:px-6 py-2 sm:py-3 rounded border-2 transition-all duration-300 hover:-translate-y-0.5 text-sm sm:text-base ${
-          activeTab === "customers"
-            ? "bg-blue-500 border-blue-500 text-white"
-            : "border-gray-600 text-gray-200 hover:bg-gray-700"
-        }`}
+    <>
+      {/* Top Header - Always visible */}
+      <Header
+        style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 1001,
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: isMobile ? "0 16px" : "0 24px",
+          background: "linear-gradient(135deg, #1f2937 0%, #111827 100%)",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+          height: "64px",
+          borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+        }}
       >
-        Customers
-      </Link>
-      <Link
-        to="/jobs"
-        className={`flex-1 text-center px-2 sm:px-4 md:px-6 py-2 sm:py-3 rounded border-2 transition-all duration-300 hover:-translate-y-0.5 text-sm sm:text-base ${
-          activeTab === "jobs"
-            ? "bg-blue-500 border-blue-500 text-white"
-            : "border-gray-600 text-gray-200 hover:bg-gray-700"
-        }`}
+        {/* Left: Logo and Toggle (Desktop only) */}
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          {/* Desktop Toggle Button */}
+          {isDesktop && (
+            <Button
+              type="text"
+              icon={
+                sidebarCollapsed ? (
+                  <MenuUnfoldOutlined style={{ fontSize: "20px", color: "#fff" }} />
+                ) : (
+                  <MenuFoldOutlined style={{ fontSize: "20px", color: "#fff" }} />
+                )
+              }
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              style={{
+                border: "none",
+                background: "rgba(255, 255, 255, 0.08)",
+                borderRadius: "8px",
+                width: "40px",
+                height: "40px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "all 0.3s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(255, 255, 255, 0.15)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)";
+              }}
+            />
+          )}
+
+          {/* Logo */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              cursor: "pointer",
+              transition: "transform 0.2s ease",
+            }}
+            onClick={() => navigate("/dashboard")}
+            onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+          >
+            <img
+              src="/rewixx_logo.png"
+              alt="Rewixx"
+              style={{
+                height: isMobile ? "32px" : "40px",
+                filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.3))",
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Right: User Avatar, Company Name & Settings */}
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          {!isMobile && (
+            <>
+              {logoSrc && (
+                <img
+                  src={logoSrc}
+                  alt="Company Logo"
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: "999px",
+                    objectFit: "cover",
+                    border: "2px solid rgba(255,255,255,0.4)",
+                    boxShadow: "0 0 0 1px rgba(0,0,0,0.2)",
+                  }}
+                />
+              )}
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-end",
+                  justifyContent: "center",
+                  maxWidth: "220px",
+                  height: "40px",
+                  lineHeight: 1.15,
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: "600",
+                    color: "#fff",
+                    letterSpacing: "0.3px",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {companyName}
+                </div>
+                {(displayEmail || authEmail) && (
+                  <div
+                    style={{
+                      fontSize: "11px",
+                      color: "rgba(255,255,255,0.7)",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {displayEmail || authEmail}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          <Tooltip title="Account Settings">
+            <Button
+              type="text"
+              icon={
+                <SettingOutlined
+                  style={{
+                    fontSize: "20px",
+                    color: "#fff",
+                  }}
+                />
+              }
+              onClick={() => setSettingsModalOpen(true)}
+              style={{
+                border: "none",
+                background: "rgba(255, 255, 255, 0.08)",
+                borderRadius: "8px",
+                width: "40px",
+                height: "40px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "all 0.3s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(255, 255, 255, 0.15)";
+                e.currentTarget.style.transform = "rotate(90deg)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)";
+                e.currentTarget.style.transform = "rotate(0deg)";
+              }}
+            />
+          </Tooltip>
+
+          {/* Sign Out */}
+          <Tooltip title="Sign Out">
+            <Button
+              type="text"
+              icon={
+                <LogoutOutlined
+                  style={{
+                    fontSize: "18px",
+                    color: "#f87171",
+                  }}
+                />
+              }
+              onClick={() => {
+                logout();
+                navigate("/");
+              }}
+              style={{
+                border: "none",
+                background: "rgba(248, 113, 113, 0.15)",
+                borderRadius: "8px",
+                width: "40px",
+                height: "40px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "all 0.3s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(248, 113, 113, 0.25)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(248, 113, 113, 0.15)";
+              }}
+            />
+          </Tooltip>
+
+          {/* Mobile Hamburger Menu */}
+          {isMobile && (
+            <Button
+              type="text"
+              icon={<MenuOutlined style={{ fontSize: "24px", color: "#fff" }} />}
+              onClick={() => setDrawerVisible(true)}
+              style={{
+                border: "none",
+                background: "transparent",
+              }}
+            />
+          )}
+        </div>
+      </Header>
+
+      {/* Sidebar - Always rendered for smooth transitions */}
+      <Sider
+        collapsed={sidebarState.collapsed}
+        collapsedWidth={64}
+        width={200}
+        style={{
+          position: "fixed",
+          left: 0,
+          top: 64,
+          bottom: 0,
+          zIndex: isMobile ? -1 : 999,
+          background: "#fff",
+          boxShadow: isMobile ? "none" : "2px 0 8px rgba(0,0,0,0.06)",
+          borderRight: isMobile ? "none" : "1px solid #f0f0f0",
+          overflow: "hidden",
+          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+          transform: sidebarState.transform,
+          opacity: isMobile ? 0 : 1,
+          pointerEvents: isMobile ? "none" : "auto",
+        }}
       >
-        Jobs
-      </Link>
-      <Link
-        to="/reports"
-        className={`flex-1 text-center px-2 sm:px-4 md:px-6 py-2 sm:py-3 rounded border-2 transition-all duration-300 hover:-translate-y-0.5 text-sm sm:text-base ${
-          activeTab === "reports"
-            ? "bg-blue-500 border-blue-500 text-white"
-            : "border-gray-600 text-gray-200 hover:bg-gray-700"
-        }`}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "4px",
+              padding: "16px 8px",
+              height: "100%",
+            }}
+          >
+            {menuItems.map((item) => {
+              const isActive = activeTab === item.key;
+              const showLabel = isDesktop && !sidebarCollapsed;
+
+              return (
+                <Tooltip
+                  key={item.key}
+                  title={!showLabel ? item.label : ""}
+                  placement="right"
+                >
+                  <div
+                    onClick={() => handleMenuClick(item.key)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                      padding: showLabel ? "12px 16px" : "12px 0",
+                      justifyContent: showLabel ? "flex-start" : "center",
+                      borderRadius: "8px",
+                      cursor: "pointer",
+                      transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                      background: isActive ? "#f0f5ff" : "transparent",
+                      color: isActive ? "#1890ff" : "#595959",
+                      fontWeight: isActive ? "600" : "500",
+                      position: "relative",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isActive) {
+                        e.currentTarget.style.background = "#fafafa";
+                        e.currentTarget.style.color = "#262626";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isActive) {
+                        e.currentTarget.style.background = "transparent";
+                        e.currentTarget.style.color = "#595959";
+                      }
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: "20px",
+                        display: "flex",
+                        minWidth: "20px",
+                        justifyContent: "center",
+                      }}
+                    >
+                      {item.icon}
+                    </span>
+                    {showLabel && (
+                      <span style={{ fontSize: "14px", whiteSpace: "nowrap" }}>
+                        {item.label}
+                      </span>
+                    )}
+                    {isActive && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          left: 0,
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          width: "3px",
+                          height: "60%",
+                          background: "#1890ff",
+                          borderRadius: "0 2px 2px 0",
+                        }}
+                      />
+                    )}
+                  </div>
+                </Tooltip>
+              );
+            })}
+          </div>
+        </Sider>
+
+      {/* Mobile Drawer Menu */}
+      <Drawer
+        title={
+          <div
+            style={{
+              fontSize: "16px",
+              color: "#1f2937",
+              textAlign: "center",
+              fontWeight: "600",
+            }}
+          >
+            {companyName}
+          </div>
+        }
+        placement="right"
+        onClose={() => setDrawerVisible(false)}
+        open={drawerVisible}
+        width={280}
+        closeIcon={<CloseOutlined style={{ fontSize: "20px", color: "#1f2937" }} />}
+        maskClosable={true}
+        keyboard={true}
+        zIndex={1002}
       >
-        Reports
-      </Link>
-    </nav>
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          {menuItems.map((item) => {
+            const isActive = activeTab === item.key;
+            return (
+              <div
+                key={item.key}
+                onClick={() => handleMenuClick(item.key)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  padding: "12px 16px",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                  background: isActive ? "#f3f4f6" : "transparent",
+                  color: isActive ? "#1f2937" : "#6b7280",
+                  fontWeight: isActive ? "600" : "500",
+                }}
+              >
+                <span style={{ fontSize: "20px", display: "flex" }}>
+                  {item.icon}
+                </span>
+                <span style={{ fontSize: "15px" }}>{item.label}</span>
+              </div>
+            );
+          })}
+          {/* Sign Out Button in Mobile Drawer */}
+          <div
+            onClick={() => {
+              logout();
+              navigate("/");
+              setDrawerVisible(false);
+            }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              padding: "12px 16px",
+              borderRadius: "8px",
+              cursor: "pointer",
+              transition: "all 0.2s",
+              background: "transparent",
+              color: "#ef4444",
+              fontWeight: "500",
+              marginTop: "16px",
+              borderTop: "1px solid #e5e7eb",
+              paddingTop: "16px",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "#fef2f2";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "transparent";
+            }}
+          >
+            <span style={{ fontSize: "20px", display: "flex" }}>
+              <LogoutOutlined />
+            </span>
+            <span style={{ fontSize: "15px" }}>Sign Out</span>
+          </div>
+        </div>
+      </Drawer>
+
+      {/* Account Settings Modal */}
+      <AccountSettingsModal
+        open={settingsModalOpen}
+        onClose={() => setSettingsModalOpen(false)}
+        currentSettings={mergedSettings}
+        onPasswordChangeClick={() => {
+          setSettingsModalOpen(false);
+          setPasswordModalOpen(true);
+        }}
+      />
+      <ChangePasswordModal
+        open={passwordModalOpen}
+        onClose={() => setPasswordModalOpen(false)}
+        isGoogleUser={userInfo?.hasGoogleAccount || false}
+      />
+    </>
   );
 };
 

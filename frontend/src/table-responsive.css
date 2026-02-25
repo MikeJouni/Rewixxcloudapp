@@ -1,0 +1,118 @@
+/* Responsive Table Styling for All Screen Sizes */
+
+/* Base table styling */
+.responsive-table {
+  width: 100%;
+}
+
+.responsive-table .ant-table {
+  font-size: 14px;
+}
+
+.responsive-table .ant-table-thead > tr > th {
+  background: #f9fafb;
+  font-weight: 600;
+  color: #374151;
+  padding: 12px 16px;
+  white-space: nowrap;
+}
+
+.responsive-table .ant-table-tbody > tr > td {
+  padding: 12px 16px;
+}
+
+.responsive-table .ant-table-tbody > tr:hover > td {
+  background: #f9fafb;
+}
+
+/* Ensure tables scale properly on large screens */
+@media (min-width: 1280px) {
+  .responsive-table .ant-table {
+    font-size: 15px;
+  }
+  
+  .responsive-table .ant-table-thead > tr > th,
+  .responsive-table .ant-table-tbody > tr > td {
+    padding: 14px 20px;
+  }
+}
+
+/* Extra large screens - maximize space usage */
+@media (min-width: 1536px) {
+  .responsive-table .ant-table {
+    font-size: 16px;
+  }
+  
+  .responsive-table .ant-table-thead > tr > th,
+  .responsive-table .ant-table-tbody > tr > td {
+    padding: 16px 24px;
+  }
+}
+
+/* Tablet optimization */
+@media (max-width: 1024px) {
+  .responsive-table .ant-table {
+    font-size: 13px;
+  }
+  
+  .responsive-table .ant-table-thead > tr > th,
+  .responsive-table .ant-table-tbody > tr > td {
+    padding: 10px 12px;
+  }
+}
+
+/* Mobile optimization */
+@media (max-width: 768px) {
+  .responsive-table .ant-table {
+    font-size: 12px;
+  }
+  
+  .responsive-table .ant-table-thead > tr > th,
+  .responsive-table .ant-table-tbody > tr > td {
+    padding: 8px 10px;
+  }
+  
+  /* Compact action buttons on mobile */
+  .responsive-table button {
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+}
+
+/* Small mobile - very compact */
+@media (max-width: 480px) {
+  .responsive-table .ant-table {
+    font-size: 11px;
+  }
+  
+  .responsive-table .ant-table-thead > tr > th,
+  .responsive-table .ant-table-tbody > tr > td {
+    padding: 6px 8px;
+  }
+}
+
+/* Smooth scrolling for tables */
+.ant-table-content {
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Custom scrollbar for better UX */
+.ant-table-content::-webkit-scrollbar {
+  height: 8px;
+}
+
+.ant-table-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.ant-table-content::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.ant-table-content::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+

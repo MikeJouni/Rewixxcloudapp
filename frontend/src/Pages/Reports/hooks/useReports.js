@@ -1,203 +1,237 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 
-const useReports = () => {
-  const [reportType, setReportType] = useState("customer");
-  const [selectedCustomer, setSelectedCustomer] = useState("");
-  const [selectedJob, setSelectedJob] = useState("");
-  const [customers, setCustomers] = useState([]);
-  const [jobs, setJobs] = useState([]);
-  const [generatedReport, setGeneratedReport] = useState(null);
-  const [showReport, setShowReport] = useState(false);
+export const useReports = (jobs, customers) => {
+  const [selectedReportType, setSelectedReportType] = useState("customer");
+  const [selectedCustomerId, setSelectedCustomerId] = useState(null);
+  const [selectedJobId, setSelectedJobId] = useState(null);
 
-  // Mock data
-  useEffect(() => {
-    setCustomers([
-      {
-        id: 1,
-        name: "John Smith",
-        email: "john@example.com",
-        phone: "555-0101",
+  const generateCustomerReport = useCallback((customerId) => {
+    const customer = customers.find(c => c.id === customerId);
+    if (!customer) return null;
+
+    const customerJobs = jobs.filter(job => job.customer?.id === customerId);
+    
+    const totalJobs = customerJobs.length;
+    const completedJobs = customerJobs.filter(job => job.status === "COMPLETED").length;
+    const inProgressJobs = customerJobs.filter(job => job.status === "IN_PROGRESS").length;
+    const pendingJobs = customerJobs.filter(job => job.status === "PENDING").length;
+    
+    // Calculate total cost and hours
+    let totalCost = 0;
+    let totalEstimatedHours = 0;
+    let totalActualHours = 0;
+    
+    customerJobs.forEach(job => {
+      // Calculate job cost from materials
+      if (job.sales && Array.isArray(job.sales)) {
+        job.sales.forEach(sale => {
+          if (sale.saleItems && Array.isArray(sale.saleItems)) {
+            sale.saleItems.forEach(item => {
+              totalCost += (Number(item.unitPrice) || 0) * (Number(item.quantity) || 0);
+            });
+          }
+        });
+      }
+      
+      totalEstimatedHours += Number(job.estimatedHours) || 0;
+      totalActualHours += Number(job.actualHours) || 0;
+    });
+
+    return {
+      type: "Customer Report",
+      customer: {
+        name: customer.name,
+        email: customer.username,
+        phone: customer.phone,
+        address: `${customer.addressLine1 || ""} ${customer.addressLine2 || ""} ${customer.city || ""} ${customer.state || ""} ${customer.zip || ""}`.trim()
       },
-      { id: 2, name: "Jane Doe", email: "jane@example.com", phone: "555-0102" },
-      {
-        id: 3,
-        name: "Bob Johnson",
-        email: "bob@example.com",
-        phone: "555-0103",
+      summary: {
+        totalJobs,
+        completedJobs,
+        inProgressJobs,
+        pendingJobs,
+        totalEstimatedHours,
+        totalActualHours,
+        totalCost: totalCost.toFixed(2)
       },
-    ]);
+      jobs: customerJobs.map(job => ({
+        id: job.id,
+        title: job.title,
+        status: job.status,
+        priority: job.priority,
+        startDate: job.startDate,
+        endDate: job.endDate,
+        estimatedHours: job.estimatedHours || 0,
+        actualHours: job.actualHours || 0,
+        description: job.description,
+        totalCost: (() => {
+          let jobCost = 0;
+          if (job.sales && Array.isArray(job.sales)) {
+            job.sales.forEach(sale => {
+              if (sale.saleItems && Array.isArray(sale.saleItems)) {
+                sale.saleItems.forEach(item => {
+                  jobCost += (Number(item.unitPrice) || 0) * (Number(item.quantity) || 0);
+                });
+              }
+            });
+          }
+          return jobCost.toFixed(2);
+        })()
+      }))
+    };
+  }, [customers, jobs]);
 
-    setJobs([
-      {
-        id: 1,
-        customerName: "John Smith",
-        title: "Kitchen Remodel",
-        status: "Completed",
-        estimatedHours: 40,
-        actualHours: 42,
-        startDate: "2024-01-15",
-        endDate: "2024-02-15",
-      },
-      {
-        id: 2,
-        customerName: "Jane Doe",
-        title: "Bathroom Update",
-        status: "In Progress",
-        estimatedHours: 20,
-        actualHours: 15,
-        startDate: "2024-02-01",
-        endDate: "2024-02-20",
-      },
-      {
-        id: 3,
-        customerName: "Bob Johnson",
-        title: "Electrical Panel Upgrade",
-        status: "Pending",
-        estimatedHours: 8,
-        actualHours: 0,
-        startDate: "2024-03-01",
-        endDate: "2024-03-02",
-      },
-    ]);
-  }, []);
+  // Generate job report
+  const generateJobReport = useCallback((jobId) => {
+    const job = jobs.find(j => j.id === jobId);
+    if (!job) return null;
 
-  const generateReport = () => {
-    let report = null;
-
-    if (reportType === "customer" && selectedCustomer) {
-      const customer = customers.find(
-        (c) => c.id === parseInt(selectedCustomer)
-      );
-      const customerJobs = jobs.filter(
-        (job) => job.customerName === customer.name
-      );
-
-      report = {
-        type: "Customer Report",
-        customer: customer,
-        jobs: customerJobs,
-        summary: {
-          totalJobs: customerJobs.length,
-          completedJobs: customerJobs.filter(
-            (job) => job.status === "Completed"
-          ).length,
-          inProgressJobs: customerJobs.filter(
-            (job) => job.status === "In Progress"
-          ).length,
-          pendingJobs: customerJobs.filter((job) => job.status === "Pending")
-            .length,
-          totalEstimatedHours: customerJobs.reduce(
-            (sum, job) => sum + job.estimatedHours,
-            0
-          ),
-          totalActualHours: customerJobs.reduce(
-            (sum, job) => sum + job.actualHours,
-            0
-          ),
-        },
-      };
-    } else if (reportType === "job" && selectedJob) {
-      const job = jobs.find((j) => j.id === parseInt(selectedJob));
-
-      report = {
-        type: "Job Report",
-        job: job,
-        summary: {
-          status: job.status,
-          estimatedHours: job.estimatedHours,
-          actualHours: job.actualHours,
-          efficiency:
-            job.actualHours > 0
-              ? ((job.estimatedHours / job.actualHours) * 100).toFixed(1)
-              : "N/A",
-          duration:
-            job.startDate && job.endDate
-              ? Math.ceil(
-                  (new Date(job.endDate) - new Date(job.startDate)) /
-                    (1000 * 60 * 60 * 24)
-                )
-              : "N/A",
-        },
-      };
+    // Calculate job cost and materials
+    let totalCost = 0;
+    const materials = [];
+    
+    if (job.sales && Array.isArray(job.sales)) {
+      job.sales.forEach(sale => {
+        if (sale.saleItems && Array.isArray(sale.saleItems)) {
+          sale.saleItems.forEach(item => {
+            const itemCost = (Number(item.unitPrice) || 0) * (Number(item.quantity) || 0);
+            totalCost += itemCost;
+            
+            materials.push({
+              name: item.product?.name || "Unknown Product",
+              quantity: item.quantity || 0,
+              unitPrice: item.unitPrice || 0,
+              total: itemCost.toFixed(2),
+              notes: item.notes || ""
+            });
+          });
+        }
+      });
     }
 
-    setGeneratedReport(report);
-    setShowReport(true);
-  };
-
-  const exportReport = () => {
-    if (!generatedReport) return;
-
-    let content = "";
-    if (generatedReport.type === "Customer Report") {
-      content = `Customer Report: ${generatedReport.customer.name}
-Generated: ${new Date().toLocaleDateString()}
-
-Customer Information:
-- Name: ${generatedReport.customer.name}
-- Email: ${generatedReport.customer.email}
-- Phone: ${generatedReport.customer.phone}
-
-Summary:
-- Total Jobs: ${generatedReport.summary.totalJobs}
-- Completed: ${generatedReport.summary.completedJobs}
-- In Progress: ${generatedReport.summary.inProgressJobs}
-- Pending: ${generatedReport.summary.pendingJobs}
-- Total Estimated Hours: ${generatedReport.summary.totalEstimatedHours}
-- Total Actual Hours: ${generatedReport.summary.totalActualHours}
-
-Jobs:
-${generatedReport.jobs
-  .map(
-    (job) =>
-      `- ${job.title} (${job.status}) - Est: ${job.estimatedHours}h, Act: ${job.actualHours}h`
-  )
-  .join("\n")}`;
-    } else {
-      content = `Job Report: ${generatedReport.job.title}
-Generated: ${new Date().toLocaleDateString()}
-
-Job Information:
-- Title: ${generatedReport.job.title}
-- Customer: ${generatedReport.job.customerName}
-- Status: ${generatedReport.job.status}
-- Start Date: ${generatedReport.job.startDate}
-- End Date: ${generatedReport.job.endDate}
-
-Summary:
-- Estimated Hours: ${generatedReport.summary.estimatedHours}
-- Actual Hours: ${generatedReport.summary.actualHours}
-- Efficiency: ${generatedReport.summary.efficiency}%
-- Duration: ${generatedReport.summary.duration} days`;
+    // Calculate efficiency
+    const estimatedHours = Number(job.estimatedHours) || 0;
+    const actualHours = Number(job.actualHours) || 0;
+    const efficiency = estimatedHours > 0 ? ((estimatedHours - actualHours) / estimatedHours * 100).toFixed(1) : 0;
+    
+    // Calculate duration
+    let duration = 0;
+    if (job.startDate && job.endDate) {
+      const start = new Date(job.startDate);
+      const end = new Date(job.endDate);
+      duration = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
     }
 
-    const blob = new Blob([content], { type: "text/plain" });
+    return {
+      type: "Job Report",
+      job: {
+        id: job.id,
+        title: job.title,
+        description: job.description,
+        status: job.status,
+        priority: job.priority,
+        startDate: job.startDate,
+        endDate: job.endDate,
+        customerName: job.customer?.name || "No Customer"
+      },
+      summary: {
+        estimatedHours,
+        actualHours,
+        efficiency: efficiency + "%",
+        duration: duration + " days",
+        totalCost: totalCost.toFixed(2),
+        totalMaterials: materials.length
+      },
+      materials,
+      receipts: job.receiptImageUrls ? job.receiptImageUrls.length : 0
+    };
+  }, [jobs]);
+
+  // Get current report based on selection
+  const currentReport = useMemo(() => {
+    if (selectedReportType === "customer" && selectedCustomerId) {
+      return generateCustomerReport(selectedCustomerId);
+    } else if (selectedReportType === "job" && selectedJobId) {
+      return generateJobReport(selectedJobId);
+    }
+    return null;
+  }, [selectedReportType, selectedCustomerId, selectedJobId, generateCustomerReport, generateJobReport]);
+
+  // Export report as CSV
+  const exportReport = (report) => {
+    if (!report) return;
+
+    let csvContent = "";
+    
+    if (report.type === "Customer Report") {
+      // Customer report CSV
+      csvContent += "Customer Report\n";
+      csvContent += `Customer: ${report.customer.name}\n`;
+      csvContent += `Email: ${report.customer.email}\n`;
+      csvContent += `Phone: ${report.customer.phone}\n`;
+      csvContent += `Address: ${report.customer.address}\n\n`;
+      
+      csvContent += "Summary\n";
+      csvContent += `Total Jobs,${report.summary.totalJobs}\n`;
+      csvContent += `Completed,${report.summary.completedJobs}\n`;
+      csvContent += `In Progress,${report.summary.inProgressJobs}\n`;
+      csvContent += `Pending,${report.summary.pendingJobs}\n`;
+      csvContent += `Total Hours (Est),${report.summary.totalEstimatedHours}\n`;
+      csvContent += `Total Hours (Act),${report.summary.totalActualHours}\n`;
+      csvContent += `Total Cost,$${report.summary.totalCost}\n\n`;
+      
+      csvContent += "Jobs\n";
+      csvContent += "ID,Title,Status,Priority,Start Date,End Date,Est Hours,Act Hours,Cost\n";
+      report.jobs.forEach(job => {
+        csvContent += `${job.id},"${job.title}",${job.status},${job.priority},${job.startDate || ""},${job.endDate || ""},${job.estimatedHours},${job.actualHours},$${job.totalCost}\n`;
+      });
+    } else if (report.type === "Job Report") {
+      // Job report CSV
+      csvContent += "Job Report\n";
+      csvContent += `Title: ${report.job.title}\n`;
+      csvContent += `Customer: ${report.job.customerName}\n`;
+      csvContent += `Status: ${report.job.status}\n`;
+      csvContent += `Priority: ${report.job.priority}\n`;
+      csvContent += `Start Date: ${report.job.startDate || ""}\n`;
+      csvContent += `End Date: ${report.job.endDate || ""}\n\n`;
+      
+      csvContent += "Summary\n";
+      csvContent += `Estimated Hours,${report.summary.estimatedHours}\n`;
+      csvContent += `Actual Hours,${report.summary.actualHours}\n`;
+      csvContent += `Efficiency,${report.summary.efficiency}\n`;
+      csvContent += `Duration,${report.summary.duration}\n`;
+      csvContent += `Total Cost,$${report.summary.totalCost}\n`;
+      csvContent += `Total Materials,${report.summary.totalMaterials}\n\n`;
+      
+      csvContent += "Materials\n";
+      csvContent += "Name,Quantity,Unit Price,Total,Notes\n";
+      report.materials.forEach(material => {
+        csvContent += `"${material.name}",${material.quantity},$${material.unitPrice},$${material.total},"${material.notes}"\n`;
+      });
+    }
+
+    // Create and download CSV file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${generatedReport.type.replace(" ", "_")}_${
-      new Date().toISOString().split("T")[0]
-    }.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `${report.type.replace(' ', '_')}_${Date.now()}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return {
-    reportType,
-    setReportType,
-    selectedCustomer,
-    setSelectedCustomer,
-    selectedJob,
-    setSelectedJob,
-    customers,
-    jobs,
-    generatedReport,
-    showReport,
-    generateReport,
+    selectedReportType,
+    setSelectedReportType,
+    selectedCustomerId,
+    setSelectedCustomerId,
+    selectedJobId,
+    setSelectedJobId,
+    currentReport,
     exportReport,
+    generateCustomerReport,
+    generateJobReport
   };
 };
-
-export default useReports;

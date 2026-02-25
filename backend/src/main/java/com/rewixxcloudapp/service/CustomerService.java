@@ -1,7 +1,9 @@
 package com.rewixxcloudapp.service;
 
 import com.rewixxcloudapp.entity.Customer;
+import com.rewixxcloudapp.entity.Job;
 import com.rewixxcloudapp.repository.CustomerRepository;
+import com.rewixxcloudapp.repository.JobRepository;
 import com.rewixxcloudapp.dto.CustomerDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,19 +22,27 @@ public class CustomerService {
     private CustomerRepository customerRepository;
 
     @Autowired
+    private JobRepository jobRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
-    public Optional<Customer> getCustomerById(Long id) {
-        return customerRepository.findById(id);
+    public Optional<Customer> getCustomerById(Long id, Long userId) {
+        return customerRepository.findByIdAndUserId(id, userId);
     }
 
     public Customer saveCustomer(Customer customer) {
         return customerRepository.save(customer);
     }
 
-    public Customer createCustomer(CustomerDto dto) {
-        if (customerRepository.findByUsername(dto.getUsername()).isPresent()) {
-            throw new RuntimeException("Username already exists");
+    public Customer createCustomer(CustomerDto dto, Long userId) {
+        if (customerRepository.findByUsernameAndUserId(dto.getUsername(), userId).isPresent()) {
+            throw new RuntimeException("Email already exists");
+        }
+        if (dto.getPhone() != null && !dto.getPhone().trim().isEmpty()) {
+            if (customerRepository.findByPhoneAndUserId(dto.getPhone(), userId).isPresent()) {
+                throw new RuntimeException("Phone number already exists");
+            }
         }
         if (dto.getUsername() == null || dto.getUsername().trim().isEmpty()) {
             throw new IllegalArgumentException("Username cannot be empty");
@@ -41,6 +51,7 @@ public class CustomerService {
             throw new IllegalArgumentException("Name cannot be empty");
         }
         Customer customer = new Customer(dto.getUsername(), null, dto.getName());
+        customer.setUserId(userId);
         if (dto.getPassword() != null && !dto.getPassword().trim().isEmpty()) {
             customer.setPassword(passwordEncoder.encode(dto.getPassword()));
         }
@@ -54,12 +65,24 @@ public class CustomerService {
     }
 
     public Customer updateCustomerFromDto(Customer customer, CustomerDto dto) {
-        if (dto.getUsername() != null)
+        if (dto.getUsername() != null) {
+            // Check if username is being changed and if it already exists
+            if (!dto.getUsername().equals(customer.getUsername()) && 
+                customerRepository.findByUsernameAndUserId(dto.getUsername(), customer.getUserId()).isPresent()) {
+                throw new RuntimeException("Email already exists");
+            }
             customer.setUsername(dto.getUsername());
+        }
         if (dto.getName() != null)
             customer.setName(dto.getName());
-        if (dto.getPhone() != null)
+        if (dto.getPhone() != null) {
+            // Check if phone is being changed and if it already exists
+            if (!dto.getPhone().equals(customer.getPhone()) && 
+                customerRepository.findByPhoneAndUserId(dto.getPhone(), customer.getUserId()).isPresent()) {
+                throw new RuntimeException("Phone number already exists");
+            }
             customer.setPhone(dto.getPhone());
+        }
         if (dto.getAddressLine1() != null)
             customer.setAddressLine1(dto.getAddressLine1());
         if (dto.getAddressLine2() != null)
@@ -77,13 +100,34 @@ public class CustomerService {
         return customerRepository.save(customer);
     }
 
-    public void deleteCustomerById(Long id) {
-        customerRepository.deleteById(id);
+    public void deleteCustomerById(Long id, Long userId) {
+        try {
+            Optional<Customer> customerOpt = customerRepository.findByIdAndUserId(id, userId);
+            if (customerOpt.isEmpty()) {
+                throw new RuntimeException("Customer not found");
+            }
+            // First delete all jobs associated with this customer
+            List<Job> customerJobs = jobRepository.findByCustomerIdAndUserId(id, userId);
+            if (customerJobs != null && !customerJobs.isEmpty()) {
+                logger.info("Deleting {} jobs associated with customer ID {}", customerJobs.size(), id);
+                jobRepository.deleteAll(customerJobs);
+                logger.info("Successfully deleted {} jobs for customer ID {}", customerJobs.size(), id);
+            } else {
+                logger.info("No jobs found for customer ID {}", id);
+            }
+            
+            // Now delete the customer
+            customerRepository.deleteById(id);
+            logger.info("Customer with ID {} deleted successfully", id);
+        } catch (Exception e) {
+            logger.error("Error deleting customer with ID {}: {}", id, e.getMessage(), e);
+            throw new RuntimeException("Failed to delete customer: " + e.getMessage(), e);
+        }
     }
 
-    public Map<String, Object> getCustomersList(int page, int pageSize, String searchTerm) {
-        List<Customer> customers = customerRepository.findCustomersWithSearch(searchTerm, page, pageSize);
-        long totalCustomers = customerRepository.countCustomersWithSearch(searchTerm);
+    public Map<String, Object> getCustomersList(int page, int pageSize, String searchTerm, Long userId) {
+        List<Customer> customers = customerRepository.findCustomersWithSearch(searchTerm, page, pageSize, userId);
+        long totalCustomers = customerRepository.countCustomersWithSearch(searchTerm, userId);
         int totalPages = (int) Math.ceil((double) totalCustomers / pageSize);
 
         Map<String, Object> result = new HashMap<>();

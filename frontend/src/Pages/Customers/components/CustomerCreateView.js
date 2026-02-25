@@ -8,8 +8,8 @@ const CustomerCreateView = () => {
   const { addCustomer } = useCustomers();
 
   const handleCreateSuccess = (response) => {
-    // Navigate to the newly created customer's detail page
-    navigate(`/customers/${response.id}`);
+    // Navigate back to the customer list
+    navigate("/customers");
   };
 
   const handleCancel = () => {
@@ -31,16 +31,19 @@ const CustomerCreateView = () => {
         </button>
       </div>
 
-      <CustomerForm
-        onSubmit={(customerData) => {
-          addCustomer.mutate(customerData, {
-            onSuccess: handleCreateSuccess,
-          });
-        }}
-        onCancel={handleCancel}
-        isLoading={addCustomer.isLoading}
-        error={addCustomer.error}
-      />
+      <div className="mb-6 p-6 bg-white rounded-lg shadow-md">
+        <h2 className="text-xl font-semibold mb-4">Add New Customer</h2>
+        <CustomerForm
+          onSubmit={(customerData) => {
+            addCustomer.mutate(customerData, {
+              onSuccess: handleCreateSuccess,
+            });
+          }}
+          onCancel={handleCancel}
+          isLoading={addCustomer.isLoading}
+          error={addCustomer.error}
+        />
+      </div>
     </div>
   );
 };

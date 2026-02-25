@@ -1,71 +1,62 @@
-import { useState, useMemo, useEffect } from "react";
-import config from "../../../config";
+import { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import * as jobService from "../services/jobService";
+import * as productService from "../services/productService";
+import { useJobMutations } from "./useJobMutations";
+import { useJobFilters } from "./useJobFilters";
+import { useJobReceipts } from "./useJobReceipts";
+import { useJobMaterials } from "./useJobMaterials";
 
 const useJobs = () => {
-  const [jobs, setJobs] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
+  const queryClient = useQueryClient();
+  
+  // Core state
   const [editingJob, setEditingJob] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
-  const [processingReceipt, setProcessingReceipt] = useState(false);
-  const [selectedJobForReceipt, setSelectedJobForReceipt] = useState(null);
-  const [showReceiptModal, setShowReceiptModal] = useState(false);
-  const [showVerificationModal, setShowVerificationModal] = useState(false);
-  const [currentReceiptData, setCurrentReceiptData] = useState(null);
-  const [currentJobId, setCurrentJobId] = useState(null);
   const [selectedJobForDetails, setSelectedJobForDetails] = useState(null);
   const [showJobDetailModal, setShowJobDetailModal] = useState(false);
 
-  const statusOptions = [
-    "All",
-    "Pending",
-    "In Progress",
-    "Completed",
-    "Cancelled",
-  ];
-  const priorityOptions = ["Low", "Medium", "High", "Urgent"];
+  // Fetch jobs data
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["jobs", { searchTerm: "", page: 0, pageSize: 10, statusFilter: "All" }],
+    queryFn: () => jobService.getJobsList({ searchTerm: "", page: 0, pageSize: 10, statusFilter: "All" }),
+    staleTime: 2 * 60 * 1000, // Consider data fresh for 2 minutes
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    retry: 1, // Retry failed requests once
+  });
 
+  // Fetch products data
+  const { data: products, isLoading: productsLoading, error: productsError } = useQuery({
+    queryKey: ["products"],
+    queryFn: () => productService.getProducts(),
+    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+    retry: 1, // Retry failed requests once
+  });
+
+  const jobs = data?.jobs || [];
+
+  // Use separated hooks
+  const filters = useJobFilters(jobs);
+  const mutations = useJobMutations(selectedJobForDetails, setSelectedJobForDetails, filters.searchTerm, filters.page, filters.pageSize, filters.statusFilter);
+  const receipts = useJobReceipts(queryClient, jobs, selectedJobForDetails, setSelectedJobForDetails);
+  const materials = useJobMaterials();
+  
+
+
+  // Mobile detection
   useEffect(() => {
     const isMobileDevice =
       /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
         navigator.userAgent
       );
+
     setIsMobile(isMobileDevice);
   }, []);
+  
 
-  const filteredJobs = useMemo(() => {
-    return jobs.filter((job) => {
-      const matchesSearch =
-        job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        job.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        job.description.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus =
-        statusFilter === "All" || job.status === statusFilter;
-      return matchesSearch && matchesStatus;
-    });
-  }, [jobs, searchTerm, statusFilter]);
 
-  const addJob = (jobData) => {
-    const newJob = {
-      id: jobs.length + 1,
-      ...jobData,
-      actualHours: 0,
-      receipts: [],
-      materials: [],
-      totalCost: 0,
-    };
-    setJobs([...jobs, newJob]);
-  };
-
-  const updateJob = (jobData) => {
-    setJobs(jobs.map((job) => (job.id === jobData.id ? jobData : job)));
-    setEditingJob(null);
-  };
-
-  const deleteJob = (jobId) => {
-    setJobs(jobs.filter((job) => job.id !== jobId));
-  };
-
+  // Job editing functions
   const startEditing = (job) => {
     setEditingJob(job);
   };
@@ -74,169 +65,166 @@ const useJobs = () => {
     setEditingJob(null);
   };
 
-  const processReceiptWithVeryfi = async (file) => {
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const response = await fetch(
-        `${config.PYTHON_API_BASE}/api/receipts/process`,
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const receiptData = await response.json();
-      return receiptData;
-    } catch (error) {
-      console.error("Error processing receipt with Veryfi:", error);
-      throw error;
+  const handleJobUpdate = (updatedJob, materialData = null) => {
+    // If material data is provided, handle it first
+    if (materialData && materialData.source === "Barcode Scan") {
+      // For barcode flow, avoid optimistic job overwrite that can temporarily hide materials
+      materials.handleBarcodeMaterial(updatedJob.id, materialData, mutations.addMaterialToJob, selectedJobForDetails, setSelectedJobForDetails, queryClient, filters.searchTerm, filters.page, filters.pageSize, filters.statusFilter);
+      return;
     }
-  };
-
-  const handleReceiptUpload = async (jobId, event) => {
-    const file = event.target.files[0];
-    if (file) {
-      setProcessingReceipt(true);
-
-      try {
-        // Process receipt with Veryfi
-        const receiptData = await processReceiptWithVeryfi(file);
-
-        // Read file for display
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const receiptInfo = {
-            id: Date.now(),
-            name: file.name,
-            data: e.target.result,
-            uploadedAt: new Date().toISOString(),
-            extractedData: receiptData,
-          };
-
-          // Store the receipt data for verification
-          setCurrentReceiptData(receiptData);
-          setCurrentJobId(jobId);
-          setShowVerificationModal(true);
-
-          // Add receipt to job (without materials yet)
-          setJobs(
-            jobs.map((job) => {
-              if (job.id === jobId) {
-                return {
-                  ...job,
-                  receipts: [...(job.receipts || []), receiptInfo],
-                };
-              }
-              return job;
-            })
+    
+    mutations.updateJob.mutate(updatedJob, {
+      onSuccess: () => {
+        // Update the local state to reflect the changes immediately
+        setSelectedJobForDetails(updatedJob);
+        // Also update the jobs list if this job is in it
+        if (jobs.find(job => job.id === updatedJob.id)) {
+          const updatedJobs = jobs.map(job => 
+            job.id === updatedJob.id ? updatedJob : job
           );
-        };
-        reader.readAsDataURL(file);
-      } catch (error) {
-        console.error("Failed to process receipt:", error);
-        alert(
-          "Failed to process receipt. Please try again or contact support."
-        );
-      } finally {
-        setProcessingReceipt(false);
-      }
-    }
-  };
-
-  const handleReceiptVerification = (verifiedData) => {
-    // Add verified items as materials to the job
-    setJobs(
-      jobs.map((job) => {
-        if (job.id === currentJobId) {
-          // Convert verified items to materials format
-          const newMaterials = verifiedData.items.map((item) => ({
-            id: Date.now() + Math.random(),
-            name: item.name,
-            price: item.price,
-            quantity: item.quantity,
-            total: item.total,
-            supplier: currentReceiptData.vendor,
-            category: "Receipt Item",
-            source: "Receipt Scan (Verified)",
-            notes: verifiedData.notes,
-          }));
-
-          const updatedMaterials = [...(job.materials || []), ...newMaterials];
-
-          // Update total cost
-          const newTotalCost = (job.totalCost || 0) + verifiedData.total;
-
-          return {
-            ...job,
-            materials: updatedMaterials,
-            totalCost: newTotalCost,
-          };
+          // Force a re-render by updating the query data
+          try {
+            queryClient.setQueryData(["jobs", { searchTerm: filters.searchTerm, page: filters.page, pageSize: filters.pageSize, statusFilter: filters.statusFilter }], {
+              ...data,
+              jobs: updatedJobs
+            });
+          } catch (error) {
+            console.error("Failed to update query data:", error);
+            // Don't let this error break the flow
+          }
         }
-        return job;
-      })
-    );
-
-    // Reset verification state
-    setCurrentReceiptData(null);
-    setCurrentJobId(null);
-    setShowVerificationModal(false);
+        // Skip invalidating queries to preserve job context
+        console.log("Skipping query invalidation in handleJobUpdate to preserve job context");
+      },
+      onError: (error) => {
+        console.error("Failed to update job:", error);
+        // Don't let the job disappear on error
+      }
+    });
+    setEditingJob(null);
   };
 
-  const viewReceipts = (job) => {
-    setSelectedJobForReceipt(job);
-    setShowReceiptModal(true);
-  };
-
+  // View job details
   const viewJobDetails = (job) => {
     setSelectedJobForDetails(job);
     setShowJobDetailModal(true);
   };
 
-  const handleJobUpdate = (updatedJob) => {
-    setJobs(jobs.map((job) => (job.id === updatedJob.id ? updatedJob : job)));
-    // Also update the selected job for details if it's the same job
-    if (selectedJobForDetails && selectedJobForDetails.id === updatedJob.id) {
-      setSelectedJobForDetails(updatedJob);
+  // Receipt verification
+  const handleReceiptVerification = async (receiptData) => {
+    try {
+      // Add materials from the receipt to the job
+      const currentJob = selectedJobForDetails;
+      
+      if (receiptData.items && receiptData.items.length > 0 && currentJob) {
+          // Convert receipt items to materials and add them to the job
+          for (const item of receiptData.items) {
+            if (item.name && item.price) {
+              try {
+                // First, create a product for this receipt item
+                const productData = {
+                  name: item.name,
+                  description: `Product from receipt: ${item.name}`,
+                  unitPrice: item.price,
+                  category: "Receipt Item",
+                  supplier: receiptData.vendor || "Receipt"
+                };
+                
+                const createdProduct = await productService.createProduct(productData);
+                
+                // Invalidate products query to refresh dropdown
+                queryClient.invalidateQueries({ queryKey: ["products"] });
+                
+                // Now add the material to the job using the created product
+                const materialDto = {
+                  productId: createdProduct.id,
+                  quantity: item.quantity || 1,
+                  unitPrice: item.price,
+                  notes: `From receipt: ${receiptData.receipt_number || 'Unknown'}`
+                };
+                
+                await mutations.addMaterialToJob.mutateAsync({
+                  jobId: currentJob.id,
+                  material: materialDto
+                });
+                
+              } catch (itemError) {
+                console.error(`Failed to process item ${item.name}:`, itemError);
+              }
+            }
+          }
+          
+          // Simple refresh - just invalidate jobs queries
+          queryClient.invalidateQueries({ 
+            queryKey: ["jobs"], 
+            exact: false 
+          });
+      }
+      
+      // Close the verification modal - simple!
+      receipts.setShowVerificationModal(false);
+      
+      console.log("Receipt verification completed - modal closed");
+      return { success: true };
+      
+    } catch (error) {
+      console.error("Error adding materials:", error);
+      // Still close the modal even if there's an error
+      receipts.setShowVerificationModal(false);
+      throw error;
     }
   };
 
+
+
   return {
+    // Core data
     jobs,
-    filteredJobs,
-    searchTerm,
-    setSearchTerm,
-    statusFilter,
-    setStatusFilter,
-    statusOptions,
-    priorityOptions,
+    filteredJobs: filters.filteredJobs,
+    isLoading,
+    error,
+    
+    // Filters
+    ...filters,
+    
+    // Mutations
+    ...mutations,
+    
+    // Receipts
+    ...receipts,
+    
+    // Materials
+    ...materials,
+    
+    // Job editing
     editingJob,
-    isMobile,
-    processingReceipt,
-    selectedJobForReceipt,
-    showReceiptModal,
-    setShowReceiptModal,
-    showVerificationModal,
-    setShowVerificationModal,
-    currentReceiptData,
-    selectedJobForDetails,
-    showJobDetailModal,
-    setShowJobDetailModal,
-    addJob,
-    updateJob,
-    deleteJob,
     startEditing,
     cancelEditing,
-    handleReceiptUpload,
-    handleReceiptVerification,
-    viewReceipts,
-    viewJobDetails,
     handleJobUpdate,
+    
+    // Job details
+    selectedJobForDetails,
+    setSelectedJobForDetails,
+    showJobDetailModal,
+    
+    // Products
+    products,
+    productsLoading,
+    productsError,
+    setShowJobDetailModal,
+    viewJobDetails,
+    
+    // Receipt verification
+    handleReceiptVerification,
+    
+    // Pagination
+    totalPages: data?.totalPages || 1,
+    totalJobs: data?.totalJobs || 0,
+    hasNext: data?.hasNext || false,
+    hasPrevious: data?.hasPrevious || false,
+    
+    // Mobile
+    isMobile,
   };
 };
 

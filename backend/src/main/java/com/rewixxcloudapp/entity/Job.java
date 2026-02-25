@@ -1,6 +1,8 @@
 package com.rewixxcloudapp.entity;
 
 import com.rewixxcloudapp.util.JsonSerializer;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import javax.persistence.*;
 import java.time.LocalDate;
@@ -8,55 +10,78 @@ import java.util.List;
 import java.util.Collection;
 
 @Entity
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Table(name = "jobs")
 public class Job {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
+
     private String title;
 
+    @Column(columnDefinition = "TEXT", length = Integer.MAX_VALUE)
     private String description;
 
     @Enumerated(EnumType.STRING)
     private JobStatus status;
-
-    @Enumerated(EnumType.STRING)
-    private JobPriority priority;
 
     private LocalDate startDate;
 
     private LocalDate endDate;
 
     private Integer estimatedHours;
+    
+    private Integer actualHours;
+
+    private Double jobPrice;
+
+    private Double customMaterialCost;
+
+    private Boolean includeTax;
+
+    @Column(columnDefinition = "TEXT", length = Integer.MAX_VALUE)
+    private String workSiteAddress;
 
     @ManyToOne
     private Customer customer;
 
-    @OneToMany(mappedBy = "job", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "job", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference("job-sales")
     private List<Sale> sales;
+
+    @OneToMany(mappedBy = "job", cascade = CascadeType.ALL)
+    @JsonManagedReference("job-payments")
+    private List<Payment> payments;
 
     @ElementCollection
     @CollectionTable(name = "job_receipt_images", joinColumns = @JoinColumn(name = "job_id"))
-    @Column(name = "image_url")
+    @Column(name = "image_url", columnDefinition = "TEXT")
     private List<String> receiptImageUrls;
 
     public Job() {
     }
 
-    public Job(String title, String description, JobStatus status, JobPriority priority) {
+    public Job(String title, String description, JobStatus status) {
         this.title = title;
         this.description = description;
         this.status = status;
-        this.priority = priority;
     }
 
     // JSON Serialization methods
     private static JsonSerializer serializer() {
         return JsonSerializer.create()
-                .include("id", "title", "description", "status", "priority", "startDate", "endDate",
-                        "estimatedHours", "receiptImageUrls", "customer.id", "customer.username",
-                        "customer.phone", "customer.addressLine1", "customer.city", "customer.state")
+                .include("id", "title", "description", "status", "startDate", "endDate",
+                        "jobPrice", "customMaterialCost", "includeTax", "receiptImageUrls", "customer.id", "customer.username",
+                        "customer.phone", "customer.addressLine1", "customer.city", "customer.state",
+                        "sales.id", "sales.date", "sales.description", "sales.saleItems.id",
+                        "sales.saleItems.quantity", "sales.saleItems.unitPrice",
+                        "sales.saleItems.product.id", "sales.saleItems.product.name",
+                        "sales.saleItems.product.unitPrice", "sales.saleItems.product.category",
+                        "sales.saleItems.product.description",
+                        "payments.id", "payments.amount", "payments.paymentType", "payments.paymentDate")
                 .exclude("*");
     }
 
@@ -98,14 +123,6 @@ public class Job {
 
     public void setStatus(JobStatus status) {
         this.status = status;
-    }
-
-    public JobPriority getPriority() {
-        return priority;
-    }
-
-    public void setPriority(JobPriority priority) {
-        this.priority = priority;
     }
 
     public LocalDate getStartDate() {
@@ -154,5 +171,61 @@ public class Job {
 
     public void setReceiptImageUrls(List<String> receiptImageUrls) {
         this.receiptImageUrls = receiptImageUrls;
+    }
+    
+    public Integer getActualHours() {
+        return actualHours;
+    }
+
+    public void setActualHours(Integer actualHours) {
+        this.actualHours = actualHours;
+    }
+
+    public Double getJobPrice() {
+        return jobPrice;
+    }
+
+    public void setJobPrice(Double jobPrice) {
+        this.jobPrice = jobPrice;
+    }
+
+    public Double getCustomMaterialCost() {
+        return customMaterialCost;
+    }
+
+    public void setCustomMaterialCost(Double customMaterialCost) {
+        this.customMaterialCost = customMaterialCost;
+    }
+
+    public Boolean getIncludeTax() {
+        return includeTax;
+    }
+
+    public void setIncludeTax(Boolean includeTax) {
+        this.includeTax = includeTax;
+    }
+
+    public List<Payment> getPayments() {
+        return payments;
+    }
+
+    public void setPayments(List<Payment> payments) {
+        this.payments = payments;
+    }
+
+    public String getWorkSiteAddress() {
+        return workSiteAddress;
+    }
+
+    public void setWorkSiteAddress(String workSiteAddress) {
+        this.workSiteAddress = workSiteAddress;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 }

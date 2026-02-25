@@ -1,8 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Button } from "antd";
 import { Html5Qrcode } from "html5-qrcode";
 import config from "../../../../config";
 
-const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
+const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile, jobId }) => {
+  const queryClient = useQueryClient();
+  
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -16,9 +20,7 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
   const stopScanning = useCallback(async () => {
     if (html5QrcodeRef.current && html5QrcodeRef.current.isScanning) {
       try {
-        console.log("🛑 Stopping scanner...");
         await html5QrcodeRef.current.stop();
-        console.log("✅ Scanner stopped successfully");
       } catch (error) {
         console.error("❌ Error stopping scanner:", error);
       }
@@ -28,18 +30,13 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
 
   const onScanSuccess = useCallback(
     async (decodedText, decodedResult) => {
-      console.log("🎯 Barcode detected:", decodedText);
-      console.log("Full scan result:", decodedResult);
-
       // Prevent multiple scans of the same barcode
       if (decodedText === lastScannedBarcode.current) {
-        console.log("🔄 Duplicate barcode, ignoring");
         return;
       }
 
       // Prevent multiple simultaneous requests
       if (loading) {
-        console.log("⏳ Already loading, ignoring scan");
         return;
       }
 
@@ -54,20 +51,16 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
 
       // Add a small delay to prevent rapid-fire scanning
       scanTimeoutRef.current = setTimeout(async () => {
-        console.log("🚀 Making API call for barcode:", decodedText);
         // Use API URL from config
         const apiUrl = `${
           config.PYTHON_API_BASE
         }/api/materials/barcode-lookup?barcode=${encodeURIComponent(
           decodedText
         )}`;
-        console.log("🔗 API URL:", apiUrl);
         setLoading(true);
         setError("");
 
         try {
-          console.log("📡 Starting fetch request...");
-
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
@@ -83,24 +76,20 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
 
           clearTimeout(timeoutId);
 
-          console.log("📡 API Response status:", response.status);
-
           // Check if response is ok
           if (!response.ok) {
             let errorMessage = `HTTP ${response.status}`;
             try {
               const errorText = await response.text();
-              console.error("❌ API Error response:", errorText);
               errorMessage += `: ${errorText}`;
             } catch (e) {
-              console.error("❌ Could not read error response");
+              // Could not read error response
             }
             throw new Error(errorMessage);
           }
 
           // Get response as text first, then parse as JSON
           const responseText = await response.text();
-          console.log("📡 Raw response text:", responseText);
 
           if (!responseText.trim()) {
             throw new Error("Server returned empty response");
@@ -109,7 +98,6 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
           let productData;
           try {
             productData = JSON.parse(responseText);
-            console.log("📦 Product data received:", productData);
           } catch (jsonError) {
             console.error("❌ Failed to parse JSON:", jsonError);
             throw new Error(
@@ -117,13 +105,12 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
             );
           }
 
-          if (productData && productData.name) {
-            console.log("✅ Product found, showing quantity selector");
+          // Check if this is a successful product lookup (not a fallback response)
+          if (productData && productData.name && productData.supplier !== "Unknown") {
             setProduct(productData);
             setShowQuantitySelector(true);
             await stopScanning();
           } else {
-            console.log("❌ Product not found in response");
             setError("Product not found. Please try scanning again.");
             lastScannedBarcode.current = "";
           }
@@ -162,7 +149,6 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
 
   const startScanning = useCallback(async () => {
     try {
-      console.log("🎥 Starting barcode scanner...");
       setError("");
       lastScannedBarcode.current = "";
       setScannedBarcode("");
@@ -171,9 +157,7 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
       html5QrcodeRef.current = new Html5Qrcode("reader");
 
       // Get available cameras
-      console.log("📱 Getting available cameras...");
       const devices = await Html5Qrcode.getCameras();
-      console.log("📷 Available cameras:", devices);
 
       if (devices.length === 0) {
         throw new Error("No cameras found on this device");
@@ -192,10 +176,7 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
         backCamera = devices[0];
       }
 
-      console.log("📷 Using camera:", backCamera.label);
-
       // Start scanning with the selected camera
-      console.log("🚀 Starting scanner with camera ID:", backCamera.id);
       await html5QrcodeRef.current.start(
         { deviceId: backCamera.id },
         {
@@ -207,8 +188,6 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
         onScanSuccess,
         onScanFailure
       );
-
-      console.log("✅ Scanner started successfully");
     } catch (error) {
       console.error("💥 Error starting scanner:", error);
 
@@ -245,27 +224,50 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
     };
   }, [isOpen, isMobile, startScanning, stopScanning]);
 
-  const handleQuantityConfirm = () => {
+  const handleQuantityConfirm = async () => {
     if (product && quantity > 0) {
-      const materialData = {
-        id: Date.now(),
-        name: product.name,
-        price: parseFloat(product.price.replace(/[^0-9.]/g, "")) || 0,
-        quantity: quantity,
-        total:
-          (parseFloat(product.price.replace(/[^0-9.]/g, "")) || 0) * quantity,
-        supplier: product.supplier,
-        category: product.category,
-        sku: product.sku,
-        url: product.url,
-        image_url: product.image_url,
-        description: product.description,
-        availability: product.availability,
-        source: "Barcode Scan",
-      };
+      try {
+        // First, create or find the product in the database
+        // First, create or find the product in the database via shared service
+        const productPayload = {
+          name: product.name,
+          description: product.description || `Product from barcode scan: ${product.name}`,
+          unitPrice: parseFloat(product.price.replace(/[^0-9.]/g, "")) || 0,
+        };
 
-      onProductFound(materialData);
-      handleClose();
+        const productService = await import("../../services/productService");
+        const createdProduct = await productService.createProduct(productPayload);
+        if (!createdProduct || !createdProduct.id) {
+          throw new Error('Failed to create product');
+        }
+        
+        // Invalidate products query to refresh dropdown
+        queryClient.invalidateQueries({ queryKey: ["products"] });
+
+        const unitPriceNumber = parseFloat(product.price.replace(/[^0-9.]/g, "")) || 0;
+        // Minimal DTO expected by backend
+
+        // Now create the material data with the database product ID
+        const materialData = {
+          productId: createdProduct.id,
+          quantity: Number(quantity) || 1,
+          unitPrice: unitPriceNumber,
+          source: "Barcode Scan",
+        };
+
+        console.log('Barcode scanner calling onProductFound with:', {
+          jobId: jobId,
+          material: materialData
+        });
+        onProductFound({
+          jobId: jobId,
+          material: materialData
+        });
+        handleClose();
+      } catch (error) {
+        console.error('Error creating product:', error);
+        setError(`Failed to add to materials: ${error.message}`);
+      }
     }
   };
 
@@ -273,7 +275,6 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
     await stopScanning();
     setProduct(null);
     setQuantity(1);
-    setShowQuantitySelector(false);
     setError("");
     setScannedBarcode("");
     lastScannedBarcode.current = "";
@@ -289,13 +290,14 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
           {/* Modal Header */}
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-semibold text-gray-800">Scan Barcode</h3>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
-              aria-label="Close"
-            >
-              ×
-            </button>
+          <Button
+            type="text"
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 text-2xl font-bold p-0 h-auto"
+            aria-label="Close"
+          >
+            ×
+          </Button>
           </div>
 
           {/* Message */}
@@ -305,12 +307,14 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
 
           {/* Close Button */}
           <div className="mt-6 flex justify-center">
-            <button
+            <Button
+              type="primary"
               onClick={onClose}
-              className="px-5 py-2 rounded-full bg-gray-800 text-white font-medium hover:bg-gray-900 transition"
+              size="large"
+              className="bg-gray-800 hover:bg-gray-900 border-gray-800 hover:border-gray-900"
             >
               Close
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -325,12 +329,13 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
           <h3 className="m-0">
             {showQuantitySelector ? "Select Quantity" : "Scan Barcode"}
           </h3>
-          <button
+          <Button
+            type="text"
             onClick={handleClose}
-            className="bg-none border-none text-2xl cursor-pointer text-gray-500 hover:text-gray-700"
+            className="text-2xl p-0 h-auto text-gray-500 hover:text-gray-700"
           >
             ×
-          </button>
+          </Button>
         </div>
 
         {/* Scanner View */}
@@ -410,12 +415,13 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
             <div className="mb-6">
               <label className="block mb-2 font-bold">Quantity:</label>
               <div className="flex items-center gap-4">
-                <button
+                <Button
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="px-4 py-2 bg-gray-600 text-white border-none rounded cursor-pointer text-xl hover:bg-gray-700"
+                  size="large"
+                  className="bg-gray-600 hover:bg-gray-700 border-gray-600 hover:border-gray-700"
                 >
                   -
-                </button>
+                </Button>
                 <input
                   type="number"
                   value={quantity}
@@ -425,12 +431,13 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
                   min="1"
                   className="px-2 py-2 border border-gray-300 rounded w-20 text-center text-lg"
                 />
-                <button
+                <Button
                   onClick={() => setQuantity(quantity + 1)}
-                  className="px-4 py-2 bg-gray-600 text-white border-none rounded cursor-pointer text-xl hover:bg-gray-700"
+                  size="large"
+                  className="bg-gray-600 hover:bg-gray-700 border-gray-600 hover:border-gray-700"
                 >
                   +
-                </button>
+                </Button>
               </div>
 
               <div className="mt-2 p-3 bg-green-50 rounded text-center font-bold">
@@ -444,12 +451,14 @@ const BarcodeScannerModal = ({ isOpen, onClose, onProductFound, isMobile }) => {
 
             {/* Action Buttons */}
             <div className="flex justify-center">
-              <button
+              <Button
+                type="primary"
                 onClick={handleQuantityConfirm}
-                className="px-8 py-3 bg-green-600 text-white border-none rounded cursor-pointer text-base font-bold hover:bg-green-700"
+                size="large"
+                className="bg-green-600 hover:bg-green-700 border-green-600 hover:border-green-700"
               >
                 Add to Materials
-              </button>
+              </Button>
             </div>
           </div>
         )}
