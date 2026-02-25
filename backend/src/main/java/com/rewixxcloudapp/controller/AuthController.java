@@ -243,14 +243,29 @@ public class AuthController {
         }
     }
 
+    // Hardcoded admin credentials
+    private static final String ADMIN_EMAIL = "admin@rewixx.com";
+    private static final String ADMIN_PASSWORD = "admin123";
+    private static final Long ADMIN_USER_ID = 0L;
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         try {
             if (request == null || request.email == null || request.password == null) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Email and password are required"));
             }
-            
+
             String email = request.email.trim().toLowerCase();
+
+            // Hardcoded admin login bypass
+            if (ADMIN_EMAIL.equals(email) && ADMIN_PASSWORD.equals(request.password)) {
+                logger.info("Admin login via hardcoded credentials");
+                String jwt = jwtUtil.generateToken(ADMIN_USER_ID, ADMIN_EMAIL);
+                Map<String, Object> response = new HashMap<>();
+                response.put("token", jwt);
+                response.put("isNewUser", false);
+                return ResponseEntity.ok(response);
+            }
 
             Optional<AuthUser> userOpt = authUserRepository.findByEmail(email);
             if (userOpt.isEmpty()) {
