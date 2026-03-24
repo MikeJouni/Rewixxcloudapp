@@ -87,6 +87,10 @@ public class ContractService {
         contract.setDepositPercent(dto.getDepositPercent());
         contract.setPaymentMethods(dto.getPaymentMethods());
 
+        // Display options
+        contract.setShowCostBreakdown(dto.getShowCostBreakdown());
+        contract.setShowMaterialsList(dto.getShowMaterialsList());
+
         // If job is connected, sync price and status from job, and sync scope of work
         if (contract.getJob() != null) {
             syncContractWithJob(contract);
@@ -219,6 +223,8 @@ public class ContractService {
         if (dto.getWarranty() != null) contract.setWarranty(dto.getWarranty());
         if (dto.getDepositPercent() != null) contract.setDepositPercent(dto.getDepositPercent());
         if (dto.getPaymentMethods() != null) contract.setPaymentMethods(dto.getPaymentMethods());
+        if (dto.getShowCostBreakdown() != null) contract.setShowCostBreakdown(dto.getShowCostBreakdown());
+        if (dto.getShowMaterialsList() != null) contract.setShowMaterialsList(dto.getShowMaterialsList());
 
         if (dto.getDate() != null && !dto.getDate().isEmpty()) {
             contract.setContractDate(LocalDate.parse(dto.getDate(), DateTimeFormatter.ISO_DATE));

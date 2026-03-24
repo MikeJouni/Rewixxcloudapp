@@ -47,12 +47,11 @@ export const generateInvoicePDF = async (invoice, accountSettings) => {
   };
 
   // Try to load and add company logo
-  const logoUrl = invoice.logoUrl || accountSettings?.logoUrl;
+  const logoUrl = accountSettings?.logoUrl;
   if (logoUrl) {
     try {
-      const baseUrl = window.location.origin.includes("localhost")
-        ? "http://localhost:8080"
-        : window.location.origin;
+      const config = (await import("../../../config")).default;
+      const baseUrl = config.SPRING_API_BASE;
       const fullLogoUrl = logoUrl.startsWith("http")
         ? logoUrl
         : `${baseUrl}${logoUrl}`;

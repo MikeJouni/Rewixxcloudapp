@@ -1,10 +1,10 @@
 import React, { useState } from "react";
-import { Card, Empty, Tag, Row, Col, Button, message, Spin, Modal, Descriptions, Typography } from "antd";
-import { FileTextOutlined, CalendarOutlined, UserOutlined, DollarOutlined, EyeOutlined, EditOutlined, DownloadOutlined } from "@ant-design/icons";
+import { Card, Empty, Tag, Row, Col, Button, message, Spin, Modal, Popconfirm, Descriptions, Typography } from "antd";
+import { FileTextOutlined, CalendarOutlined, UserOutlined, DollarOutlined, EyeOutlined, EditOutlined, DownloadOutlined, DeleteOutlined } from "@ant-design/icons";
 
 const { Text } = Typography;
 
-const ContractList = ({ contracts = [], onEdit, onView, onDownload, isLoading }) => {
+const ContractList = ({ contracts = [], onEdit, onView, onDownload, onDelete, isLoading }) => {
   const [selectedContract, setSelectedContract] = useState(null);
 
   const handleEdit = (contract) => {
@@ -29,6 +29,20 @@ const ContractList = ({ contracts = [], onEdit, onView, onDownload, isLoading })
     } else {
       message.info("PDF download functionality coming soon");
     }
+  };
+
+  const handleDelete = (contract) => {
+    Modal.confirm({
+      title: "Delete Contract",
+      content: `Are you sure you want to delete the contract for ${contract.customerName}?`,
+      okText: "Delete",
+      okType: "danger",
+      onOk: () => {
+        if (onDelete) {
+          return onDelete(contract.id);
+        }
+      },
+    });
   };
 
 
@@ -68,7 +82,6 @@ const ContractList = ({ contracts = [], onEdit, onView, onDownload, isLoading })
               size="small"
               style={{ height: "100%" }}
               styles={{ body: { padding: "16px", height: "100%", display: "flex", flexDirection: "column" } }}
-              onClick={() => handleView(contract)}
             >
               {/* Header */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
@@ -151,6 +164,20 @@ const ContractList = ({ contracts = [], onEdit, onView, onDownload, isLoading })
                     handleDownload(contract);
                   }}
                 />
+                <Popconfirm
+                  title="Delete this contract?"
+                  onConfirm={() => onDelete && onDelete(contract.id)}
+                  okText="Delete"
+                  okType="danger"
+                  onOpenChange={(open, e) => { if (e) e.stopPropagation(); }}
+                >
+                  <Button
+                    size="small"
+                    danger
+                    icon={<DeleteOutlined />}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </Popconfirm>
               </div>
             </Card>
           </Col>

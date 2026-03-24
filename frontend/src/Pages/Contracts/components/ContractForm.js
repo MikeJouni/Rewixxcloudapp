@@ -53,16 +53,7 @@ const ContractForm = ({ form, onValuesChange, setSelectedCustomer, setSelectedJo
     enabled: !!token,
   });
 
-  useEffect(() => {
-    if (accountSettings) {
-      form.setFieldsValue({
-        companyName: accountSettings.companyName,
-        companyAddress: accountSettings.address,
-        companyPhone: accountSettings.phone,
-        companyEmail: accountSettings.email,
-      });
-    }
-  }, [accountSettings, form]);
+  // Company info is always taken from account settings — no form fields needed
 
   const handleCustomerSelect = (customerId) => {
     const customer = customers.find((c) => c.id === customerId);
@@ -85,25 +76,27 @@ const ContractForm = ({ form, onValuesChange, setSelectedCustomer, setSelectedJo
   };
 
   const handleJobSelect = (jobId) => {
-    const job = jobs.find((j) => j.id === jobId);
+    const job = allJobs.find((j) => j.id === jobId);
     if (job) {
       setSelectedJob(job);
 
-      // Calculate total job cost (material cost + job price + tax)
-      const materialCost = job.customMaterialCost || 0;
-      const jobPrice = job.jobPrice || 0;
-      const subtotal = materialCost + jobPrice;
-      const tax = job.includeTax ? subtotal * 0.06 : 0;
-      const totalJobCost = subtotal + tax;
+      // Calculate total job cost — same logic as JobTable computeTotalCost
+      const billingMaterialCost = (job.customMaterialCost !== undefined && job.customMaterialCost !== null)
+        ? Number(job.customMaterialCost) : 0;
+      const price = Number(job.jobPrice) || 0;
+      const subtotal = billingMaterialCost + price;
+      const taxAmount = job.includeTax ? subtotal * 0.06 : 0;
+      const totalJobCost = subtotal + taxAmount;
 
       // Calculate payment status from job payments
-      const totalPaid = (job.payments || []).reduce((sum, payment) => sum + parseFloat(payment.amount || 0), 0);
+      const totalPaid = Array.isArray(job.payments) && job.payments.length > 0
+        ? job.payments.reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0)
+        : 0;
       const remainingBalance = totalJobCost - totalPaid;
 
-      // Determine contract status based on payment status
       let contractStatus = "UNPAID";
       if (totalJobCost > 0) {
-        if (remainingBalance <= 0) {
+        if (totalPaid >= totalJobCost) {
           contractStatus = "PAID";
         } else if (totalPaid > 0) {
           contractStatus = "PARTIAL";
@@ -112,7 +105,7 @@ const ContractForm = ({ form, onValuesChange, setSelectedCustomer, setSelectedJo
 
       form.setFieldsValue({
         scopeOfWork: job.description || "",
-        totalPrice: totalJobCost || jobPrice || 0,
+        totalPrice: totalJobCost,
         status: contractStatus,
       });
 
@@ -131,6 +124,9 @@ const ContractForm = ({ form, onValuesChange, setSelectedCustomer, setSelectedJo
           customerAddress: fullAddress,
         });
       }
+
+      // Trigger preview update (onValuesChange doesn't fire for programmatic setFieldsValue)
+      setTimeout(() => onValuesChange && onValuesChange(), 0);
     }
   };
 
@@ -150,81 +146,48 @@ const ContractForm = ({ form, onValuesChange, setSelectedCustomer, setSelectedJo
         showMaterialsList: false,
       }}
     >
-      <Divider orientation="left" style={{ margin: "16px 0" }}>Company Information</Divider>
+      <Divider orientation="left" style={{ margin: "16px 0" }}>Job & Customer</Divider>
 
-      <Form.Item label="Company Name" name="companyName">
-        <Input size="large" disabled />
-      </Form.Item>
-
-      <Form.Item label="Address" name="companyAddress">
-        <Input size="large" />
-      </Form.Item>
-
-      <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} gap-4`}>
-        <Form.Item label="Phone" name="companyPhone">
-          <Input size={isMobile ? "middle" : "large"} />
-        </Form.Item>
-        <Form.Item label="Email" name="companyEmail">
-          <Input size={isMobile ? "middle" : "large"} />
-        </Form.Item>
-      </div>
-
-      <Form.Item label="License Number" name="licenseNumber">
-        <Input size="large" placeholder="Master Lic# 6218750" />
-      </Form.Item>
-
-      <Form.Item label="ID Number" name="idNumber">
-        <Input size="large" placeholder="802581271" />
-      </Form.Item>
-
-      <Divider orientation="left" style={{ margin: "16px 0" }}>Customer Information</Divider>
-
-      <Form.Item label="Search Customer">
+      <Form.Item
+        label="Select Job"
+        name="jobId"
+        rules={[{ required: true, message: "Please select a job" }]}
+      >
         <Select
           showSearch
           size="large"
-          placeholder={customersLoading ? "Loading customers..." : "Search and select customer"}
+          placeholder={jobsLoading ? "Loading jobs..." : "Search and select a job"}
           optionFilterProp="children"
-          onChange={handleCustomerSelect}
+          onChange={handleJobSelect}
           filterOption={(input, option) =>
             option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
           }
           suffixIcon={<SearchOutlined />}
-          allowClear
-          loading={customersLoading}
-          notFoundContent={customersLoading ? "Loading..." : customersError ? "Error loading customers" : "No customers found"}
+          loading={jobsLoading}
+          notFoundContent={jobsLoading ? "Loading..." : jobsError ? "Error loading jobs" : "No jobs found"}
         >
-          {customers.map((customer) => {
-            const address = [
-              customer.addressLine1,
-              customer.city,
-              customer.state
-            ].filter(Boolean).join(", ");
-            return (
-              <Option key={customer.id} value={customer.id}>
-                {customer.name} - {address}
-              </Option>
-            );
-          })}
+          {allJobs.map((job) => (
+            <Option key={job.id} value={job.id}>
+              {job.title} - {job.customer?.name || "No customer"}
+            </Option>
+          ))}
         </Select>
       </Form.Item>
 
       <Form.Item
         label="Customer Name"
         name="customerName"
-        rules={[{ required: true, message: "Customer name is required" }]}
-        hidden={!selectedCustomer && !selectedJob}
+        hidden={!selectedJob}
       >
-        <Input size="large" placeholder="Enter customer name" disabled={!!selectedCustomer || !!selectedJob} />
+        <Input size="large" disabled />
       </Form.Item>
 
       <Form.Item
         label="Customer Address"
         name="customerAddress"
-        rules={[{ required: true, message: "Customer address is required" }]}
-        hidden={!selectedCustomer && !selectedJob}
+        hidden={!selectedJob}
       >
-        <Input size="large" placeholder="Enter customer address" disabled={!!selectedCustomer || !!selectedJob} />
+        <Input size="large" disabled />
       </Form.Item>
 
       <Divider orientation="left" style={{ margin: "16px 0" }}>Contract Details</Divider>
@@ -235,29 +198,6 @@ const ContractForm = ({ form, onValuesChange, setSelectedCustomer, setSelectedJo
         extra="Leave blank to auto-generate"
       >
         <Input size="large" placeholder="CTR-2026-0001 (auto-generated if empty)" />
-      </Form.Item>
-
-      <Form.Item label="Search Job">
-        <Select
-          showSearch
-          size="large"
-          placeholder={jobsLoading ? "Loading jobs..." : "Search and select job (optional)"}
-          optionFilterProp="children"
-          onChange={handleJobSelect}
-          filterOption={(input, option) =>
-            option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
-          }
-          suffixIcon={<SearchOutlined />}
-          allowClear
-          loading={jobsLoading}
-          notFoundContent={jobsLoading ? "Loading..." : jobsError ? "Error loading jobs" : "No jobs found"}
-        >
-          {jobs.map((job) => (
-            <Option key={job.id} value={job.id}>
-              {job.title} - {job.customer?.name || "No customer"}
-            </Option>
-          ))}
-        </Select>
       </Form.Item>
 
       <Form.Item label="Date" name="date">
@@ -275,35 +215,32 @@ const ContractForm = ({ form, onValuesChange, setSelectedCustomer, setSelectedJo
         />
       </Form.Item>
 
-      {selectedJob && (
-        <>
-          <Form.Item 
-            label="Status (from Job)" 
-            name="status"
-          >
-            <Select size="large" disabled>
-              <Option value="UNPAID">Unpaid</Option>
-              <Option value="PAID">Paid</Option>
-              <Option value="PARTIAL">Partial Payment</Option>
-            </Select>
-          </Form.Item>
+      <Form.Item
+        label={selectedJob ? "Status (from Job)" : "Status"}
+        name="status"
+      >
+        <Select size="large" disabled={!!selectedJob}>
+          <Option value="UNPAID">Unpaid</Option>
+          <Option value="PAID">Paid</Option>
+          <Option value="PARTIAL">Partial Payment</Option>
+        </Select>
+      </Form.Item>
 
-          <Form.Item
-            label="Total Price (from Job)"
-            name="totalPrice"
-          >
-            <InputNumber
-              size="large"
-              style={{ width: "100%" }}
-              prefix="$"
-              min={0}
-              step={0.01}
-              precision={2}
-              disabled
-            />
-          </Form.Item>
-        </>
-      )}
+      <Form.Item
+        label={selectedJob ? "Total Price (from Job)" : "Total Price"}
+        name="totalPrice"
+        rules={[{ required: true, message: "Total price is required" }]}
+      >
+        <InputNumber
+          size="large"
+          style={{ width: "100%" }}
+          prefix="$"
+          min={0}
+          step={0.01}
+          precision={2}
+          disabled={!!selectedJob}
+        />
+      </Form.Item>
 
       <Divider orientation="left" style={{ margin: "16px 0" }}>Display Options</Divider>
 

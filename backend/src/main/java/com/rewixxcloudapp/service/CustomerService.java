@@ -36,21 +36,23 @@ public class CustomerService {
     }
 
     public Customer createCustomer(CustomerDto dto, Long userId) {
-        if (customerRepository.findByUsernameAndUserId(dto.getUsername(), userId).isPresent()) {
-            throw new RuntimeException("Email already exists");
+        if (dto.getUsername() != null && !dto.getUsername().trim().isEmpty()) {
+            if (customerRepository.findByUsernameAndUserId(dto.getUsername(), userId).isPresent()) {
+                throw new RuntimeException("Email already exists");
+            }
         }
         if (dto.getPhone() != null && !dto.getPhone().trim().isEmpty()) {
             if (customerRepository.findByPhoneAndUserId(dto.getPhone(), userId).isPresent()) {
                 throw new RuntimeException("Phone number already exists");
             }
         }
-        if (dto.getUsername() == null || dto.getUsername().trim().isEmpty()) {
-            throw new IllegalArgumentException("Username cannot be empty");
-        }
         if (dto.getName() == null || dto.getName().trim().isEmpty()) {
             throw new IllegalArgumentException("Name cannot be empty");
         }
-        Customer customer = new Customer(dto.getUsername(), null, dto.getName());
+        String username = (dto.getUsername() != null && !dto.getUsername().trim().isEmpty())
+            ? dto.getUsername()
+            : dto.getName().toLowerCase().replaceAll("\\s+", ".") + "." + System.currentTimeMillis();
+        Customer customer = new Customer(username, null, dto.getName());
         customer.setUserId(userId);
         if (dto.getPassword() != null && !dto.getPassword().trim().isEmpty()) {
             customer.setPassword(passwordEncoder.encode(dto.getPassword()));

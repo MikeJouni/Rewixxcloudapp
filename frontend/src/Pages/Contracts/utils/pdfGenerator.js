@@ -106,13 +106,18 @@ export const generateContractPDF = async (contract, accountSettings) => {
 
   // ========== HEADER SECTION ==========
 
+  // Always use account settings for company info
+  const companyName = accountSettings?.companyName || "Company Name";
+  const companyAddress = accountSettings?.address || "";
+  const companyPhone = accountSettings?.phone || "";
+  const companyEmail = accountSettings?.email || "";
+
   // Try to load and add company logo
-  const logoUrl = contract.companyLogoUrl || accountSettings?.logoUrl;
+  const logoUrl = accountSettings?.logoUrl;
   if (logoUrl) {
     try {
-      const baseUrl = window.location.origin.includes('localhost')
-        ? 'http://localhost:8080'
-        : window.location.origin;
+      const config = (await import("../../../config")).default;
+      const baseUrl = config.SPRING_API_BASE;
       const fullLogoUrl = logoUrl.startsWith('http')
         ? logoUrl
         : `${baseUrl}${logoUrl}`;
@@ -130,17 +135,13 @@ export const generateContractPDF = async (contract, accountSettings) => {
   doc.setFontSize(20);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...colors.primary);
-  doc.text(contract.companyName || accountSettings?.companyName || "Company Name", pageWidth / 2, yPos, { align: "center" });
+  doc.text(companyName, pageWidth / 2, yPos, { align: "center" });
   yPos += 6;
 
   // Company Contact Info
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(...colors.secondary);
-
-  const companyAddress = contract.companyAddress || accountSettings?.address || "";
-  const companyPhone = contract.companyPhone || accountSettings?.phone || "";
-  const companyEmail = contract.companyEmail || accountSettings?.email || "";
 
   if (companyAddress) {
     doc.text(companyAddress, pageWidth / 2, yPos, { align: "center" });
@@ -200,26 +201,42 @@ export const generateContractPDF = async (contract, accountSettings) => {
   doc.setFontSize(9);
   doc.setTextColor(...colors.text);
 
-  // Contractor details
-  doc.text(contract.companyName || accountSettings?.companyName || "", leftCol, yPos);
+  // Contractor details (left column)
+  doc.setFont("helvetica", "bold");
+  doc.text(companyName, leftCol, yPos);
+  // Customer details (right column)
   doc.text(contract.customerName || "N/A", rightCol, yPos);
   yPos += 4;
 
+  doc.setFont("helvetica", "normal");
+  let leftY = yPos;
+  let rightY = yPos;
+
   if (companyAddress) {
     const addrLines = doc.splitTextToSize(companyAddress, colWidth);
-    addrLines.forEach((line, i) => {
-      doc.text(line, leftCol, yPos + (i * 4));
+    addrLines.forEach((line) => {
+      doc.text(line, leftCol, leftY);
+      leftY += 4;
     });
+  }
+  if (companyPhone) {
+    doc.text("Phone: " + companyPhone, leftCol, leftY);
+    leftY += 4;
+  }
+  if (companyEmail) {
+    doc.text("Email: " + companyEmail, leftCol, leftY);
+    leftY += 4;
   }
 
   if (contract.customerAddress) {
     const custAddrLines = doc.splitTextToSize(contract.customerAddress, colWidth);
-    custAddrLines.forEach((line, i) => {
-      doc.text(line, rightCol, yPos + (i * 4));
+    custAddrLines.forEach((line) => {
+      doc.text(line, rightCol, rightY);
+      rightY += 4;
     });
   }
 
-  yPos += 12;
+  yPos = Math.max(leftY, rightY) + 6;
 
   // ========== SCOPE OF WORK ==========
   addSectionHeader("SCOPE OF WORK");
@@ -227,6 +244,33 @@ export const generateContractPDF = async (contract, accountSettings) => {
   const scopeOfWork = contract.scopeOfWork || "N/A";
   addMultiLineText(scopeOfWork, 9);
   yPos += 5;
+
+  // ========== MATERIALS LIST (if toggled on) ==========
+  const materials = contract.materials || [];
+  if (contract.showMaterialsList && materials.length > 0) {
+    checkPageBreak(20);
+    addSectionHeader("MATERIALS");
+
+    doc.setFontSize(9);
+    // Table header
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...colors.sectionHeader);
+    doc.text("Item", margin, yPos);
+    doc.text("Qty", pageWidth - margin - 10, yPos, { align: "right" });
+    yPos += 4;
+    drawLine();
+
+    // Table rows
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...colors.text);
+    materials.forEach((material) => {
+      checkPageBreak(5);
+      doc.text(material.name || "", margin, yPos);
+      doc.text(String(material.quantity || 1), pageWidth - margin - 10, yPos, { align: "right" });
+      yPos += 4;
+    });
+    yPos += 5;
+  }
 
   // ========== PRICING ==========
   checkPageBreak(35);
@@ -241,7 +285,14 @@ export const generateContractPDF = async (contract, accountSettings) => {
   doc.setFontSize(9);
   doc.setTextColor(...colors.text);
 
-  doc.text(`Total Contract Price (Labor & Materials):`, margin, yPos);
+  // Cost breakdown (if toggled on)
+  if (contract.showCostBreakdown) {
+    doc.text("Labor & Materials:", margin, yPos);
+    doc.text(`$${totalPrice.toFixed(2)}`, margin + 80, yPos);
+    yPos += 5;
+  }
+
+  doc.text(`Total Contract Price:`, margin, yPos);
   doc.setFont("helvetica", "bold");
   doc.text(`$${totalPrice.toFixed(2)}`, margin + 80, yPos);
   yPos += 5;
@@ -358,7 +409,7 @@ export const generateContractPDF = async (contract, accountSettings) => {
   // ========== FOOTER ==========
   doc.setFontSize(8);
   doc.setTextColor(...colors.light);
-  doc.text("Thank you for choosing " + (contract.companyName || accountSettings?.companyName || "us") + "!", pageWidth / 2, yPos, { align: "center" });
+  doc.text("Thank you for choosing " + (companyName) + "!", pageWidth / 2, yPos, { align: "center" });
 
   // Generate filename
   const customerName = (contract.customerName || "Customer").replace(/[^a-zA-Z0-9]/g, "_");

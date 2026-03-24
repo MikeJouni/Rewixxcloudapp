@@ -57,6 +57,10 @@ public class Contract {
     @Enumerated(EnumType.STRING)
     private ContractStatus status;
 
+    // Display Options
+    private Boolean showCostBreakdown;
+    private Boolean showMaterialsList;
+
     public Contract() {
     }
 
@@ -227,5 +231,21 @@ public class Contract {
 
     public void setTermsAndConditions(String termsAndConditions) {
         this.termsAndConditions = termsAndConditions;
+    }
+
+    public Boolean getShowCostBreakdown() {
+        return showCostBreakdown;
+    }
+
+    public void setShowCostBreakdown(Boolean showCostBreakdown) {
+        this.showCostBreakdown = showCostBreakdown;
+    }
+
+    public Boolean getShowMaterialsList() {
+        return showMaterialsList;
+    }
+
+    public void setShowMaterialsList(Boolean showMaterialsList) {
+        this.showMaterialsList = showMaterialsList;
     }
 }

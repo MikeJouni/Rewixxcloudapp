@@ -111,6 +111,18 @@ const ContractsPage = () => {
     },
   });
 
+  // Delete contract mutation
+  const deleteContractMutation = useMutation({
+    mutationFn: contractService.deleteContract,
+    onSuccess: () => {
+      message.success("Contract deleted successfully!");
+      queryClient.invalidateQueries(["contracts"]);
+    },
+    onError: (error) => {
+      message.error(error?.response?.data?.message || "Failed to delete contract");
+    },
+  });
+
   // Update contract mutation
   const updateContractMutation = useMutation({
     mutationFn: ({ id, data }) => contractService.updateContract(id, data),
@@ -191,12 +203,7 @@ const ContractsPage = () => {
     // Pre-fill the form with contract data
     setTimeout(() => {
       form.setFieldsValue({
-        companyName: contract.companyName,
-        companyAddress: contract.companyAddress,
-        companyPhone: contract.companyPhone,
-        companyEmail: contract.companyEmail,
-        licenseNumber: contract.licenseNumber,
-        idNumber: contract.idNumber,
+        jobId: contract.jobId || contract.job?.id,
         customerName: contract.customerName,
         customerAddress: contract.customerAddress,
         contractNumber: contract.contractNumber,
@@ -208,6 +215,8 @@ const ContractsPage = () => {
         depositPercent: contract.depositPercent,
         paymentMethods: contract.paymentMethods,
         status: contract.status || "UNPAID",
+        showCostBreakdown: contract.showCostBreakdown || false,
+        showMaterialsList: contract.showMaterialsList || false,
       });
 
       // Trigger preview update
@@ -236,12 +245,10 @@ const ContractsPage = () => {
       const values = form.getFieldsValue();
 
       const contractData = {
-        companyName: values.companyName,
-        companyAddress: values.companyAddress,
-        companyPhone: values.companyPhone,
-        companyEmail: values.companyEmail,
-        licenseNumber: values.licenseNumber,
-        idNumber: values.idNumber,
+        companyName: accountSettings?.companyName || "",
+        companyAddress: accountSettings?.address || "",
+        companyPhone: accountSettings?.phone || "",
+        companyEmail: accountSettings?.email || "",
         customerName: values.customerName,
         customerAddress: values.customerAddress,
         customerId: selectedCustomer?.id || editingContract?.customerId,
@@ -255,6 +262,8 @@ const ContractsPage = () => {
         depositPercent: values.depositPercent,
         paymentMethods: values.paymentMethods,
         status: values.status,
+        showCostBreakdown: values.showCostBreakdown || false,
+        showMaterialsList: values.showMaterialsList || false,
       };
 
       if (editingContract) {
@@ -272,6 +281,7 @@ const ContractsPage = () => {
     const contractData = {
       ...values,
       date: values.date ? values.date.format("YYYY-MM-DD") : dayjs().format("YYYY-MM-DD"),
+      materials: jobMaterials,
     };
     handleDownloadPDF(contractData);
   };
@@ -384,6 +394,7 @@ const ContractsPage = () => {
           contracts={filteredContracts}
           onEdit={handleEditContract}
           onDownload={handleDownloadPDF}
+          onDelete={(id) => deleteContractMutation.mutate(id)}
           isLoading={contractsLoading}
         />
       </Card>

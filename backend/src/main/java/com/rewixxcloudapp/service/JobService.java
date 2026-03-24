@@ -207,6 +207,13 @@ public class JobService {
         if (jobOpt.isEmpty()) {
             throw new IllegalArgumentException("Job not found");
         }
+        // Unlink any contracts referencing this job before deleting
+        Optional<Contract> contractOpt = contractRepository.findByJobIdAndUserId(id, userId);
+        if (contractOpt.isPresent()) {
+            Contract contract = contractOpt.get();
+            contract.setJob(null);
+            contractRepository.save(contract);
+        }
         jobRepository.deleteById(id);
     }
 

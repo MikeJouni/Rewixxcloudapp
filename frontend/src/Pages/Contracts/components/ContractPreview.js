@@ -25,12 +25,6 @@ const ContractPreview = ({ data, accountSettings, isMobile = false, materials = 
   }
 
   const {
-    companyName,
-    companyAddress,
-    companyPhone,
-    companyEmail,
-    licenseNumber,
-    idNumber,
     customerName,
     customerAddress,
     contractNumber,
@@ -45,9 +39,15 @@ const ContractPreview = ({ data, accountSettings, isMobile = false, materials = 
     showMaterialsList,
   } = data;
 
+  // Always use account settings for company info
+  const companyName = accountSettings?.companyName || "";
+  const companyAddress = accountSettings?.address || "";
+  const companyPhone = accountSettings?.phone || "";
+  const companyEmail = accountSettings?.email || "";
+  const logoUrl = accountSettings?.logoUrl;
+
   const depositAmount = (totalPrice * depositPercent) / 100;
   const remainingAmount = totalPrice - depositAmount;
-  const logoUrl = accountSettings?.logoUrl;
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
@@ -122,8 +122,6 @@ const ContractPreview = ({ data, accountSettings, isMobile = false, materials = 
             {companyAddress && <div style={{ color: "#555" }}>{companyAddress}</div>}
             {companyPhone && <div style={{ color: "#555" }}>Phone: {companyPhone}</div>}
             {companyEmail && <div style={{ color: "#555" }}>Email: {companyEmail}</div>}
-            {licenseNumber && <div style={{ color: "#555" }}>License: {licenseNumber}</div>}
-            {idNumber && <div style={{ color: "#555" }}>ID: {idNumber}</div>}
           </div>
         </div>
 

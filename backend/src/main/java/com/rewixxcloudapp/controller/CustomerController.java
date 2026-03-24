@@ -43,8 +43,8 @@ public class CustomerController {
             if (userId == null) {
                 return ResponseEntity.status(401).body(Map.of("message", "Unauthorized"));
             }
-            if (dto.getUsername() == null || dto.getName() == null) {
-                return ResponseEntity.badRequest().body(Map.of("message", "Username and name are required"));
+            if (dto.getName() == null || dto.getName().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Name is required"));
             }
             Customer customer = customerService.createCustomer(dto, userId);
             return ResponseEntity.ok(customer);

@@ -33,4 +33,8 @@ public class ContractDto {
     private Integer depositPercent;
     private String paymentMethods;
     private String status;
+
+    // Display Options
+    private Boolean showCostBreakdown;
+    private Boolean showMaterialsList;
 }

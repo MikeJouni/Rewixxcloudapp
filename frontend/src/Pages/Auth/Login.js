@@ -70,10 +70,10 @@ const Login = () => {
         } else {
           message.success("Signed in with Google.");
         }
-        // Redirect to customers page after successful login
+        // Redirect to dashboard after successful login
         // Use setTimeout to ensure state update completes before navigation
         setTimeout(() => {
-          navigate("/customers", { replace: true });
+          navigate("/dashboard", { replace: true });
         }, 100);
       } else {
         message.error("Failed to sign in with Google.");
@@ -204,10 +204,10 @@ const Login = () => {
         // For email login we only know email at this point
         login(token, values.email, values.remember, null, null);
         message.success("Signed in successfully.");
-        // Redirect to customers page after successful login
+        // Redirect to dashboard after successful login
         // Use setTimeout to ensure state update completes before navigation
         setTimeout(() => {
-          navigate("/customers", { replace: true });
+          navigate("/dashboard", { replace: true });
         }, 100);
       } else {
         message.error("Login failed.");

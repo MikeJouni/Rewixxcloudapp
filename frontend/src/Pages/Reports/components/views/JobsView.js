@@ -228,13 +228,6 @@ const JobsView = ({
         icon: <FileTextOutlined />,
         onClick: () => handleExportContract(job),
       });
-    } else {
-      items.push({
-        key: 'create-contract',
-        label: 'Create Contract',
-        icon: <PlusOutlined />,
-        onClick: () => handleCreateContract(job),
-      });
     }
 
     return items;

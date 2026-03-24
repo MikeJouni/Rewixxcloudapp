@@ -51,45 +51,39 @@ public class DatabaseConfig {
     @Profile("!test")
     public javax.sql.DataSource dataSource() {
         DataSource dataSource = new DataSource();
-        
-        // Check for PostgreSQL environment variables (production)
+
         String dbUrl = getEnv("DATABASE_URL");
-        String dbHost = getEnv("DB_HOST");
-        String dbName = getEnv("DB_NAME");
         String dbUser = getEnv("DB_USER");
         String dbPassword = getEnv("DB_PASSWORD");
+        String dbHost = getEnv("DB_HOST");
+        String dbName = getEnv("DB_NAME");
         String dbPort = getEnv("DB_PORT");
-        
-        // If DATABASE_URL is provided (common in Azure/cloud environments)
+
         if (dbUrl != null && !dbUrl.isBlank()) {
+            // DATABASE_URL provided (supports both jdbc: and postgresql:// formats)
             System.out.println("[DATABASE] Using PostgreSQL from DATABASE_URL");
             dataSource.setDriverClassName("org.postgresql.Driver");
-            dataSource.setUrl(dbUrl);
-            
-            // Extract username and password from URL if not provided separately
-            if (dbUser == null || dbUser.isBlank()) {
-                // Try to extract from URL format: postgresql://user:pass@host:port/dbname
-                if (dbUrl.contains("@")) {
-                    String[] parts = dbUrl.split("@")[0].replace("postgresql://", "").split(":");
-                    if (parts.length >= 2) {
-                        dbUser = parts[0];
-                        dbPassword = parts[1];
-                    }
+
+            String jdbcUrl = dbUrl;
+            if (dbUrl.startsWith("postgresql://")) {
+                // Convert postgresql://user:pass@host:port/db to jdbc format
+                String withoutScheme = dbUrl.replace("postgresql://", "");
+                if (withoutScheme.contains("@")) {
+                    String credentials = withoutScheme.split("@")[0];
+                    String hostPart = withoutScheme.split("@")[1];
+                    String[] credParts = credentials.split(":", 2);
+                    if (dbUser == null || dbUser.isBlank()) dbUser = credParts[0];
+                    if ((dbPassword == null || dbPassword.isBlank()) && credParts.length > 1) dbPassword = credParts[1];
+                    jdbcUrl = "jdbc:postgresql://" + hostPart;
                 }
             }
-            
-            if (dbUser != null && !dbUser.isBlank()) {
-                dataSource.setUsername(dbUser);
-            }
-            if (dbPassword != null && !dbPassword.isBlank()) {
-                dataSource.setPassword(dbPassword);
-            }
-            
-            // Set PostgreSQL dialect for Hibernate
+
+            dataSource.setUrl(jdbcUrl);
+            if (dbUser != null && !dbUser.isBlank()) dataSource.setUsername(dbUser);
+            if (dbPassword != null && !dbPassword.isBlank()) dataSource.setPassword(dbPassword);
+
             System.setProperty("spring.jpa.properties.hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
-            System.out.println("[DATABASE] Set Hibernate dialect to PostgreSQLDialect");
         }
-        // If individual PostgreSQL config is provided
         else if (dbHost != null && !dbHost.isBlank() && dbName != null && !dbName.isBlank()) {
             System.out.println("[DATABASE] Using PostgreSQL from individual config");
             dataSource.setDriverClassName("org.postgresql.Driver");
@@ -97,27 +91,22 @@ public class DatabaseConfig {
             dataSource.setUrl(String.format("jdbc:postgresql://%s:%s/%s", dbHost, port, dbName));
             dataSource.setUsername(dbUser != null && !dbUser.isBlank() ? dbUser : "postgres");
             dataSource.setPassword(dbPassword != null && !dbPassword.isBlank() ? dbPassword : "");
-            
-            // Set PostgreSQL dialect for Hibernate
+
             System.setProperty("spring.jpa.properties.hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
-            System.out.println("[DATABASE] Set Hibernate dialect to PostgreSQLDialect");
         }
-        // Fallback to H2 in-memory database for development
         else {
-            System.out.println("[DATABASE] ⚠️  No PostgreSQL config found - Using H2 in-memory database (data will be lost on restart!)");
-            System.out.println("[DATABASE] To use PostgreSQL, set environment variables: DATABASE_URL or DB_HOST/DB_NAME/DB_USER/DB_PASSWORD");
+            System.out.println("[DATABASE] No PostgreSQL config found - Using H2 in-memory database");
             dataSource.setDriverClassName("org.h2.Driver");
             dataSource.setUrl("jdbc:h2:mem:rewixxdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL");
             dataSource.setUsername("sa");
             dataSource.setPassword("");
-            System.out.println("[DATABASE] H2 Console available at: http://localhost:8080/h2-console");
         }
 
-        // Connection pool settings
-        dataSource.setInitialSize(5);
-        dataSource.setMaxActive(20);
-        dataSource.setMinIdle(5);
-        dataSource.setMaxIdle(10);
+        // Connection pool settings (tuned for Supabase free tier)
+        dataSource.setInitialSize(2);
+        dataSource.setMaxActive(10);
+        dataSource.setMinIdle(2);
+        dataSource.setMaxIdle(5);
         dataSource.setMaxWait(30000);
 
         // Connection validation

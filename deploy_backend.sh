@@ -1,58 +1,21 @@
 #!/bin/bash
-# Deploy backend with forced restart to ensure new code is used
+# Deploy Java backend to Railway
+# Prerequisites: Install Railway CLI (npm i -g @railway/cli) and login (railway login)
 
 set -e
 
-RG_NAME="cloudapp"
-ACR_NAME="rewixxacrnew"
-APP_NAME="rewixx-backend"
+echo "=== Deploying Java Backend to Railway ==="
 
-# Create a unique tag with timestamp to avoid caching issues
-TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-IMAGE_TAG="rewixx-backend:${TIMESTAMP}"
-LATEST_TAG="rewixx-backend:latest"
+cd backend
 
-echo "Building backend image with tag: ${IMAGE_TAG}..."
-az acr build -g "${RG_NAME}" -r "${ACR_NAME}" -t "${IMAGE_TAG}" -t "${LATEST_TAG}" ./backend
+echo "Step 1: Deploying to Railway..."
+railway up --service rewixx-backend
 
 echo ""
-echo "Updating Container App with new image..."
-az containerapp update \
-  -g "${RG_NAME}" \
-  -n "${APP_NAME}" \
-  --image "${ACR_NAME}.azurecr.io/${IMAGE_TAG}"
-
-echo ""
-echo "Forcing revision restart to ensure new code is loaded..."
-# Get the latest revision name
-REVISION=$(az containerapp revision list \
-  -g "${RG_NAME}" \
-  -n "${APP_NAME}" \
-  --query "[0].name" -o tsv)
-
-if [ -n "$REVISION" ]; then
-  echo "Restarting revision: ${REVISION}"
-  az containerapp revision restart \
-    -g "${RG_NAME}" \
-    -n "${APP_NAME}" \
-    --revision "${REVISION}"
-else
-  echo "Could not find revision to restart. The update should trigger a new revision automatically."
-fi
-
-echo ""
-echo "✅ Backend deployment complete!"
-echo "Image: ${ACR_NAME}.azurecr.io/${IMAGE_TAG}"
-echo ""
-echo "Waiting 10 seconds for container to restart..."
-sleep 10
-
-echo ""
-echo "Checking container app status..."
-az containerapp show \
-  -g "${RG_NAME}" \
-  -n "${APP_NAME}" \
-  --query "{Name:name, Status:properties.provisioningState, Image:properties.template.containers[0].image}" \
-  -o table
-
-
+echo "Deployment complete!"
+echo "Set these environment variables in Railway dashboard:"
+echo "  DATABASE_URL=jdbc:postgresql://db.vksyhpnomsjsomryrywl.supabase.co:5432/postgres"
+echo "  DB_USER=postgres"
+echo "  DB_PASSWORD=<your-supabase-password>"
+echo "  JWT_SECRET=<your-jwt-secret>"
+echo "  GOOGLE_OAUTH_CLIENT_ID=<your-google-client-id>"
