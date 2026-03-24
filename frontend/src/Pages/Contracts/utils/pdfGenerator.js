@@ -112,8 +112,9 @@ export const generateContractPDF = async (contract, accountSettings) => {
   const companyPhone = accountSettings?.phone || "";
   const companyEmail = accountSettings?.email || "";
 
-  // Try to load and add company logo
+  // Try to load company logo
   const logoUrl = accountSettings?.logoUrl;
+  let logoBase64 = null;
   if (logoUrl) {
     try {
       const config = (await import("../../../config")).default;
@@ -121,51 +122,54 @@ export const generateContractPDF = async (contract, accountSettings) => {
       const fullLogoUrl = logoUrl.startsWith('http')
         ? logoUrl
         : `${baseUrl}${logoUrl}`;
-
-      const logoBase64 = await loadImageAsBase64(fullLogoUrl);
-      const logoSize = 18;
-      doc.addImage(logoBase64, "PNG", (pageWidth - logoSize) / 2, yPos, logoSize, logoSize);
-      yPos += logoSize + 3;
+      logoBase64 = await loadImageAsBase64(fullLogoUrl);
     } catch (error) {
       console.warn("Could not load logo for PDF:", error);
     }
   }
 
-  // Company Name
-  doc.setFontSize(20);
+  // Header: Logo + Company info on left, SERVICE CONTRACT title on right
+  const headerStartY = yPos;
+
+  // Left side: Logo and company info
+  let leftY = yPos;
+  if (logoBase64) {
+    doc.addImage(logoBase64, "PNG", margin, leftY, 30, 15);
+    leftY += 18;
+  }
+
+  doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...colors.primary);
-  doc.text(companyName, pageWidth / 2, yPos, { align: "center" });
-  yPos += 6;
+  doc.text(companyName, margin, leftY);
+  leftY += 5;
 
-  // Company Contact Info
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(...colors.secondary);
 
   if (companyAddress) {
-    doc.text(companyAddress, pageWidth / 2, yPos, { align: "center" });
-    yPos += 4;
+    doc.text(companyAddress, margin, leftY);
+    leftY += 4;
   }
   if (companyPhone || companyEmail) {
-    doc.text(`${companyPhone}${companyPhone && companyEmail ? " | " : ""}${companyEmail}`, pageWidth / 2, yPos, { align: "center" });
-    yPos += 4;
+    doc.text(`${companyPhone}${companyPhone && companyEmail ? " | " : ""}${companyEmail}`, margin, leftY);
+    leftY += 4;
   }
   if (contract.licenseNumber || contract.idNumber) {
-    doc.text(`License: ${contract.licenseNumber || "N/A"} | ID: ${contract.idNumber || "N/A"}`, pageWidth / 2, yPos, { align: "center" });
-    yPos += 4;
+    doc.text(`License: ${contract.licenseNumber || "N/A"} | ID: ${contract.idNumber || "N/A"}`, margin, leftY);
+    leftY += 4;
   }
 
-  yPos += 3;
-  drawLine();
-  yPos += 5;
-
-  // ========== CONTRACT TITLE ==========
-  doc.setFontSize(16);
+  // Right side: SERVICE CONTRACT title
+  doc.setFontSize(24);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...colors.primary);
-  doc.text("SERVICE CONTRACT", pageWidth / 2, yPos, { align: "center" });
-  yPos += 6;
+  doc.text("SERVICE CONTRACT", pageWidth - margin, headerStartY + 10, { align: "right" });
+
+  yPos = Math.max(leftY, headerStartY + 18) + 5;
+  drawLine();
+  yPos += 5;
 
   // Contract Number and Date
   doc.setFontSize(9);
@@ -209,34 +213,34 @@ export const generateContractPDF = async (contract, accountSettings) => {
   yPos += 4;
 
   doc.setFont("helvetica", "normal");
-  let leftY = yPos;
-  let rightY = yPos;
+  let partyLeftY = yPos;
+  let partyRightY = yPos;
 
   if (companyAddress) {
     const addrLines = doc.splitTextToSize(companyAddress, colWidth);
     addrLines.forEach((line) => {
-      doc.text(line, leftCol, leftY);
-      leftY += 4;
+      doc.text(line, leftCol, partyLeftY);
+      partyLeftY += 4;
     });
   }
   if (companyPhone) {
-    doc.text("Phone: " + companyPhone, leftCol, leftY);
-    leftY += 4;
+    doc.text("Phone: " + companyPhone, leftCol, partyLeftY);
+    partyLeftY += 4;
   }
   if (companyEmail) {
-    doc.text("Email: " + companyEmail, leftCol, leftY);
-    leftY += 4;
+    doc.text("Email: " + companyEmail, leftCol, partyLeftY);
+    partyLeftY += 4;
   }
 
   if (contract.customerAddress) {
     const custAddrLines = doc.splitTextToSize(contract.customerAddress, colWidth);
     custAddrLines.forEach((line) => {
-      doc.text(line, rightCol, rightY);
-      rightY += 4;
+      doc.text(line, rightCol, partyRightY);
+      partyRightY += 4;
     });
   }
 
-  yPos = Math.max(leftY, rightY) + 6;
+  yPos = Math.max(partyLeftY, partyRightY) + 6;
 
   // ========== SCOPE OF WORK ==========
   addSectionHeader("SCOPE OF WORK");
@@ -256,7 +260,13 @@ export const generateContractPDF = async (contract, accountSettings) => {
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...colors.sectionHeader);
     doc.text("Item", margin, yPos);
-    doc.text("Qty", pageWidth - margin - 10, yPos, { align: "right" });
+    if (contract.showMaterialsWithPricing) {
+      doc.text("Qty", margin + 90, yPos, { align: "right" });
+      doc.text("Unit Price", margin + 120, yPos, { align: "right" });
+      doc.text("Total", pageWidth - margin, yPos, { align: "right" });
+    } else {
+      doc.text("Qty", pageWidth - margin - 10, yPos, { align: "right" });
+    }
     yPos += 4;
     drawLine();
 
@@ -265,8 +275,15 @@ export const generateContractPDF = async (contract, accountSettings) => {
     doc.setTextColor(...colors.text);
     materials.forEach((material) => {
       checkPageBreak(5);
+      const unitPrice = material.unitPrice || material.price || 0;
       doc.text(material.name || "", margin, yPos);
-      doc.text(String(material.quantity || 1), pageWidth - margin - 10, yPos, { align: "right" });
+      if (contract.showMaterialsWithPricing) {
+        doc.text(String(material.quantity || 1), margin + 90, yPos, { align: "right" });
+        doc.text(`$${unitPrice.toFixed(2)}`, margin + 120, yPos, { align: "right" });
+        doc.text(`$${((material.quantity || 1) * unitPrice).toFixed(2)}`, pageWidth - margin, yPos, { align: "right" });
+      } else {
+        doc.text(String(material.quantity || 1), pageWidth - margin - 10, yPos, { align: "right" });
+      }
       yPos += 4;
     });
     yPos += 5;
@@ -286,9 +303,16 @@ export const generateContractPDF = async (contract, accountSettings) => {
   doc.setTextColor(...colors.text);
 
   // Cost breakdown (if toggled on)
-  if (contract.showCostBreakdown) {
+  if (contract.showCostBreakdown && contract.subtotal != null) {
     doc.text("Labor & Materials:", margin, yPos);
-    doc.text(`$${totalPrice.toFixed(2)}`, margin + 80, yPos);
+    doc.text(`$${parseFloat(contract.subtotal || 0).toFixed(2)}`, margin + 80, yPos);
+    yPos += 5;
+  }
+
+  // Tax breakdown
+  if (contract.includeTax && contract.taxAmount > 0) {
+    doc.text("Tax (6%):", margin, yPos);
+    doc.text(`$${parseFloat(contract.taxAmount || 0).toFixed(2)}`, margin + 80, yPos);
     yPos += 5;
   }
 

@@ -28,32 +28,24 @@ export const AuthProvider = ({ children }) => {
       window.queryClient.clear();
       window.queryClient.removeQueries();
     }
-    
-    // Clear token first to ensure any components check for auth status
-    setToken(null);
-    setEmail(null);
-    setName(null);
-    setAvatarUrl(null);
-    
-    // Use requestAnimationFrame to ensure state updates happen after cache clear
-    requestAnimationFrame(() => {
-      setToken(jwt);
-      setEmail(userEmail);
-      setName(displayName || null);
-      setAvatarUrl(avatar || null);
-      
-      if (remember) {
-        localStorage.setItem("auth_token", jwt);
-        localStorage.setItem("auth_email", userEmail || "");
-        localStorage.setItem("auth_name", displayName || "");
-        localStorage.setItem("auth_avatar", avatar || "");
-      } else {
-        localStorage.removeItem("auth_token");
-        localStorage.removeItem("auth_email");
-        localStorage.removeItem("auth_name");
-        localStorage.removeItem("auth_avatar");
-      }
-    });
+
+    // Set new token and user info immediately
+    setToken(jwt);
+    setEmail(userEmail);
+    setName(displayName || null);
+    setAvatarUrl(avatar || null);
+
+    if (remember) {
+      localStorage.setItem("auth_token", jwt);
+      localStorage.setItem("auth_email", userEmail || "");
+      localStorage.setItem("auth_name", displayName || "");
+      localStorage.setItem("auth_avatar", avatar || "");
+    } else {
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("auth_email");
+      localStorage.removeItem("auth_name");
+      localStorage.removeItem("auth_avatar");
+    }
   };
 
   const logout = () => {

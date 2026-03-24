@@ -1,11 +1,12 @@
 import React, { useEffect } from "react";
-import { Form, Input, Select, DatePicker, InputNumber, Divider, Switch } from "antd";
+import { Form, Input, Select, DatePicker, InputNumber, Divider, Switch, Button } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import * as customerService from "../../Customers/services/customerService";
 import * as jobService from "../../Jobs/services/jobService";
 import * as accountSettingsService from "../../../services/accountSettingsService";
 import { useAuth } from "../../../AuthContext";
+import { DEFAULT_TERMS_AND_CONDITIONS } from "../../../constants/termsTemplate";
 import dayjs from "dayjs";
 
 const { TextArea } = Input;
@@ -144,6 +145,7 @@ const ContractForm = ({ form, onValuesChange, setSelectedCustomer, setSelectedJo
         paymentMethods: "Zelle, Cash App, Check, Credit Card (3% fee), or Cash",
         showCostBreakdown: false,
         showMaterialsList: false,
+        showMaterialsWithPricing: false,
       }}
     >
       <Divider orientation="left" style={{ margin: "16px 0" }}>Job & Customer</Divider>
@@ -264,6 +266,16 @@ const ContractForm = ({ form, onValuesChange, setSelectedCustomer, setSelectedJo
             <Switch />
           </Form.Item>
         )}
+        {selectedJob && (
+          <Form.Item
+            label="Show Materials with Pricing"
+            name="showMaterialsWithPricing"
+            valuePropName="checked"
+            extra="Show individual pricing and quantity for each material"
+          >
+            <Switch />
+          </Form.Item>
+        )}
       </div>
 
       <Form.Item label="Warranty" name="warranty">
@@ -271,7 +283,11 @@ const ContractForm = ({ form, onValuesChange, setSelectedCustomer, setSelectedJo
       </Form.Item>
 
       <Form.Item
-        label="Terms and Conditions"
+        label={
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+            <span>Terms and Conditions</span>
+          </div>
+        }
         name="termsAndConditions"
       >
         <TextArea
@@ -279,6 +295,17 @@ const ContractForm = ({ form, onValuesChange, setSelectedCustomer, setSelectedJo
           placeholder="Enter terms and conditions..."
         />
       </Form.Item>
+      <Button
+        size="small"
+        type="dashed"
+        style={{ marginTop: -12, marginBottom: 16 }}
+        onClick={() => {
+          form.setFieldsValue({ termsAndConditions: DEFAULT_TERMS_AND_CONDITIONS });
+          setTimeout(() => onValuesChange && onValuesChange(), 0);
+        }}
+      >
+        Use Template
+      </Button>
 
       <Divider orientation="left" style={{ margin: "16px 0" }}>Payment Terms</Divider>
 

@@ -37,4 +37,5 @@ public class ContractDto {
     // Display Options
     private Boolean showCostBreakdown;
     private Boolean showMaterialsList;
+    private Boolean showMaterialsWithPricing;
 }

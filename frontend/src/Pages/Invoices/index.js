@@ -368,9 +368,10 @@ const InvoicesPage = () => {
 
   const isMobile = !screens.md;
 
-  // Mobile-friendly line item card component
-  const LineItemCard = ({ item, index }) => (
+  // Render mobile line item card inline (not as a component to avoid losing input focus)
+  const renderLineItemCard = (item, index) => (
     <Card
+      key={item.key}
       size="small"
       className="mb-3"
       style={{ background: "#fafafa" }}
@@ -654,9 +655,7 @@ const InvoicesPage = () => {
                 {/* Mobile: Card layout */}
                 {isMobile ? (
                   <div>
-                    {lineItems.map((item, index) => (
-                      <LineItemCard key={item.key} item={item} index={index} />
-                    ))}
+                    {lineItems.map((item, index) => renderLineItemCard(item, index))}
                   </div>
                 ) : (
                   /* Desktop: Table layout */

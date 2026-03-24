@@ -37,6 +37,10 @@ const ContractPreview = ({ data, accountSettings, isMobile = false, materials = 
     paymentMethods,
     showCostBreakdown,
     showMaterialsList,
+    showMaterialsWithPricing,
+    subtotal: jobSubtotal,
+    taxAmount: jobTaxAmount,
+    includeTax: jobIncludeTax,
   } = data;
 
   // Always use account settings for company info
@@ -214,15 +218,30 @@ const ContractPreview = ({ data, accountSettings, isMobile = false, materials = 
                 <tr style={{ borderBottom: "1px solid #ddd" }}>
                   <th style={{ padding: "8px 0", textAlign: "left", fontWeight: "bold", fontSize: isMobile ? "11px" : "12px" }}>Item</th>
                   <th style={{ padding: "8px 0", textAlign: "right", fontWeight: "bold", fontSize: isMobile ? "11px" : "12px", width: "60px" }}>Qty</th>
+                  {showMaterialsWithPricing && (
+                    <>
+                      <th style={{ padding: "8px 0", textAlign: "right", fontWeight: "bold", fontSize: isMobile ? "11px" : "12px", width: "80px" }}>Unit Price</th>
+                      <th style={{ padding: "8px 0", textAlign: "right", fontWeight: "bold", fontSize: isMobile ? "11px" : "12px", width: "80px" }}>Total</th>
+                    </>
+                  )}
                 </tr>
               </thead>
               <tbody>
-                {materials.map((material, index) => (
-                  <tr key={material.id || index} style={{ borderBottom: "1px solid #eee" }}>
-                    <td style={{ padding: "6px 0", fontSize: isMobile ? "11px" : "12px" }}>{material.name}</td>
-                    <td style={{ padding: "6px 0", textAlign: "right", fontSize: isMobile ? "11px" : "12px" }}>{material.quantity}</td>
-                  </tr>
-                ))}
+                {materials.map((material, index) => {
+                  const unitPrice = material.unitPrice || material.price || 0;
+                  return (
+                    <tr key={material.id || index} style={{ borderBottom: "1px solid #eee" }}>
+                      <td style={{ padding: "6px 0", fontSize: isMobile ? "11px" : "12px" }}>{material.name}</td>
+                      <td style={{ padding: "6px 0", textAlign: "right", fontSize: isMobile ? "11px" : "12px" }}>{material.quantity}</td>
+                      {showMaterialsWithPricing && (
+                        <>
+                          <td style={{ padding: "6px 0", textAlign: "right", fontSize: isMobile ? "11px" : "12px" }}>${unitPrice.toFixed(2)}</td>
+                          <td style={{ padding: "6px 0", textAlign: "right", fontSize: isMobile ? "11px" : "12px", fontWeight: "600" }}>${(material.quantity * unitPrice).toFixed(2)}</td>
+                        </>
+                      )}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -242,10 +261,16 @@ const ContractPreview = ({ data, accountSettings, isMobile = false, materials = 
           </h3>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <tbody>
-              {showCostBreakdown && (
+              {showCostBreakdown && jobSubtotal != null && (
                 <tr>
                   <td style={{ padding: "8px 0", borderBottom: "1px solid #ddd" }}>Labor & Materials</td>
-                  <td style={{ padding: "8px 0", borderBottom: "1px solid #ddd", textAlign: "right" }}>{formatCurrency(totalPrice)}</td>
+                  <td style={{ padding: "8px 0", borderBottom: "1px solid #ddd", textAlign: "right" }}>{formatCurrency(jobSubtotal)}</td>
+                </tr>
+              )}
+              {jobIncludeTax && jobTaxAmount > 0 && (
+                <tr>
+                  <td style={{ padding: "8px 0", borderBottom: "1px solid #ddd" }}>Tax (6%)</td>
+                  <td style={{ padding: "8px 0", borderBottom: "1px solid #ddd", textAlign: "right" }}>{formatCurrency(jobTaxAmount)}</td>
                 </tr>
               )}
               <tr>

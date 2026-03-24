@@ -4,7 +4,7 @@ import { FileTextOutlined } from "@ant-design/icons";
 import config from "../../../config";
 
 const InvoicePreview = ({ data, accountSettings, isMobile = false }) => {
-  if (!data || !data.customerName) {
+  if (!data) {
     return (
       <Card
         title="Preview"
@@ -47,7 +47,11 @@ const InvoicePreview = ({ data, accountSettings, isMobile = false }) => {
     includeTax,
     notes,
     scopeOfWork,
-    showItemizedList = true, // Default to true for backwards compatibility
+    showItemizedList = true,
+    materials = [],
+    showMaterialsList = false,
+    showMaterialsWithPricing = false,
+    termsAndConditions,
   } = data;
 
   const formatCurrency = (amount) => {
@@ -355,6 +359,80 @@ const InvoicePreview = ({ data, accountSettings, isMobile = false }) => {
           </>
         )}
 
+        {/* Materials Section */}
+        {showMaterialsList && materials && materials.length > 0 && (
+          <div style={{ marginBottom: isMobile ? "16px" : "24px" }}>
+            <div
+              style={{
+                fontWeight: "bold",
+                fontSize: isMobile ? "12px" : "14px",
+                color: colors.primary,
+                borderBottom: `1px solid ${colors.primary}`,
+                paddingBottom: "4px",
+                marginBottom: "12px",
+              }}
+            >
+              MATERIALS
+            </div>
+            {isMobile ? (
+              <div>
+                {materials.map((material, index) => (
+                  <div
+                    key={material.id || index}
+                    style={{
+                      padding: "8px 12px",
+                      marginBottom: "4px",
+                      background: index % 2 === 0 ? "#fff" : colors.background,
+                      border: `1px solid ${colors.border}`,
+                      borderRadius: "4px",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      fontSize: "11px",
+                    }}
+                  >
+                    <span style={{ color: colors.text }}>{material.name}</span>
+                    <span style={{ color: colors.textLight }}>
+                      {showMaterialsWithPricing
+                        ? `${material.quantity} × ${formatCurrency(material.unitPrice)} = ${formatCurrency(material.quantity * material.unitPrice)}`
+                        : `Qty: ${material.quantity}`}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ borderBottom: `1px solid ${colors.border}` }}>
+                    <th style={{ padding: "8px 0", textAlign: "left", fontWeight: "600", fontSize: "12px", color: colors.text }}>Item</th>
+                    <th style={{ padding: "8px 0", textAlign: "right", fontWeight: "600", fontSize: "12px", width: "60px", color: colors.text }}>Qty</th>
+                    {showMaterialsWithPricing && (
+                      <>
+                        <th style={{ padding: "8px 0", textAlign: "right", fontWeight: "600", fontSize: "12px", width: "90px", color: colors.text }}>Unit Price</th>
+                        <th style={{ padding: "8px 0", textAlign: "right", fontWeight: "600", fontSize: "12px", width: "90px", color: colors.text }}>Total</th>
+                      </>
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {materials.map((material, index) => (
+                    <tr key={material.id || index} style={{ borderBottom: `1px solid ${colors.border}` }}>
+                      <td style={{ padding: "6px 0", fontSize: "12px", color: colors.text }}>{material.name}</td>
+                      <td style={{ padding: "6px 0", textAlign: "right", fontSize: "12px", color: colors.text }}>{material.quantity}</td>
+                      {showMaterialsWithPricing && (
+                        <>
+                          <td style={{ padding: "6px 0", textAlign: "right", fontSize: "12px", color: colors.text }}>{formatCurrency(material.unitPrice)}</td>
+                          <td style={{ padding: "6px 0", textAlign: "right", fontSize: "12px", fontWeight: "600", color: colors.text }}>{formatCurrency(material.quantity * material.unitPrice)}</td>
+                        </>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
+
         {/* Totals */}
         <div
           style={{
@@ -467,6 +545,33 @@ const InvoicePreview = ({ data, accountSettings, isMobile = false }) => {
               Notes
             </div>
             <div style={{ whiteSpace: "pre-wrap", color: colors.text }}>{notes}</div>
+          </div>
+        )}
+
+        {/* Terms and Conditions */}
+        {termsAndConditions && (
+          <div
+            style={{
+              marginBottom: "24px",
+              padding: "16px",
+              background: colors.background,
+              borderRadius: "4px",
+              borderLeft: `4px solid ${colors.secondary}`,
+            }}
+          >
+            <div
+              style={{
+                fontWeight: "bold",
+                marginBottom: "8px",
+                color: colors.primary,
+                textTransform: "uppercase",
+                fontSize: "11px",
+                letterSpacing: "1px",
+              }}
+            >
+              Terms and Conditions
+            </div>
+            <div style={{ whiteSpace: "pre-wrap", color: colors.text, fontSize: isMobile ? "9px" : "10px" }}>{termsAndConditions}</div>
           </div>
         )}
 

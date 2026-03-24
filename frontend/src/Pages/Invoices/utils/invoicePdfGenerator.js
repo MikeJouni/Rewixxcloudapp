@@ -46,8 +46,9 @@ export const generateInvoicePDF = async (invoice, accountSettings) => {
     return `$${(amount || 0).toFixed(2)}`;
   };
 
-  // Try to load and add company logo
+  // Try to load company logo
   const logoUrl = accountSettings?.logoUrl;
+  let logoBase64 = null;
   if (logoUrl) {
     try {
       const config = (await import("../../../config")).default;
@@ -55,70 +56,73 @@ export const generateInvoicePDF = async (invoice, accountSettings) => {
       const fullLogoUrl = logoUrl.startsWith("http")
         ? logoUrl
         : `${baseUrl}${logoUrl}`;
-
-      const logoBase64 = await loadImageAsBase64(fullLogoUrl);
-      doc.addImage(logoBase64, "PNG", margin, yPos, 30, 15);
-      yPos += 5;
+      logoBase64 = await loadImageAsBase64(fullLogoUrl);
     } catch (error) {
       console.warn("Could not load logo for PDF:", error);
     }
   }
 
-  // INVOICE Title (right side)
-  doc.setFontSize(32);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(...colors.primary);
-  doc.text("INVOICE", pageWidth - margin, yPos + 10, { align: "right" });
+  // Header: Logo + Company info on left, INVOICE title on right
+  const headerStartY = yPos;
 
-  // Invoice number
-  if (invoice.invoiceNumber) {
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(...colors.textLight);
-    doc.text(`#${invoice.invoiceNumber}`, pageWidth - margin, yPos + 18, {
-      align: "right",
-    });
+  // Left side: Logo and company info
+  let leftY = yPos;
+  if (logoBase64) {
+    doc.addImage(logoBase64, "PNG", margin, leftY, 30, 15);
+    leftY += 18;
   }
 
-  yPos += 25;
-
-  // Company Info (left side)
   doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...colors.text);
   doc.text(
     invoice.companyName || accountSettings?.companyName || "Company Name",
     margin,
-    yPos
+    leftY
   );
-  yPos += 6;
+  leftY += 6;
 
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(...colors.textLight);
 
   if (invoice.companyAddress || accountSettings?.address) {
-    doc.text(invoice.companyAddress || accountSettings?.address, margin, yPos);
-    yPos += 5;
+    doc.text(invoice.companyAddress || accountSettings?.address, margin, leftY);
+    leftY += 5;
   }
   if (invoice.companyPhone || accountSettings?.phone) {
     doc.text(
       `Phone: ${invoice.companyPhone || accountSettings?.phone}`,
       margin,
-      yPos
+      leftY
     );
-    yPos += 5;
+    leftY += 5;
   }
   if (invoice.companyEmail || accountSettings?.email) {
     doc.text(
       `Email: ${invoice.companyEmail || accountSettings?.email}`,
       margin,
-      yPos
+      leftY
     );
-    yPos += 5;
+    leftY += 5;
   }
 
-  yPos += 5;
+  // Right side: INVOICE title
+  doc.setFontSize(32);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...colors.primary);
+  doc.text("INVOICE", pageWidth - margin, headerStartY + 10, { align: "right" });
+
+  if (invoice.invoiceNumber) {
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...colors.textLight);
+    doc.text(`#${invoice.invoiceNumber}`, pageWidth - margin, headerStartY + 18, {
+      align: "right",
+    });
+  }
+
+  yPos = Math.max(leftY, headerStartY + 25) + 5;
 
   // Horizontal line
   doc.setDrawColor(...colors.primary);
@@ -290,6 +294,48 @@ export const generateInvoicePDF = async (invoice, accountSettings) => {
     yPos += 10;
   }
 
+  // Materials Section
+  const invoiceMaterials = invoice.materials || [];
+  if (invoice.showMaterialsList && invoiceMaterials.length > 0) {
+    if (yPos > 240) { doc.addPage(); yPos = 20; }
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...colors.secondary);
+    doc.text("MATERIALS", margin, yPos);
+    yPos += 8;
+
+    // Table header
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...colors.text);
+    doc.text("Item", margin, yPos);
+    doc.text("Qty", margin + 100, yPos, { align: "right" });
+    if (invoice.showMaterialsWithPricing) {
+      doc.text("Unit Price", margin + 130, yPos, { align: "right" });
+      doc.text("Total", margin + contentWidth, yPos, { align: "right" });
+    }
+    yPos += 2;
+    doc.setDrawColor(...colors.line);
+    doc.setLineWidth(0.3);
+    doc.line(margin, yPos, pageWidth - margin, yPos);
+    yPos += 5;
+
+    doc.setFont("helvetica", "normal");
+    invoiceMaterials.forEach((material) => {
+      if (yPos > 270) { doc.addPage(); yPos = 20; }
+      doc.setTextColor(...colors.text);
+      doc.text(material.name || "", margin, yPos);
+      doc.text(String(material.quantity || 0), margin + 100, yPos, { align: "right" });
+      if (invoice.showMaterialsWithPricing) {
+        doc.text(`$${(material.unitPrice || 0).toFixed(2)}`, margin + 130, yPos, { align: "right" });
+        doc.text(`$${((material.quantity || 0) * (material.unitPrice || 0)).toFixed(2)}`, margin + contentWidth, yPos, { align: "right" });
+      }
+      yPos += 5;
+    });
+    yPos += 5;
+  }
+
   // Totals Section (right-aligned)
   const totalsWidth = 100;
   const totalsX = pageWidth - margin - totalsWidth;
@@ -383,8 +429,35 @@ export const generateInvoicePDF = async (invoice, accountSettings) => {
     });
   }
 
+  // Terms and Conditions section
+  if (invoice.termsAndConditions) {
+    if (yPos > 240) { doc.addPage(); yPos = 20; }
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...colors.secondary);
+    doc.text("TERMS AND CONDITIONS", margin, yPos);
+    yPos += 6;
+
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...colors.textLight);
+    doc.setFontSize(8);
+    const termsLines = doc.splitTextToSize(
+      invoice.termsAndConditions,
+      contentWidth
+    );
+    termsLines.forEach((line) => {
+      if (yPos > 270) {
+        doc.addPage();
+        yPos = 20;
+      }
+      doc.text(line, margin, yPos);
+      yPos += 4;
+    });
+    yPos += 5;
+  }
+
   // Footer
-  yPos = 280;
+  yPos = Math.max(yPos + 10, 280);
   doc.setFontSize(9);
   doc.setTextColor(...colors.textLight);
   doc.text("Thank you for your business!", pageWidth / 2, yPos, {

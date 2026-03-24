@@ -10,6 +10,7 @@ import JobDetailModal from "./modals/JobDetailModal";
 import ReceiptTableModal from "./modals/ReceiptTableModal";
 import InvoicePreview from "../../Invoices/components/InvoicePreview";
 import { generateInvoicePDF } from "../../Invoices/utils/invoicePdfGenerator";
+import { DEFAULT_TERMS_AND_CONDITIONS } from "../../../constants/termsTemplate";
 import useJobs from "../hooks/useJobs";
 import dayjs from "dayjs";
 
@@ -28,7 +29,10 @@ const JobsListView = () => {
   const [invoiceIncludeTax, setInvoiceIncludeTax] = useState(false);
   const [invoiceMobileTab, setInvoiceMobileTab] = useState("form");
   const [invoiceIncludeScope, setInvoiceIncludeScope] = useState(false);
-  const [showItemizedList, setShowItemizedList] = useState(true);
+  const [showMaterialsList, setShowMaterialsList] = useState(false);
+  const [showMaterialsWithPricing, setShowMaterialsWithPricing] = useState(false);
+  const [includeTerms, setIncludeTerms] = useState(false);
+
   const [manualScopeOfWork, setManualScopeOfWork] = useState("");
   const lineItemKeyRef = useRef(1);
 
@@ -115,11 +119,35 @@ const JobsListView = () => {
     }, 100);
   };
 
+  // Extract materials from job sales data
+  const extractJobMaterials = (job) => {
+    if (!job || !job.sales) return [];
+    const allMaterials = [];
+    job.sales.forEach((sale) => {
+      if (sale.saleItems) {
+        sale.saleItems.forEach((saleItem) => {
+          if (saleItem.product) {
+            allMaterials.push({
+              id: saleItem.id,
+              name: saleItem.product.name,
+              quantity: saleItem.quantity || 1,
+              unitPrice: parseFloat(saleItem.unitPrice || saleItem.product.unitPrice || 0),
+            });
+          }
+        });
+      }
+    });
+    return allMaterials;
+  };
+
   // Handle opening invoice drawer for a job
   const handleCreateInvoice = (job) => {
     setInvoiceJob(job);
     setInvoiceDrawerVisible(true);
     setInvoiceMobileTab("form");
+    setShowMaterialsList(false);
+    setShowMaterialsWithPricing(false);
+    setIncludeTerms(false);
 
     // Calculate total cost from job
     const materialCost = job.customMaterialCost || 0;
@@ -167,19 +195,49 @@ const JobsListView = () => {
     ].filter(Boolean).join(", ") : "";
 
     // Pre-fill form
-    setTimeout(() => {
-      invoiceForm.setFieldsValue({
-        invoiceDate: dayjs(),
-        paymentTerms: "Due upon receipt",
-        customerName: customer?.name || job.customerName || "",
-        customerAddress: fullAddress,
-        customerPhone: customer?.phone || "",
-        customerEmail: customer?.email || "",
-      });
+    const formValues = {
+      invoiceDate: dayjs(),
+      paymentTerms: "Due upon receipt",
+      customerName: customer?.name || job.customerName || "",
+      customerAddress: fullAddress,
+      customerPhone: customer?.phone || "",
+      customerEmail: customer?.email || "",
+    };
 
-      // Update preview
-      updateInvoicePreview();
+    setTimeout(() => {
+      invoiceForm.setFieldsValue(formValues);
     }, 100);
+
+    // Build preview directly with local data (don't rely on stale state)
+    const itemsSubtotal = items.reduce((sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0), 0);
+    const itemsTax = (job.includeTax || false) ? itemsSubtotal * 0.06 : 0;
+    setInvoicePreviewData({
+      companyName: accountSettings?.companyName,
+      companyAddress: accountSettings?.address,
+      companyPhone: accountSettings?.phone,
+      companyEmail: accountSettings?.email,
+      logoUrl: accountSettings?.logoUrl,
+      customerName: formValues.customerName,
+      customerAddress: formValues.customerAddress,
+      customerEmail: formValues.customerEmail,
+      customerPhone: formValues.customerPhone,
+      invoiceNumber: null,
+      invoiceDate: dayjs().format("YYYY-MM-DD"),
+      dueDate: null,
+      paymentTerms: formValues.paymentTerms,
+      lineItems: items,
+      subtotal: itemsSubtotal,
+      taxAmount: itemsTax,
+      grandTotal: itemsSubtotal + itemsTax,
+      includeTax: job.includeTax || false,
+      notes: null,
+      scopeOfWork: null,
+      showItemizedList: true,
+      materials: extractJobMaterials(job),
+      showMaterialsList: false,
+      showMaterialsWithPricing: false,
+      termsAndConditions: null,
+    });
   };
 
   // Update invoice preview data
@@ -206,16 +264,28 @@ const JobsListView = () => {
       includeTax: invoiceIncludeTax,
       notes: values.notes,
       scopeOfWork: invoiceJob ? (invoiceIncludeScope ? invoiceJob?.description : null) : (manualScopeOfWork || null),
-      showItemizedList: showItemizedList,
+      showItemizedList: true,
+      materials: invoiceJob ? extractJobMaterials(invoiceJob) : [],
+      showMaterialsList,
+      showMaterialsWithPricing,
+      termsAndConditions: includeTerms ? DEFAULT_TERMS_AND_CONDITIONS : null,
     });
-  }, [accountSettings, invoiceForm, invoiceLineItems, invoiceSubtotal, invoiceTaxAmount, invoiceGrandTotal, invoiceIncludeTax, invoiceIncludeScope, invoiceJob, showItemizedList, manualScopeOfWork]);
+  }, [accountSettings, invoiceForm, invoiceLineItems, invoiceSubtotal, invoiceTaxAmount, invoiceGrandTotal, invoiceIncludeTax, invoiceIncludeScope, invoiceJob, manualScopeOfWork, showMaterialsList, showMaterialsWithPricing, includeTerms]);
 
-  // Auto-update preview when scope toggle, tax toggle, itemized toggle, or manual scope changes
+  // Auto-update preview when toggles or manual scope changes (not on initial open)
+  const drawerInitializedRef = useRef(false);
   useEffect(() => {
     if (invoiceDrawerVisible) {
+      // Skip the first render after drawer opens — handleCreateInvoice already set preview
+      if (!drawerInitializedRef.current) {
+        drawerInitializedRef.current = true;
+        return;
+      }
       updateInvoicePreview();
+    } else {
+      drawerInitializedRef.current = false;
     }
-  }, [invoiceIncludeScope, invoiceIncludeTax, showItemizedList, manualScopeOfWork, invoiceDrawerVisible, updateInvoicePreview]);
+  }, [invoiceIncludeScope, invoiceIncludeTax, manualScopeOfWork, invoiceDrawerVisible, invoiceLineItems, invoiceSubtotal, invoiceGrandTotal, showMaterialsList, showMaterialsWithPricing, includeTerms, updateInvoicePreview]);
 
   // Handle invoice form value changes
   const handleInvoiceValuesChange = () => {
@@ -231,7 +301,9 @@ const JobsListView = () => {
     setInvoiceLineItems([]);
     setInvoiceIncludeTax(false);
     setInvoiceIncludeScope(false);
-    setShowItemizedList(true);
+    setShowMaterialsList(false);
+    setShowMaterialsWithPricing(false);
+    setIncludeTerms(false);
     setManualScopeOfWork("");
     setInvoiceMobileTab("form");
   };
@@ -283,7 +355,11 @@ const JobsListView = () => {
       includeTax: invoiceIncludeTax,
       notes: values.notes,
       scopeOfWork: invoiceJob ? (invoiceIncludeScope ? invoiceJob?.description : null) : (manualScopeOfWork || null),
-      showItemizedList: showItemizedList,
+      showItemizedList: true,
+      materials: invoiceJob ? extractJobMaterials(invoiceJob) : [],
+      showMaterialsList,
+      showMaterialsWithPricing,
+      termsAndConditions: includeTerms ? DEFAULT_TERMS_AND_CONDITIONS : null,
     };
     await generateInvoicePDF(invoiceData, accountSettings);
   };
@@ -359,9 +435,10 @@ const JobsListView = () => {
     },
   ];
 
-  // Mobile line item card component
-  const InvoiceLineItemCard = ({ item, index }) => (
+  // Render mobile line item card inline (not as a component to avoid losing input focus)
+  const renderInvoiceLineItemCard = (item, index) => (
     <Card
+      key={item.key}
       size="small"
       className="mb-3"
       style={{ background: "#fafafa" }}
@@ -669,29 +746,9 @@ const JobsListView = () => {
                     </Col>
                   </Row>
 
-                  <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <span className="font-medium text-gray-700">Invoice Display Mode:</span>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {showItemizedList ? "Shows individual line items with quantities and prices" : "Shows only the total amount due"}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`text-sm ${!showItemizedList ? 'font-semibold text-gray-700' : 'text-gray-400'}`}>Total Only</span>
-                        <Switch
-                          checked={showItemizedList}
-                          onChange={(checked) => setShowItemizedList(checked)}
-                        />
-                        <span className={`text-sm ${showItemizedList ? 'font-semibold text-gray-700' : 'text-gray-400'}`}>Itemized</span>
-                      </div>
-                    </div>
-                  </div>
 
                   <Divider orientation="left">Line Items</Divider>
-                  {invoiceLineItems.map((item, index) => (
-                    <InvoiceLineItemCard key={item.key} item={item} index={index} />
-                  ))}
+                  {invoiceLineItems.map((item, index) => renderInvoiceLineItemCard(item, index))}
                   <Button
                     type="dashed"
                     onClick={addInvoiceLineItem}
@@ -766,6 +823,58 @@ const JobsListView = () => {
                           Optional - describe the work performed for this invoice
                         </div>
                       </>
+                    )}
+                  </Card>
+
+                  {invoiceJob && invoiceJob.sales && invoiceJob.sales.length > 0 && (
+                    <Card size="small" className="mb-4">
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="font-medium text-gray-700">Show Materials List:</span>
+                        <Switch
+                          size="small"
+                          checked={showMaterialsList}
+                          onChange={(checked) => {
+                            setShowMaterialsList(checked);
+                            if (!checked) setShowMaterialsWithPricing(false);
+                          }}
+                        />
+                      </div>
+                      {showMaterialsList && (
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium text-gray-700">Show Materials with Pricing:</span>
+                          <Switch
+                            size="small"
+                            checked={showMaterialsWithPricing}
+                            onChange={(checked) => setShowMaterialsWithPricing(checked)}
+                          />
+                        </div>
+                      )}
+                      {!showMaterialsList && (
+                        <div className="p-2 bg-gray-50 rounded text-sm text-gray-500">
+                          Toggle on to include materials from this job
+                        </div>
+                      )}
+                    </Card>
+                  )}
+
+                  <Card size="small" className="mb-4">
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium text-gray-700">Include Terms & Conditions:</span>
+                      <Switch
+                        size="small"
+                        checked={includeTerms}
+                        onChange={(checked) => setIncludeTerms(checked)}
+                      />
+                    </div>
+                    {includeTerms && (
+                      <div className="mt-2 p-2 bg-blue-50 rounded text-xs text-gray-600 whitespace-pre-wrap border border-blue-200" style={{ maxHeight: 150, overflowY: "auto" }}>
+                        {DEFAULT_TERMS_AND_CONDITIONS}
+                      </div>
+                    )}
+                    {!includeTerms && (
+                      <div className="mt-2 p-2 bg-gray-50 rounded text-sm text-gray-500">
+                        Toggle on to include standard terms and conditions
+                      </div>
                     )}
                   </Card>
 
@@ -853,24 +962,6 @@ const JobsListView = () => {
                     </Col>
                   </Row>
 
-                  <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <span className="font-medium text-gray-700">Invoice Display Mode:</span>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {showItemizedList ? "Shows individual line items with quantities and prices" : "Shows only the total amount due"}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`text-sm ${!showItemizedList ? 'font-semibold text-gray-700' : 'text-gray-400'}`}>Total Only</span>
-                        <Switch
-                          checked={showItemizedList}
-                          onChange={(checked) => setShowItemizedList(checked)}
-                        />
-                        <span className={`text-sm ${showItemizedList ? 'font-semibold text-gray-700' : 'text-gray-400'}`}>Itemized</span>
-                      </div>
-                    </div>
-                  </div>
 
                   <Divider orientation="left">Line Items</Divider>
                   <Table
@@ -954,6 +1045,55 @@ const JobsListView = () => {
                           Optional - describe the work performed for this invoice
                         </div>
                       </>
+                    )}
+                  </Card>
+
+                  {invoiceJob && invoiceJob.sales && invoiceJob.sales.length > 0 && (
+                    <Card size="small" className="mb-4">
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="font-medium text-gray-700">Show Materials List:</span>
+                        <Switch
+                          checked={showMaterialsList}
+                          onChange={(checked) => {
+                            setShowMaterialsList(checked);
+                            if (!checked) setShowMaterialsWithPricing(false);
+                          }}
+                        />
+                      </div>
+                      {showMaterialsList && (
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium text-gray-700">Show Materials with Pricing:</span>
+                          <Switch
+                            checked={showMaterialsWithPricing}
+                            onChange={(checked) => setShowMaterialsWithPricing(checked)}
+                          />
+                        </div>
+                      )}
+                      {!showMaterialsList && (
+                        <div className="p-3 bg-gray-50 rounded text-sm text-gray-500">
+                          Toggle on to include materials from this job
+                        </div>
+                      )}
+                    </Card>
+                  )}
+
+                  <Card size="small" className="mb-4">
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium text-gray-700">Include Terms & Conditions:</span>
+                      <Switch
+                        checked={includeTerms}
+                        onChange={(checked) => setIncludeTerms(checked)}
+                      />
+                    </div>
+                    {includeTerms && (
+                      <div className="mt-2 p-3 bg-blue-50 rounded text-xs text-gray-600 whitespace-pre-wrap border border-blue-200" style={{ maxHeight: 200, overflowY: "auto" }}>
+                        {DEFAULT_TERMS_AND_CONDITIONS}
+                      </div>
+                    )}
+                    {!includeTerms && (
+                      <div className="p-3 bg-gray-50 rounded text-sm text-gray-500">
+                        Toggle on to include standard terms and conditions
+                      </div>
                     )}
                   </Card>
 

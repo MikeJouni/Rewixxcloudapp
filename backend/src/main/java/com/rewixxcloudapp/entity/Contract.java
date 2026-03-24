@@ -60,6 +60,7 @@ public class Contract {
     // Display Options
     private Boolean showCostBreakdown;
     private Boolean showMaterialsList;
+    private Boolean showMaterialsWithPricing;
 
     public Contract() {
     }
@@ -247,5 +248,13 @@ public class Contract {
 
     public void setShowMaterialsList(Boolean showMaterialsList) {
         this.showMaterialsList = showMaterialsList;
+    }
+
+    public Boolean getShowMaterialsWithPricing() {
+        return showMaterialsWithPricing;
+    }
+
+    public void setShowMaterialsWithPricing(Boolean showMaterialsWithPricing) {
+        this.showMaterialsWithPricing = showMaterialsWithPricing;
     }
 }

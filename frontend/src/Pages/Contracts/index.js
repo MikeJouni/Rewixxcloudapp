@@ -63,6 +63,7 @@ const ContractsPage = () => {
               id: saleItem.id,
               name: saleItem.product.name,
               quantity: saleItem.quantity || 1,
+              unitPrice: parseFloat(saleItem.unitPrice || saleItem.product.unitPrice || 0),
             });
           }
         });
@@ -136,12 +137,24 @@ const ContractsPage = () => {
     },
   });
 
+  // Calculate tax breakdown from selected job
+  const getJobTaxBreakdown = (job) => {
+    if (!job) return { subtotal: null, taxAmount: null, includeTax: false };
+    const jobPrice = job.jobPrice || 0;
+    const materialCost = job.customMaterialCost || 0;
+    const subtotal = jobPrice + materialCost;
+    const includeTax = job.includeTax || false;
+    const taxAmount = includeTax ? subtotal * 0.06 : 0;
+    return { subtotal, taxAmount, includeTax };
+  };
+
   const handleValuesChange = () => {
     // Update preview in real-time - no required fields needed
     const values = form.getFieldsValue();
     setPreviewData({
       ...values,
       date: values.date ? values.date.format("YYYY-MM-DD") : dayjs().format("YYYY-MM-DD"),
+      ...getJobTaxBreakdown(selectedJob),
     });
   };
 
@@ -153,6 +166,7 @@ const ContractsPage = () => {
       setPreviewData({
         ...values,
         date: values.date ? values.date.format("YYYY-MM-DD") : dayjs().format("YYYY-MM-DD"),
+        ...getJobTaxBreakdown(selectedJob),
       });
     }, 100);
   };
@@ -217,21 +231,51 @@ const ContractsPage = () => {
         status: contract.status || "UNPAID",
         showCostBreakdown: contract.showCostBreakdown || false,
         showMaterialsList: contract.showMaterialsList || false,
+        showMaterialsWithPricing: contract.showMaterialsWithPricing || false,
       });
 
       // Trigger preview update
       setPreviewData({
         ...contract,
         date: contract.contractDate || contract.date,
+        ...getJobTaxBreakdown(contract.job),
       });
     }, 100);
+  };
+
+  // Extract materials from a contract's linked job
+  const extractMaterialsFromContract = (contract) => {
+    const job = contract.job;
+    if (!job || !job.sales) return [];
+    const materials = [];
+    job.sales.forEach((sale) => {
+      if (sale.saleItems) {
+        sale.saleItems.forEach((saleItem) => {
+          if (saleItem.product) {
+            materials.push({
+              id: saleItem.id,
+              name: saleItem.product.name,
+              quantity: saleItem.quantity || 1,
+              unitPrice: parseFloat(saleItem.unitPrice || saleItem.product.unitPrice || 0),
+            });
+          }
+        });
+      }
+    });
+    return materials;
   };
 
   // Handle PDF download
   const handleDownloadPDF = async (contract) => {
     try {
       message.loading({ content: "Generating PDF...", key: "pdf" });
-      await generateContractPDF(contract, accountSettings);
+      // Ensure materials and tax breakdown are included
+      const contractWithMaterials = {
+        ...contract,
+        materials: contract.materials || extractMaterialsFromContract(contract),
+        ...getJobTaxBreakdown(contract.job || selectedJob),
+      };
+      await generateContractPDF(contractWithMaterials, accountSettings);
       message.success({ content: "PDF downloaded successfully!", key: "pdf" });
     } catch (error) {
       console.error("PDF generation error:", error);
@@ -264,6 +308,7 @@ const ContractsPage = () => {
         status: values.status,
         showCostBreakdown: values.showCostBreakdown || false,
         showMaterialsList: values.showMaterialsList || false,
+        showMaterialsWithPricing: values.showMaterialsWithPricing || false,
       };
 
       if (editingContract) {
@@ -282,6 +327,7 @@ const ContractsPage = () => {
       ...values,
       date: values.date ? values.date.format("YYYY-MM-DD") : dayjs().format("YYYY-MM-DD"),
       materials: jobMaterials,
+      ...getJobTaxBreakdown(selectedJob),
     };
     handleDownloadPDF(contractData);
   };
