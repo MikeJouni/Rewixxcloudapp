@@ -44,8 +44,8 @@ const useExpenses = () => {
 
   // Update expense mutation
   const updateExpense = useMutation({
-    mutationFn: ({ id, ...expense }) =>
-      expenseService.updateExpense(id, expense),
+    mutationFn: ({ id, data }) =>
+      expenseService.updateExpense(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
     },

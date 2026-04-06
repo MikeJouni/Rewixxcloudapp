@@ -68,8 +68,8 @@ export const generateInvoicePDF = async (invoice, accountSettings) => {
   // Left side: Logo and company info
   let leftY = yPos;
   if (logoBase64) {
-    doc.addImage(logoBase64, "PNG", margin, leftY, 30, 15);
-    leftY += 18;
+    doc.addImage(logoBase64, "PNG", margin, leftY, 70, 35);
+    leftY += 42;
   }
 
   doc.setFontSize(14);
@@ -128,7 +128,7 @@ export const generateInvoicePDF = async (invoice, accountSettings) => {
   doc.setDrawColor(...colors.primary);
   doc.setLineWidth(0.75);
   doc.line(margin, yPos, pageWidth - margin, yPos);
-  yPos += 15;
+  yPos += 8;
 
   // Bill To and Invoice Details side by side
   const colWidth = (pageWidth - margin * 2) / 2;
@@ -291,7 +291,7 @@ export const generateInvoicePDF = async (invoice, accountSettings) => {
     dividerX += colWidths.unitPrice;
     doc.line(dividerX, tableTop, dividerX, yPos);
 
-    yPos += 10;
+    yPos += 5;
   }
 
   // Materials Section
@@ -303,7 +303,7 @@ export const generateInvoicePDF = async (invoice, accountSettings) => {
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...colors.secondary);
     doc.text("MATERIALS", margin, yPos);
-    yPos += 8;
+    yPos += 5;
 
     // Table header
     doc.setFontSize(9);
@@ -325,13 +325,20 @@ export const generateInvoicePDF = async (invoice, accountSettings) => {
     invoiceMaterials.forEach((material) => {
       if (yPos > 270) { doc.addPage(); yPos = 20; }
       doc.setTextColor(...colors.text);
-      doc.text(material.name || "", margin, yPos);
+      const nameMaxWidth = invoice.showMaterialsWithPricing ? 80 : 100;
+      const nameLines = doc.splitTextToSize(material.name || "", nameMaxWidth);
+      doc.text(nameLines[0], margin, yPos);
       doc.text(String(material.quantity || 0), margin + 100, yPos, { align: "right" });
       if (invoice.showMaterialsWithPricing) {
         doc.text(`$${(material.unitPrice || 0).toFixed(2)}`, margin + 130, yPos, { align: "right" });
         doc.text(`$${((material.quantity || 0) * (material.unitPrice || 0)).toFixed(2)}`, margin + contentWidth, yPos, { align: "right" });
       }
       yPos += 5;
+      for (let i = 1; i < nameLines.length; i++) {
+        if (yPos > 270) { doc.addPage(); yPos = 20; }
+        doc.text(nameLines[i], margin, yPos);
+        yPos += 4;
+      }
     });
     yPos += 5;
   }
@@ -376,7 +383,30 @@ export const generateInvoicePDF = async (invoice, accountSettings) => {
     align: "right",
   });
 
-  yPos += 25;
+  yPos += 18;
+
+  // Paid / Unpaid
+  if (invoice.totalPaid > 0) {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(21, 128, 61); // green
+    doc.text("Paid:", totalsX, yPos);
+    doc.text(formatCurrency(invoice.totalPaid), totalsValueX, yPos, { align: "right" });
+    yPos += 6;
+
+    const unpaid = invoice.grandTotal - invoice.totalPaid;
+    if (unpaid > 0) {
+      doc.setTextColor(220, 38, 38); // red
+      doc.text("Unpaid:", totalsX, yPos);
+      doc.text(formatCurrency(unpaid), totalsValueX, yPos, { align: "right" });
+    } else {
+      doc.setTextColor(21, 128, 61);
+      doc.text("Fully Paid", totalsX, yPos);
+    }
+    yPos += 12;
+  } else {
+    yPos += 7;
+  }
 
   // Scope of Work section
   if (invoice.scopeOfWork) {
@@ -406,15 +436,15 @@ export const generateInvoicePDF = async (invoice, accountSettings) => {
 
   // Notes section
   if (invoice.notes) {
-    doc.setFontSize(10);
+    doc.setFontSize(8);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...colors.secondary);
     doc.text("NOTES", margin, yPos);
-    yPos += 6;
+    yPos += 5;
 
     doc.setFont("helvetica", "normal");
     doc.setTextColor(...colors.textLight);
-    doc.setFontSize(9);
+    doc.setFontSize(8);
     const notesLines = doc.splitTextToSize(
       invoice.notes,
       contentWidth
@@ -425,7 +455,7 @@ export const generateInvoicePDF = async (invoice, accountSettings) => {
         yPos = 20;
       }
       doc.text(line, margin, yPos);
-      yPos += 5;
+      yPos += 4;
     });
   }
 

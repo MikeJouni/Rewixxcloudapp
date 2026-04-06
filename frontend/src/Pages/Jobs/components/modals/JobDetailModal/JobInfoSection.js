@@ -384,6 +384,31 @@ const JobInfoSection = forwardRef(({ job, totalCost, actualMaterialCost, onCompl
               <span className="font-semibold text-gray-700">Total:</span>
               <span className="font-bold text-gray-900">${totalJobCost.toFixed(2)}</span>
             </div>
+            {(() => {
+              const totalPaid = Array.isArray(job.payments) && job.payments.length > 0
+                ? job.payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
+                : 0;
+              const unpaid = totalJobCost - totalPaid;
+              if (totalPaid > 0 || totalJobCost > 0) {
+                return (
+                  <div className="pt-1 border-t border-blue-300 space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-green-700 font-medium">Paid:</span>
+                      <span className="font-semibold text-green-700">${totalPaid.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className={`font-medium ${unpaid <= 0 ? 'text-green-700' : 'text-red-600'}`}>
+                        {unpaid <= 0 ? 'Fully Paid' : 'Unpaid:'}
+                      </span>
+                      {unpaid > 0 && (
+                        <span className="font-semibold text-red-600">${unpaid.toFixed(2)}</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            })()}
           </div>
         </div>
       </div>

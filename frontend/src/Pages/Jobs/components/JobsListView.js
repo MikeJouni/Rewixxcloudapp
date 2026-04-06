@@ -237,12 +237,18 @@ const JobsListView = () => {
       showMaterialsList: false,
       showMaterialsWithPricing: false,
       termsAndConditions: null,
+      totalPaid: Array.isArray(job.payments)
+        ? job.payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
+        : 0,
     });
   };
 
   // Update invoice preview data
   const updateInvoicePreview = useCallback(() => {
     const values = invoiceForm.getFieldsValue();
+    const jobTotalPaid = invoiceJob && Array.isArray(invoiceJob.payments)
+      ? invoiceJob.payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
+      : 0;
     setInvoicePreviewData({
       companyName: accountSettings?.companyName,
       companyAddress: accountSettings?.address,
@@ -269,6 +275,7 @@ const JobsListView = () => {
       showMaterialsList,
       showMaterialsWithPricing,
       termsAndConditions: includeTerms ? DEFAULT_TERMS_AND_CONDITIONS : null,
+      totalPaid: jobTotalPaid,
     });
   }, [accountSettings, invoiceForm, invoiceLineItems, invoiceSubtotal, invoiceTaxAmount, invoiceGrandTotal, invoiceIncludeTax, invoiceIncludeScope, invoiceJob, manualScopeOfWork, showMaterialsList, showMaterialsWithPricing, includeTerms]);
 
@@ -360,6 +367,9 @@ const JobsListView = () => {
       showMaterialsList,
       showMaterialsWithPricing,
       termsAndConditions: includeTerms ? DEFAULT_TERMS_AND_CONDITIONS : null,
+      totalPaid: invoiceJob && Array.isArray(invoiceJob.payments)
+        ? invoiceJob.payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
+        : 0,
     };
     await generateInvoicePDF(invoiceData, accountSettings);
   };

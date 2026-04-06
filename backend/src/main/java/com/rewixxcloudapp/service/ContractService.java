@@ -92,6 +92,11 @@ public class ContractService {
         contract.setShowMaterialsList(dto.getShowMaterialsList());
         contract.setShowMaterialsWithPricing(dto.getShowMaterialsWithPricing());
 
+        // Signature options
+        contract.setClientPrintedName(dto.getClientPrintedName());
+        contract.setClientSignatureDate(dto.getClientSignatureDate());
+        contract.setAutoSignContractor(dto.getAutoSignContractor());
+
         // If job is connected, sync price and status from job, and sync scope of work
         if (contract.getJob() != null) {
             syncContractWithJob(contract);
@@ -227,6 +232,9 @@ public class ContractService {
         if (dto.getShowCostBreakdown() != null) contract.setShowCostBreakdown(dto.getShowCostBreakdown());
         if (dto.getShowMaterialsList() != null) contract.setShowMaterialsList(dto.getShowMaterialsList());
         if (dto.getShowMaterialsWithPricing() != null) contract.setShowMaterialsWithPricing(dto.getShowMaterialsWithPricing());
+        if (dto.getClientPrintedName() != null) contract.setClientPrintedName(dto.getClientPrintedName());
+        if (dto.getClientSignatureDate() != null) contract.setClientSignatureDate(dto.getClientSignatureDate());
+        if (dto.getAutoSignContractor() != null) contract.setAutoSignContractor(dto.getAutoSignContractor());
 
         if (dto.getDate() != null && !dto.getDate().isEmpty()) {
             contract.setContractDate(LocalDate.parse(dto.getDate(), DateTimeFormatter.ISO_DATE));

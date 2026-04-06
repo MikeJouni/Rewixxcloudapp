@@ -22,6 +22,7 @@ import ExpensesPage from "./Pages/Expenses";
 import ContractsPage from "./Pages/Contracts";
 import InvoicesPage from "./Pages/Invoices";
 import ReportsPage from "./Pages/Reports";
+import SchedulePage from "./Pages/Schedule";
 import Footer from "./components/Footer";
 import { AuthProvider, useAuth } from "./AuthContext";
 import Login from "./Pages/Auth/Login";
@@ -148,6 +149,7 @@ function AppContent() {
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/schedule" element={<SchedulePage />} />
             <Route path="/customers/*" element={<CustomersPage />} />
             <Route path="/jobs/*" element={<JobsPage />} />
             <Route path="/employees/*" element={<EmployeesPage />} />

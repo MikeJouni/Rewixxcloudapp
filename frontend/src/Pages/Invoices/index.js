@@ -90,8 +90,12 @@ const InvoicesPage = () => {
   const taxAmount = includeTax ? subtotal * 0.06 : 0;
   const grandTotal = subtotal + taxAmount;
 
-  const updatePreview = () => {
+  const updatePreview = (jobOverride) => {
     const values = form.getFieldsValue();
+    const job = jobOverride || selectedJob;
+    const jobTotalPaid = job && Array.isArray(job.payments)
+      ? job.payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
+      : 0;
     setPreviewData({
       ...values,
       companyName: accountSettings?.companyName,
@@ -104,6 +108,7 @@ const InvoicesPage = () => {
       taxAmount,
       grandTotal,
       includeTax,
+      totalPaid: jobTotalPaid,
       invoiceDate: values.invoiceDate
         ? values.invoiceDate.format("YYYY-MM-DD")
         : dayjs().format("YYYY-MM-DD"),
@@ -228,7 +233,7 @@ const InvoicesPage = () => {
         });
       }
 
-      setTimeout(updatePreview, 100);
+      setTimeout(() => updatePreview(job), 100);
     }
   };
 
@@ -268,6 +273,9 @@ const InvoicesPage = () => {
       return;
     }
 
+    const jobTotalPaid = selectedJob && Array.isArray(selectedJob.payments)
+      ? selectedJob.payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
+      : 0;
     const invoiceData = {
       ...values,
       companyName: accountSettings?.companyName,
@@ -280,6 +288,7 @@ const InvoicesPage = () => {
       taxAmount,
       grandTotal,
       includeTax,
+      totalPaid: jobTotalPaid,
       invoiceDate: values.invoiceDate
         ? values.invoiceDate.format("YYYY-MM-DD")
         : dayjs().format("YYYY-MM-DD"),

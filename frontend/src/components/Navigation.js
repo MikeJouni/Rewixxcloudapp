@@ -15,6 +15,7 @@ import {
   MenuUnfoldOutlined,
   LogoutOutlined,
   DashboardOutlined,
+  CalendarOutlined,
 } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import * as accountSettingsService from "../services/accountSettingsService";
@@ -108,6 +109,7 @@ const Navigation = ({ sidebarCollapsed, setSidebarCollapsed }) => {
   const getActiveTab = () => {
     const path = location.pathname;
     if (path.startsWith("/dashboard") || path === "/") return "dashboard";
+    if (path.startsWith("/schedule")) return "schedule";
     if (path.startsWith("/customers")) return "customers";
     if (path.startsWith("/jobs")) return "jobs";
     if (path.startsWith("/employees")) return "employees";
@@ -129,6 +131,11 @@ const Navigation = ({ sidebarCollapsed, setSidebarCollapsed }) => {
       key: "dashboard",
       icon: <DashboardOutlined />,
       label: "Dashboard",
+    },
+    {
+      key: "schedule",
+      icon: <CalendarOutlined />,
+      label: "Schedule",
     },
     {
       key: "customers",

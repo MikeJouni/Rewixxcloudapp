@@ -139,13 +139,16 @@ const ContractsPage = () => {
 
   // Calculate tax breakdown from selected job
   const getJobTaxBreakdown = (job) => {
-    if (!job) return { subtotal: null, taxAmount: null, includeTax: false };
+    if (!job) return { subtotal: null, taxAmount: null, includeTax: false, totalPaid: 0 };
     const jobPrice = job.jobPrice || 0;
     const materialCost = job.customMaterialCost || 0;
     const subtotal = jobPrice + materialCost;
     const includeTax = job.includeTax || false;
     const taxAmount = includeTax ? subtotal * 0.06 : 0;
-    return { subtotal, taxAmount, includeTax };
+    const totalPaid = Array.isArray(job.payments)
+      ? job.payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
+      : 0;
+    return { subtotal, taxAmount, includeTax, totalPaid };
   };
 
   const handleValuesChange = () => {
@@ -232,6 +235,9 @@ const ContractsPage = () => {
         showCostBreakdown: contract.showCostBreakdown || false,
         showMaterialsList: contract.showMaterialsList || false,
         showMaterialsWithPricing: contract.showMaterialsWithPricing || false,
+        clientPrintedName: contract.clientPrintedName || "",
+        clientSignatureDate: contract.clientSignatureDate ? dayjs(contract.clientSignatureDate) : null,
+        autoSignContractor: contract.autoSignContractor || false,
       });
 
       // Trigger preview update
@@ -309,6 +315,9 @@ const ContractsPage = () => {
         showCostBreakdown: values.showCostBreakdown || false,
         showMaterialsList: values.showMaterialsList || false,
         showMaterialsWithPricing: values.showMaterialsWithPricing || false,
+        clientPrintedName: values.clientPrintedName || null,
+        clientSignatureDate: values.clientSignatureDate ? values.clientSignatureDate.format("YYYY-MM-DD") : null,
+        autoSignContractor: values.autoSignContractor || false,
       };
 
       if (editingContract) {
@@ -326,6 +335,7 @@ const ContractsPage = () => {
     const contractData = {
       ...values,
       date: values.date ? values.date.format("YYYY-MM-DD") : dayjs().format("YYYY-MM-DD"),
+      clientSignatureDate: values.clientSignatureDate ? values.clientSignatureDate.format("YYYY-MM-DD") : null,
       materials: jobMaterials,
       ...getJobTaxBreakdown(selectedJob),
     };

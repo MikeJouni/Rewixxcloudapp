@@ -326,6 +326,27 @@ const ContractForm = ({ form, onValuesChange, setSelectedCustomer, setSelectedJo
           placeholder="Zelle, Cash App, Check, Credit Card (3% fee), or Cash"
         />
       </Form.Item>
+
+      <Divider orientation="left" style={{ margin: "16px 0" }}>Client Signature</Divider>
+
+      <Form.Item label="Client Printed Name" name="clientPrintedName">
+        <Input size="large" placeholder="Enter client's full name" />
+      </Form.Item>
+
+      <Form.Item label="Client Signature Date" name="clientSignatureDate">
+        <DatePicker size="large" style={{ width: "100%" }} />
+      </Form.Item>
+
+      <Divider orientation="left" style={{ margin: "16px 0" }}>Contractor Signature</Divider>
+
+      <Form.Item
+        label="Auto-sign as Contractor"
+        name="autoSignContractor"
+        valuePropName="checked"
+        extra="Automatically sign with your company name"
+      >
+        <Switch />
+      </Form.Item>
     </Form>
   );
 };

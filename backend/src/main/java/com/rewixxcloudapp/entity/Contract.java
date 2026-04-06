@@ -62,6 +62,11 @@ public class Contract {
     private Boolean showMaterialsList;
     private Boolean showMaterialsWithPricing;
 
+    // Signature Options
+    private String clientPrintedName;
+    private String clientSignatureDate;
+    private Boolean autoSignContractor;
+
     public Contract() {
     }
 
@@ -256,5 +261,29 @@ public class Contract {
 
     public void setShowMaterialsWithPricing(Boolean showMaterialsWithPricing) {
         this.showMaterialsWithPricing = showMaterialsWithPricing;
+    }
+
+    public String getClientPrintedName() {
+        return clientPrintedName;
+    }
+
+    public void setClientPrintedName(String clientPrintedName) {
+        this.clientPrintedName = clientPrintedName;
+    }
+
+    public String getClientSignatureDate() {
+        return clientSignatureDate;
+    }
+
+    public void setClientSignatureDate(String clientSignatureDate) {
+        this.clientSignatureDate = clientSignatureDate;
+    }
+
+    public Boolean getAutoSignContractor() {
+        return autoSignContractor;
+    }
+
+    public void setAutoSignContractor(Boolean autoSignContractor) {
+        this.autoSignContractor = autoSignContractor;
     }
 }

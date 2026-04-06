@@ -1,4 +1,5 @@
 import React from "react";
+import { createPortal } from "react-dom";
 
 const ConfirmModal = ({
   isOpen,
@@ -21,8 +22,8 @@ const ConfirmModal = ({
 
   const canConfirm = !requireTextMatch || inputValue === requireTextMatch.expected;
 
-  return (
-    <div className="fixed inset-0 bg-black/80 flex justify-center items-center z-50 p-4">
+  return createPortal(
+    <div className="fixed inset-0 bg-black/80 flex justify-center items-center p-4" style={{ zIndex: 9999 }}>
       <div className="bg-white rounded-xl p-6 w-full max-w-md">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-semibold text-gray-900 m-0">{title}</h3>
@@ -71,7 +72,8 @@ const ConfirmModal = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

@@ -194,10 +194,9 @@ const JobForm = ({ onSubmit, onCancel, initialData = null }) => {
             name="description"
             value={formData.description}
             onChange={handleInputChange}
-            rows="4"
+            rows="6"
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y min-h-[100px]"
             placeholder="Add job description..."
-            style={{ maxHeight: '400px' }}
           />
           <div className="flex justify-end mt-1">
             <span className="text-xs text-gray-500">

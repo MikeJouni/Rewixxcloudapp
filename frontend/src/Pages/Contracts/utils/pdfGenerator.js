@@ -62,12 +62,12 @@ export const generateContractPDF = async (contract, accountSettings) => {
 
   // Helper to add section header
   const addSectionHeader = (title) => {
-    checkPageBreak(15);
+    checkPageBreak(12);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
+    doc.setFontSize(10);
     doc.setTextColor(...colors.sectionHeader);
     doc.text(title, margin, yPos);
-    yPos += 6;
+    yPos += 5;
   };
 
   // Helper to add text with auto page break
@@ -134,8 +134,8 @@ export const generateContractPDF = async (contract, accountSettings) => {
   // Left side: Logo and company info
   let leftY = yPos;
   if (logoBase64) {
-    doc.addImage(logoBase64, "PNG", margin, leftY, 30, 15);
-    leftY += 18;
+    doc.addImage(logoBase64, "PNG", margin, leftY, 70, 35);
+    leftY += 42;
   }
 
   doc.setFontSize(14);
@@ -167,9 +167,9 @@ export const generateContractPDF = async (contract, accountSettings) => {
   doc.setTextColor(...colors.primary);
   doc.text("SERVICE CONTRACT", pageWidth - margin, headerStartY + 10, { align: "right" });
 
-  yPos = Math.max(leftY, headerStartY + 18) + 5;
+  yPos = Math.max(leftY, headerStartY + 18) + 3;
   drawLine();
-  yPos += 5;
+  yPos += 2;
 
   // Contract Number and Date
   doc.setFontSize(9);
@@ -184,7 +184,7 @@ export const generateContractPDF = async (contract, accountSettings) => {
     yPos += 4;
   }
   doc.text(`Date: ${contractDate}`, pageWidth / 2, yPos, { align: "center" });
-  yPos += 8;
+  yPos += 5;
 
   // ========== PARTIES SECTION (side by side) ==========
   const colWidth = contentWidth / 2 - 5;
@@ -240,14 +240,14 @@ export const generateContractPDF = async (contract, accountSettings) => {
     });
   }
 
-  yPos = Math.max(partyLeftY, partyRightY) + 6;
+  yPos = Math.max(partyLeftY, partyRightY) + 3;
 
   // ========== SCOPE OF WORK ==========
   addSectionHeader("SCOPE OF WORK");
 
   const scopeOfWork = contract.scopeOfWork || "N/A";
   addMultiLineText(scopeOfWork, 9);
-  yPos += 5;
+  yPos += 2;
 
   // ========== MATERIALS LIST (if toggled on) ==========
   const materials = contract.materials || [];
@@ -276,7 +276,9 @@ export const generateContractPDF = async (contract, accountSettings) => {
     materials.forEach((material) => {
       checkPageBreak(5);
       const unitPrice = material.unitPrice || material.price || 0;
-      doc.text(material.name || "", margin, yPos);
+      const nameMaxWidth = contract.showMaterialsWithPricing ? 75 : 120;
+      const nameLines = doc.splitTextToSize(material.name || "", nameMaxWidth);
+      doc.text(nameLines[0], margin, yPos);
       if (contract.showMaterialsWithPricing) {
         doc.text(String(material.quantity || 1), margin + 90, yPos, { align: "right" });
         doc.text(`$${unitPrice.toFixed(2)}`, margin + 120, yPos, { align: "right" });
@@ -285,12 +287,18 @@ export const generateContractPDF = async (contract, accountSettings) => {
         doc.text(String(material.quantity || 1), pageWidth - margin - 10, yPos, { align: "right" });
       }
       yPos += 4;
+      // Print remaining name lines if wrapped
+      for (let i = 1; i < nameLines.length; i++) {
+        checkPageBreak(4);
+        doc.text(nameLines[i], margin, yPos);
+        yPos += 4;
+      }
     });
-    yPos += 5;
+    yPos += 2;
   }
 
   // ========== PRICING ==========
-  checkPageBreak(35);
+  checkPageBreak(30);
   addSectionHeader("PROJECT COST & PAYMENT TERMS");
 
   const totalPrice = parseFloat(contract.totalPrice || 0);
@@ -329,7 +337,7 @@ export const generateContractPDF = async (contract, accountSettings) => {
   doc.text(`Balance Due Upon Completion:`, margin, yPos);
   doc.setFont("helvetica", "bold");
   doc.text(`$${balanceDue.toFixed(2)}`, margin + 80, yPos);
-  yPos += 8;
+  yPos += 5;
 
   // Payment Methods
   doc.setFont("helvetica", "normal");
@@ -344,7 +352,7 @@ export const generateContractPDF = async (contract, accountSettings) => {
   checkPageBreak(15);
   addSectionHeader("WARRANTY");
   addTextLine(contract.warranty || "2 years on workmanship", 9);
-  yPos += 5;
+  yPos += 2;
 
   // ========== TERMS AND CONDITIONS ==========
   if (contract.termsAndConditions) {
@@ -361,7 +369,7 @@ export const generateContractPDF = async (contract, accountSettings) => {
       doc.text(line, margin, yPos);
       yPos += 3.5;
     });
-    yPos += 5;
+    yPos += 2;
   }
 
   // ========== SIGNATURE SECTION ==========
@@ -375,19 +383,19 @@ export const generateContractPDF = async (contract, accountSettings) => {
   }
 
   drawLine();
-  yPos += 8;
+  yPos += 4;
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
   doc.setTextColor(...colors.sectionHeader);
   doc.text("AGREEMENT & SIGNATURES", margin, yPos);
-  yPos += 6;
+  yPos += 5;
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(...colors.text);
   doc.text("By signing below, both parties agree to the terms and conditions outlined in this contract.", margin, yPos);
-  yPos += 10;
+  yPos += 7;
 
   // Two-column signatures
   const sigColWidth = contentWidth / 2 - 10;
@@ -403,30 +411,68 @@ export const generateContractPDF = async (contract, accountSettings) => {
   doc.setDrawColor(...colors.line);
   doc.setLineWidth(0.3);
 
-  // Client signature
+  // Client signature line
   doc.line(margin, yPos, margin + sigColWidth, yPos);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.text("Signature", margin, yPos + 4);
 
-  // Contractor signature
+  // Contractor signature line (auto-sign if enabled)
+  if (contract.autoSignContractor && companyName) {
+    doc.setFont("helvetica", "bolditalic");
+    doc.setFontSize(16);
+    doc.setTextColor(...colors.primary);
+    doc.text(companyName, sigRightCol, yPos - 2);
+    doc.setTextColor(...colors.text);
+  }
   doc.line(sigRightCol, yPos, sigRightCol + sigColWidth, yPos);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
   doc.text("Signature", sigRightCol, yPos + 4);
   yPos += 12;
 
   // Print Name lines
+  const clientName = contract.clientPrintedName || "";
   doc.line(margin, yPos, margin + sigColWidth, yPos);
+  if (clientName) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.text(clientName, margin, yPos - 2);
+  }
+  doc.setFontSize(8);
   doc.text("Print Name", margin, yPos + 4);
 
   doc.line(sigRightCol, yPos, sigRightCol + sigColWidth, yPos);
+  if (contract.autoSignContractor && companyName) {
+    doc.setFontSize(9);
+    doc.text(companyName, sigRightCol, yPos - 2);
+  }
+  doc.setFontSize(8);
   doc.text("Print Name", sigRightCol, yPos + 4);
   yPos += 12;
 
   // Date lines
+  const clientDate = contract.clientSignatureDate
+    ? new Date(contract.clientSignatureDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+    : "";
+  const contractorDate = contract.autoSignContractor
+    ? (contract.date || contract.contractDate || new Date().toLocaleDateString())
+    : "";
+
   doc.line(margin, yPos, margin + 40, yPos);
+  if (clientDate) {
+    doc.setFontSize(9);
+    doc.text(clientDate, margin, yPos - 2);
+  }
+  doc.setFontSize(8);
   doc.text("Date", margin, yPos + 4);
 
   doc.line(sigRightCol, yPos, sigRightCol + 40, yPos);
+  if (contractorDate) {
+    doc.setFontSize(9);
+    doc.text(contractorDate, sigRightCol, yPos - 2);
+  }
+  doc.setFontSize(8);
   doc.text("Date", sigRightCol, yPos + 4);
   yPos += 10;
 

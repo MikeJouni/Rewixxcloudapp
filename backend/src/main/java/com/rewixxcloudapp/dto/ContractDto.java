@@ -38,4 +38,9 @@ public class ContractDto {
     private Boolean showCostBreakdown;
     private Boolean showMaterialsList;
     private Boolean showMaterialsWithPricing;
+
+    // Signature Options
+    private String clientPrintedName;
+    private String clientSignatureDate;
+    private Boolean autoSignContractor;
 }

@@ -41,6 +41,10 @@ const ContractPreview = ({ data, accountSettings, isMobile = false, materials = 
     subtotal: jobSubtotal,
     taxAmount: jobTaxAmount,
     includeTax: jobIncludeTax,
+    clientPrintedName,
+    clientSignatureDate,
+    autoSignContractor,
+    totalPaid: jobTotalPaid,
   } = data;
 
   // Always use account settings for company info
@@ -100,7 +104,7 @@ const ContractPreview = ({ data, accountSettings, isMobile = false, materials = 
               <img
                 src={`${config.SPRING_API_BASE}${logoUrl}`}
                 alt="Company Logo"
-                style={{ maxHeight: "80px", maxWidth: "200px", objectFit: "contain" }}
+                style={{ maxHeight: "200px", maxWidth: "400px", objectFit: "contain", marginBottom: "20px" }}
               />
             ) : (
               <div style={{
@@ -231,7 +235,7 @@ const ContractPreview = ({ data, accountSettings, isMobile = false, materials = 
                   const unitPrice = material.unitPrice || material.price || 0;
                   return (
                     <tr key={material.id || index} style={{ borderBottom: "1px solid #eee" }}>
-                      <td style={{ padding: "6px 0", fontSize: isMobile ? "11px" : "12px" }}>{material.name}</td>
+                      <td style={{ padding: "6px 0", fontSize: isMobile ? "11px" : "12px", wordBreak: "break-word", overflowWrap: "break-word", maxWidth: isMobile ? "120px" : "250px" }}>{material.name}</td>
                       <td style={{ padding: "6px 0", textAlign: "right", fontSize: isMobile ? "11px" : "12px" }}>{material.quantity}</td>
                       {showMaterialsWithPricing && (
                         <>
@@ -277,6 +281,22 @@ const ContractPreview = ({ data, accountSettings, isMobile = false, materials = 
                 <td style={{ padding: "10px 0", fontWeight: "bold", fontSize: isMobile ? "13px" : "14px" }}>TOTAL</td>
                 <td style={{ padding: "10px 0", fontWeight: "bold", fontSize: isMobile ? "14px" : "16px", textAlign: "right" }}>{formatCurrency(totalPrice)}</td>
               </tr>
+              {jobTotalPaid > 0 && (
+                <tr>
+                  <td style={{ padding: "6px 0", color: "#15803d", fontWeight: "600", fontSize: isMobile ? "11px" : "12px" }}>Paid</td>
+                  <td style={{ padding: "6px 0", color: "#15803d", fontWeight: "600", fontSize: isMobile ? "11px" : "12px", textAlign: "right" }}>{formatCurrency(jobTotalPaid)}</td>
+                </tr>
+              )}
+              {totalPrice > 0 && (
+                <tr>
+                  <td style={{ padding: "6px 0", color: (totalPrice - (jobTotalPaid || 0)) <= 0 ? "#15803d" : "#dc2626", fontWeight: "600", fontSize: isMobile ? "11px" : "12px" }}>
+                    {(totalPrice - (jobTotalPaid || 0)) <= 0 ? "Fully Paid" : "Unpaid"}
+                  </td>
+                  {(totalPrice - (jobTotalPaid || 0)) > 0 && (
+                    <td style={{ padding: "6px 0", color: "#dc2626", fontWeight: "600", fontSize: isMobile ? "11px" : "12px", textAlign: "right" }}>{formatCurrency(totalPrice - (jobTotalPaid || 0))}</td>
+                  )}
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -382,10 +402,10 @@ const ContractPreview = ({ data, accountSettings, isMobile = false, materials = 
                 marginBottom: "8px"
               }}></div>
               <div style={{ fontSize: isMobile ? "10px" : "inherit" }}>
-                <span>Name: ___________________</span>
+                <span>Name: {clientPrintedName || "___________________"}</span>
               </div>
               <div style={{ marginTop: "8px", fontSize: isMobile ? "10px" : "inherit" }}>
-                <span>Date: ___________________</span>
+                <span>Date: {clientSignatureDate ? new Date(clientSignatureDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : "___________________"}</span>
               </div>
             </div>
             <div>
@@ -393,13 +413,22 @@ const ContractPreview = ({ data, accountSettings, isMobile = false, materials = 
               <div style={{
                 borderBottom: "1px solid #333",
                 height: isMobile ? "30px" : "40px",
-                marginBottom: "8px"
-              }}></div>
+                marginBottom: "8px",
+                display: "flex",
+                alignItems: "flex-end",
+                paddingBottom: "4px",
+              }}>
+                {autoSignContractor && companyName && (
+                  <span style={{ fontFamily: "'Brush Script MT', 'Segoe Script', cursive", fontSize: isMobile ? "18px" : "24px", color: "#1a1a1a" }}>
+                    {companyName}
+                  </span>
+                )}
+              </div>
               <div style={{ fontSize: isMobile ? "10px" : "inherit" }}>
-                <span>Name: ___________________</span>
+                <span>Name: {autoSignContractor ? companyName : "___________________"}</span>
               </div>
               <div style={{ marginTop: "8px", fontSize: isMobile ? "10px" : "inherit" }}>
-                <span>Date: ___________________</span>
+                <span>Date: {autoSignContractor ? formatDate(date) : "___________________"}</span>
               </div>
             </div>
           </div>

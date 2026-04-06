@@ -85,7 +85,7 @@ const EmployeeEditView = () => {
           onSubmit={handleSubmit}
           onCancel={handleCancel}
           initialData={employee}
-          isLoading={updateEmployee.isLoading}
+          isLoading={updateEmployee.isPending}
         />
       </Card>
     </div>

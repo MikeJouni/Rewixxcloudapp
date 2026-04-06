@@ -241,9 +241,11 @@ const EmployeesView = ({
     },
     {
       title: 'Job',
-      dataIndex: ['job', 'title'],
+      dataIndex: 'jobTitle',
       key: 'job',
-      render: (text) => text || '-',
+      render: (text, record) => text ? (
+        <span style={{ color: '#2563eb' }}>#{record.jobId} - {text}</span>
+      ) : '-',
       responsive: ['md'],
     },
   ];

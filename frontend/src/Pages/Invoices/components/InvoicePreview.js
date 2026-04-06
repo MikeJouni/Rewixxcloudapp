@@ -52,6 +52,7 @@ const InvoicePreview = ({ data, accountSettings, isMobile = false }) => {
     showMaterialsList = false,
     showMaterialsWithPricing = false,
     termsAndConditions,
+    totalPaid = 0,
   } = data;
 
   const formatCurrency = (amount) => {
@@ -119,10 +120,10 @@ const InvoicePreview = ({ data, accountSettings, isMobile = false }) => {
                 src={`${config.SPRING_API_BASE}${logoUrl}`}
                 alt="Company Logo"
                 style={{
-                  maxHeight: "60px",
-                  maxWidth: "180px",
+                  maxHeight: "200px",
+                  maxWidth: "400px",
                   objectFit: "contain",
-                  marginBottom: "8px",
+                  marginBottom: "20px",
                 }}
               />
             ) : (
@@ -391,7 +392,7 @@ const InvoicePreview = ({ data, accountSettings, isMobile = false }) => {
                       fontSize: "11px",
                     }}
                   >
-                    <span style={{ color: colors.text }}>{material.name}</span>
+                    <span style={{ color: colors.text, wordBreak: "break-word", overflowWrap: "break-word" }}>{material.name}</span>
                     <span style={{ color: colors.textLight }}>
                       {showMaterialsWithPricing
                         ? `${material.quantity} × ${formatCurrency(material.unitPrice)} = ${formatCurrency(material.quantity * material.unitPrice)}`
@@ -417,7 +418,7 @@ const InvoicePreview = ({ data, accountSettings, isMobile = false }) => {
                 <tbody>
                   {materials.map((material, index) => (
                     <tr key={material.id || index} style={{ borderBottom: `1px solid ${colors.border}` }}>
-                      <td style={{ padding: "6px 0", fontSize: "12px", color: colors.text }}>{material.name}</td>
+                      <td style={{ padding: "6px 0", fontSize: "12px", color: colors.text, wordBreak: "break-word", overflowWrap: "break-word", maxWidth: "250px" }}>{material.name}</td>
                       <td style={{ padding: "6px 0", textAlign: "right", fontSize: "12px", color: colors.text }}>{material.quantity}</td>
                       {showMaterialsWithPricing && (
                         <>
@@ -491,6 +492,22 @@ const InvoicePreview = ({ data, accountSettings, isMobile = false }) => {
                 {formatCurrency(grandTotal)}
               </span>
             </div>
+            {totalPaid > 0 && (
+              <div style={{ marginTop: "6px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
+                  <span style={{ color: "#15803d", fontWeight: "600", fontSize: "12px" }}>Paid:</span>
+                  <span style={{ color: "#15803d", fontWeight: "600", fontSize: "12px" }}>{formatCurrency(totalPaid)}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
+                  <span style={{ color: (grandTotal - totalPaid) <= 0 ? "#15803d" : "#dc2626", fontWeight: "600", fontSize: "12px" }}>
+                    {(grandTotal - totalPaid) <= 0 ? "Fully Paid" : "Unpaid:"}
+                  </span>
+                  {(grandTotal - totalPaid) > 0 && (
+                    <span style={{ color: "#dc2626", fontWeight: "600", fontSize: "12px" }}>{formatCurrency(grandTotal - totalPaid)}</span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -525,26 +542,26 @@ const InvoicePreview = ({ data, accountSettings, isMobile = false }) => {
         {notes && (
           <div
             style={{
-              marginBottom: "24px",
-              padding: "16px",
+              marginBottom: "12px",
+              padding: "8px 10px",
               background: colors.background,
               borderRadius: "4px",
-              borderLeft: `4px solid ${colors.textLight}`,
+              borderLeft: `3px solid ${colors.textLight}`,
             }}
           >
             <div
               style={{
                 fontWeight: "bold",
-                marginBottom: "8px",
+                marginBottom: "4px",
                 color: colors.primary,
                 textTransform: "uppercase",
-                fontSize: "11px",
+                fontSize: "9px",
                 letterSpacing: "1px",
               }}
             >
               Notes
             </div>
-            <div style={{ whiteSpace: "pre-wrap", color: colors.text }}>{notes}</div>
+            <div style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", overflowWrap: "break-word", color: colors.text, fontSize: "11px", lineHeight: "1.4" }}>{notes}</div>
           </div>
         )}
 
